@@ -1,0 +1,9 @@
+node_modules/
+.litclaude/
+.litmuse/
+/HANDOFF.md
+.handoff/
+evidence/
+plans/
+*.tgz
+.DS_Store

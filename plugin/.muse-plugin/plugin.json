@@ -1,0 +1,347 @@
+{
+  "schemaVersion": 1,
+  "name": "litmuse",
+  "displayName": "LitMuse",
+  "version": "0.1.0",
+  "description": "LitFamily workflows for Muse Code: bare lit activation, planning, evidence-bound execution, review, research, handoff and Korean prose care.",
+  "compat": {
+    "source": "native",
+    "manifestDir": ".muse-plugin"
+  },
+  "capabilities": {
+    "skills": [
+      {
+        "id": "lit-loop",
+        "path": "skills/lit-loop/SKILL.md",
+        "enabledDefault": true
+      },
+      {
+        "id": "litgoal",
+        "path": "skills/litgoal/SKILL.md",
+        "enabledDefault": true
+      },
+      {
+        "id": "litwork",
+        "path": "skills/litwork/SKILL.md",
+        "enabledDefault": true
+      },
+      {
+        "id": "lit-plan",
+        "path": "skills/lit-plan/SKILL.md",
+        "enabledDefault": true
+      },
+      {
+        "id": "deep-interview",
+        "path": "skills/deep-interview/SKILL.md",
+        "enabledDefault": true
+      },
+      {
+        "id": "lit-crucible",
+        "path": "skills/lit-crucible/SKILL.md",
+        "enabledDefault": true
+      },
+      {
+        "id": "start-work",
+        "path": "skills/start-work/SKILL.md",
+        "enabledDefault": true
+      },
+      {
+        "id": "lit-code",
+        "path": "skills/lit-code/SKILL.md",
+        "enabledDefault": true
+      },
+      {
+        "id": "debugging",
+        "path": "skills/debugging/SKILL.md",
+        "enabledDefault": true
+      },
+      {
+        "id": "refactor",
+        "path": "skills/refactor/SKILL.md",
+        "enabledDefault": true
+      },
+      {
+        "id": "lit-commit",
+        "path": "skills/lit-commit/SKILL.md",
+        "enabledDefault": true
+      },
+      {
+        "id": "review-work",
+        "path": "skills/review-work/SKILL.md",
+        "enabledDefault": true
+      },
+      {
+        "id": "visual-qa",
+        "path": "skills/visual-qa/SKILL.md",
+        "enabledDefault": true
+      },
+      {
+        "id": "comment-checker",
+        "path": "skills/comment-checker/SKILL.md",
+        "enabledDefault": true
+      },
+      {
+        "id": "lit-burnoff",
+        "path": "skills/lit-burnoff/SKILL.md",
+        "enabledDefault": true
+      },
+      {
+        "id": "litresearch",
+        "path": "skills/litresearch/SKILL.md",
+        "enabledDefault": true
+      },
+      {
+        "id": "wikify",
+        "path": "skills/wikify/SKILL.md",
+        "enabledDefault": true
+      },
+      {
+        "id": "lit-comprehend",
+        "path": "skills/lit-comprehend/SKILL.md",
+        "enabledDefault": true
+      },
+      {
+        "id": "lit-humanizer",
+        "path": "skills/lit-humanizer/SKILL.md",
+        "enabledDefault": true
+      },
+      {
+        "id": "lit-recap",
+        "path": "skills/lit-recap/SKILL.md",
+        "enabledDefault": true
+      },
+      {
+        "id": "lit-handoff",
+        "path": "skills/lit-handoff/SKILL.md",
+        "enabledDefault": true
+      },
+      {
+        "id": "lit-init",
+        "path": "skills/lit-init/SKILL.md",
+        "enabledDefault": true
+      },
+      {
+        "id": "frontend-ui-ux",
+        "path": "skills/frontend-ui-ux/SKILL.md",
+        "enabledDefault": true
+      },
+      {
+        "id": "readme-studio",
+        "path": "skills/readme-studio/SKILL.md",
+        "enabledDefault": true
+      },
+      {
+        "id": "lit-docx",
+        "path": "skills/lit-docx/SKILL.md",
+        "enabledDefault": true
+      },
+      {
+        "id": "lit-pptx",
+        "path": "skills/lit-pptx/SKILL.md",
+        "enabledDefault": true
+      },
+      {
+        "id": "lit-scientific-visualization",
+        "path": "skills/lit-scientific-visualization/SKILL.md",
+        "enabledDefault": true
+      },
+      {
+        "id": "lit-diagram-drawer",
+        "path": "skills/lit-diagram-drawer/SKILL.md",
+        "enabledDefault": true
+      },
+      {
+        "id": "lit-typographic-motion",
+        "path": "skills/lit-typographic-motion/SKILL.md",
+        "enabledDefault": true
+      },
+      {
+        "id": "autoresearch",
+        "path": "skills/autoresearch/SKILL.md",
+        "enabledDefault": true
+      },
+      {
+        "id": "structural-search",
+        "path": "skills/structural-search/SKILL.md",
+        "enabledDefault": true
+      },
+      {
+        "id": "browser-drive",
+        "path": "skills/browser-drive/SKILL.md",
+        "enabledDefault": true
+      },
+      {
+        "id": "lit-brainstorm",
+        "path": "skills/lit-brainstorm/SKILL.md",
+        "enabledDefault": true
+      },
+      {
+        "id": "lit-burnoff-file",
+        "path": "skills/lit-burnoff-file/SKILL.md",
+        "enabledDefault": true
+      },
+      {
+        "id": "lit-team",
+        "path": "skills/lit-team/SKILL.md",
+        "enabledDefault": true
+      },
+      {
+        "id": "autoconference",
+        "path": "skills/autoconference/SKILL.md",
+        "enabledDefault": true
+      },
+      {
+        "id": "rules",
+        "path": "skills/rules/SKILL.md",
+        "enabledDefault": true
+      },
+      {
+        "id": "lsp",
+        "path": "skills/lsp/SKILL.md",
+        "enabledDefault": true
+      },
+      {
+        "id": "lsp-setup",
+        "path": "skills/lsp-setup/SKILL.md",
+        "enabledDefault": true
+      }
+    ],
+    "commands": [
+      {
+        "id": "lit",
+        "path": "commands/lit.md",
+        "enabledDefault": true
+      },
+      {
+        "id": "lit-korean",
+        "path": "commands/lit-korean.md",
+        "enabledDefault": true
+      },
+      {
+        "id": "lit-status",
+        "path": "commands/lit-status.md",
+        "enabledDefault": true
+      },
+      {
+        "id": "lit-hud",
+        "path": "commands/lit-hud.md",
+        "enabledDefault": true
+      }
+    ],
+    "hooks": [
+      {
+        "id": "session-start",
+        "event": "SessionStart",
+        "command": [
+          "node",
+          "hooks/session-start.mjs",
+          "--digest",
+          "b8961789243b3149"
+        ],
+        "timeoutMs": 5000
+      },
+      {
+        "id": "user-prompt-submit",
+        "event": "UserPromptSubmit",
+        "command": [
+          "node",
+          "hooks/user-prompt-submit.mjs",
+          "--digest",
+          "91a1d749ba4c3fd3"
+        ],
+        "timeoutMs": 5000,
+        "statusMessage": "LitMuse route check"
+      },
+      {
+        "id": "pre-tool-use",
+        "event": "PreToolUse",
+        "command": [
+          "node",
+          "hooks/pre-tool-use.mjs",
+          "--digest",
+          "eedfd1f3ebe5cb38"
+        ],
+        "timeoutMs": 5000
+      },
+      {
+        "id": "post-tool-use",
+        "event": "PostToolUse",
+        "command": [
+          "node",
+          "hooks/post-tool-use.mjs",
+          "--digest",
+          "dac8628eaa6da79a"
+        ],
+        "timeoutMs": 5000
+      },
+      {
+        "id": "post-tool-use-failure",
+        "event": "PostToolUseFailure",
+        "command": [
+          "node",
+          "hooks/post-tool-use-failure.mjs",
+          "--digest",
+          "b905e80e38695ee0"
+        ],
+        "timeoutMs": 5000
+      },
+      {
+        "id": "stop",
+        "event": "Stop",
+        "command": [
+          "node",
+          "hooks/stop.mjs",
+          "--digest",
+          "d7f72526de2e1053"
+        ],
+        "timeoutMs": 5000
+      },
+      {
+        "id": "subagent-start",
+        "event": "SubagentStart",
+        "command": [
+          "node",
+          "hooks/subagent-start.mjs",
+          "--digest",
+          "20285c4542661b42"
+        ],
+        "timeoutMs": 5000
+      },
+      {
+        "id": "subagent-stop",
+        "event": "SubagentStop",
+        "command": [
+          "node",
+          "hooks/subagent-stop.mjs",
+          "--digest",
+          "35624765c5646ff0"
+        ],
+        "timeoutMs": 5000
+      },
+      {
+        "id": "session-end",
+        "event": "SessionEnd",
+        "command": [
+          "node",
+          "hooks/session-end.mjs",
+          "--digest",
+          "6e0bc285570a4cc2"
+        ],
+        "timeoutMs": 5000
+      },
+      {
+        "id": "pre-compact",
+        "event": "PreCompact",
+        "command": [
+          "node",
+          "hooks/pre-compact.mjs",
+          "--digest",
+          "9c089c69dc07f94a"
+        ],
+        "timeoutMs": 5000
+      }
+    ],
+    "mcpServers": [],
+    "reminders": []
+  }
+}

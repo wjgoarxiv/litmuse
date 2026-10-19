@@ -1,0 +1,59 @@
+{
+  "name": "@litfamily/litmuse",
+  "version": "0.1.0",
+  "description": "Installer for LitMuse: skills, hooks and agents that help Meta's Muse Code plan, build, check and hand off work.",
+  "keywords": [
+    "muse",
+    "muse-code",
+    "coding-agent",
+    "agent-skills",
+    "hooks",
+    "planning",
+    "code-review",
+    "research",
+    "context-handoff",
+    "korean"
+  ],
+  "type": "module",
+  "bin": {
+    "litmuse": "bin/litmuse.mjs"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "test": "node --test test/*.test.mjs",
+    "check:version": "node scripts/check-version.mjs",
+    "scan:legacy-tokens": "node scripts/scan-legacy-tokens.mjs",
+    "qa:muse": "node scripts/qa-muse-surface.mjs",
+    "qa:muse-live": "node scripts/qa-muse-live.mjs",
+    "sync:digests": "node scripts/sync-hook-digests.mjs",
+    "check:digests": "node scripts/sync-hook-digests.mjs --check",
+    "qa:cover-recipes": "node scripts/qa-cover-recipes.mjs"
+  },
+  "files": [
+    "bin",
+    "lib",
+    "plugin",
+    "docs/hud-preset.md",
+    "docs/assets/cover-motion.webp",
+    "docs/assets/cover-motion-still.webp",
+    "README.md",
+    "README_ko-KR.md",
+    "CHANGELOG.md",
+    "LICENSE"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/wjgoarxiv/litmuse.git"
+  },
+  "bugs": {
+    "url": "https://github.com/wjgoarxiv/litmuse/issues"
+  },
+  "homepage": "https://github.com/wjgoarxiv/litmuse#readme",
+  "license": "MIT",
+  "author": "LitMuse contributors"
+}

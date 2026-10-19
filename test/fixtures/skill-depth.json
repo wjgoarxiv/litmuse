@@ -1,0 +1,194 @@
+{
+  "familyFloorBytes": 12000,
+  "runtimes": [
+    "diagram",
+    "motion",
+    "office",
+    "readme",
+    "sciviz"
+  ],
+  "hostNameExempt": [
+    "skills/frontend-ui-ux/references/design/",
+    "skills/frontend-ui-ux/references/ui-ux-db/",
+    "skills/frontend-ui-ux/references/designpowers/vendor/",
+    "skills/frontend-ui-ux/data/design-intelligence.json",
+    "skills/frontend-ui-ux/references/_canonical-corpus/manifest.json"
+  ],
+  "illustrativeRefs": [
+    "assets/flow.png",
+    "assets/flow.dark.png",
+    "assets/example-a.png",
+    "assets/example-b.png",
+    "assets/example-c.png",
+    "assets/pressure.png",
+    "scripts/verify-receipt.mjs",
+    "scripts/check.mjs",
+    "assets/title-dark.svg",
+    "rules/direct-console-log.yml"
+  ],
+  "closureExempt": [
+    "skills/frontend-ui-ux/references/design/",
+    "skills/frontend-ui-ux/references/perfection/",
+    "skills/frontend-ui-ux/references/ui-ux-db/",
+    "skills/frontend-ui-ux/references/designpowers/",
+    "skills/readme-studio/templates/readme-cover-section.md"
+  ],
+  "skills": {
+    "autoconference": {
+      "minSkillBytes": 17700,
+      "minFiles": 29
+    },
+    "autoresearch": {
+      "minSkillBytes": 13800,
+      "minFiles": 32
+    },
+    "browser-drive": {
+      "minSkillBytes": 11700,
+      "minFiles": 3
+    },
+    "comment-checker": {
+      "minSkillBytes": 13000,
+      "minFiles": 2
+    },
+    "debugging": {
+      "minSkillBytes": 19000,
+      "minFiles": 19
+    },
+    "deep-interview": {
+      "minSkillBytes": 18900,
+      "minFiles": 5
+    },
+    "frontend-ui-ux": {
+      "minSkillBytes": 14300,
+      "minFiles": 224
+    },
+    "lit-brainstorm": {
+      "minSkillBytes": 19900,
+      "minFiles": 11
+    },
+    "lit-burnoff": {
+      "minSkillBytes": 23100,
+      "minFiles": 2
+    },
+    "lit-burnoff-file": {
+      "minSkillBytes": 16800,
+      "minFiles": 1
+    },
+    "lit-code": {
+      "minSkillBytes": 50800,
+      "minFiles": 74
+    },
+    "lit-commit": {
+      "minSkillBytes": 13700,
+      "minFiles": 2
+    },
+    "lit-comprehend": {
+      "minSkillBytes": 18600,
+      "minFiles": 5
+    },
+    "lit-crucible": {
+      "minSkillBytes": 14100,
+      "minFiles": 2
+    },
+    "lit-diagram-drawer": {
+      "minSkillBytes": 25800,
+      "minFiles": 329
+    },
+    "lit-docx": {
+      "minSkillBytes": 31800,
+      "minFiles": 59
+    },
+    "lit-handoff": {
+      "minSkillBytes": 16000,
+      "minFiles": 8
+    },
+    "lit-humanizer": {
+      "minSkillBytes": 19700,
+      "minFiles": 78
+    },
+    "lit-init": {
+      "minSkillBytes": 16500,
+      "minFiles": 2
+    },
+    "lit-loop": {
+      "minSkillBytes": 20700,
+      "minFiles": 1
+    },
+    "lit-plan": {
+      "minSkillBytes": 35900,
+      "minFiles": 7
+    },
+    "lit-pptx": {
+      "minSkillBytes": 38400,
+      "minFiles": 105
+    },
+    "lit-recap": {
+      "minSkillBytes": 13600,
+      "minFiles": 1
+    },
+    "lit-scientific-visualization": {
+      "minSkillBytes": 16900,
+      "minFiles": 20
+    },
+    "lit-team": {
+      "minSkillBytes": 13900,
+      "minFiles": 6
+    },
+    "lit-typographic-motion": {
+      "minSkillBytes": 18500,
+      "minFiles": 132
+    },
+    "litgoal": {
+      "minSkillBytes": 20400,
+      "minFiles": 3
+    },
+    "litresearch": {
+      "minSkillBytes": 47800,
+      "minFiles": 4
+    },
+    "litwork": {
+      "minSkillBytes": 33300,
+      "minFiles": 3
+    },
+    "lsp": {
+      "minSkillBytes": 16500,
+      "minFiles": 5
+    },
+    "lsp-setup": {
+      "minSkillBytes": 14400,
+      "minFiles": 24
+    },
+    "readme-studio": {
+      "minSkillBytes": 15500,
+      "minFiles": 24
+    },
+    "refactor": {
+      "minSkillBytes": 36200,
+      "minFiles": 2
+    },
+    "review-work": {
+      "minSkillBytes": 34800,
+      "minFiles": 9
+    },
+    "rules": {
+      "minSkillBytes": 15900,
+      "minFiles": 1
+    },
+    "start-work": {
+      "minSkillBytes": 35800,
+      "minFiles": 4
+    },
+    "structural-search": {
+      "minSkillBytes": 20400,
+      "minFiles": 4
+    },
+    "visual-qa": {
+      "minSkillBytes": 12400,
+      "minFiles": 31
+    },
+    "wikify": {
+      "minSkillBytes": 36500,
+      "minFiles": 14
+    }
+  }
+}

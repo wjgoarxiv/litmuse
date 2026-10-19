@@ -1,0 +1,10 @@
+{
+  "name": "litmuse-motion-runtime",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Pinned Node dependencies for the LitMuse lit-typographic-motion engine. Installed only by `npx @litfamily/litmuse runtime install motion` (or the installer's pre-warm) into a LitMuse-owned cache; a render never installs.",
+  "license": "MIT",
+  "dependencies": {
+    "opentype.js": "2.0.0"
+  }
+}
