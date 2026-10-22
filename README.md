@@ -5,19 +5,33 @@
 
 <p align="center">LitMuse gives Meta's Muse Code the habit of planning before it edits, checking what it built, and leaving a handoff, so the next session starts where this one stopped. One npm command installs it as a Muse plugin.</p>
 
-<p align="center"><a href="#install">Install</a> &nbsp; <a href="#what-you-get">Skills</a> &nbsp; <a href="./docs/hud-preset.md">/hud preset</a> &nbsp; <a href="#safety-and-uninstall">Safety</a> &nbsp; <a href="./README_ko-KR.md">한국어</a></p>
+<p align="center">
+<a href="https://www.npmjs.com/package/@litfamily/litmuse"><img src="https://img.shields.io/npm/v/@litfamily/litmuse?color=FF6337&amp;label=npm" alt="npm version" /></a>
+<a href="./LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue" alt="MIT license" /></a>
+<a href="https://github.com/wjgoarxiv/litmuse/stargazers"><img src="https://img.shields.io/github/stars/wjgoarxiv/litmuse?style=flat" alt="GitHub stars" /></a>
+</p>
+
+<p align="center"><a href="#install">Install</a> &nbsp; <a href="#quick-start">Quick start</a> &nbsp; <a href="#the-status-card">Status card</a> &nbsp; <a href="#automatic-handoff">Handoff</a> &nbsp; <a href="#safety-and-uninstall">Safety</a> &nbsp; <a href="./README_ko-KR.md">한국어</a></p>
+
+## What a session looks like
+
+<p align="center"><img src="./docs/assets/readme/demo.webp" width="960" alt="Terminal capture of three real commands on this Mac. muse --version prints Muse Code 1.4.11. litmuse status --card shows the lit-plan route active with plan 0 of 2 and the next open row. litmuse models lists the muse-spark models from the host catalog." /></p>
+
+Stripped to three lines, a planning session goes like this:
+
+```text
+you type    lit plan a tiny todo app
+it does     loads lit-plan, reads the repo, writes plans/todo-app.md with ordered rows
+it ends     "Plan saved. Run /start-work when you are happy with it."
+```
+
+LitMuse suits people who run Muse Code on real projects and want two things from it: proof before done, and sessions that pick up where the last one stopped. It helps most on work that runs longer than one sitting: a feature with tests, a refactor, a research question. It also builds slides and Word reports and cleans up stiff Korean or English prose.
 
 ## Why LitMuse
 
 Muse Code starts fast: you type a line in the terminal and it gets to work. The trouble shows up later. A long session fills its context, the next session begins without what the last one learned, and "done" often means the model said so. You end up re-explaining where you were and checking by hand what really works.
 
 LitMuse gives each session a routine. Start a prompt with `lit` and the plugin's prompt hook tells Muse which LitMuse skill to load before it touches anything. A bigger change gets a written plan in `plans/` first. The work is checked against that plan with tests and a look at the real surface, and anything nobody could check is marked as unverified. Before you stop, a handoff in `.litmuse/handoff/` records what was built, how it was checked and what is left.
-
-```text
-you type    lit plan a tiny todo app
-it does     loads lit-plan, reads the repo, writes plans/todo-app.md with ordered tasks and checks
-it ends     "Plan saved. Run /start-work when you are happy with it."
-```
 
 Muse still runs the session and picks the model. LitMuse adds the way of working, and it lives in plain files you can read.
 
@@ -38,6 +52,8 @@ npx @litfamily/litmuse doctor
 ```
 
 `doctor` ends with `LitMuse doctor: PASS` when everything is in place. Each capability that still waits for approval appears as `APPROVAL NEEDED` together with the exact command.
+
+To update, run the install command again. To remove everything, see Safety and uninstall below.
 
 Useful switches: `--dry-run` previews and writes nothing; `--yes` lets an agent or CI shell install (a shell without a terminal otherwise only previews); `--approve` approves the capabilities without the question, for scripts; `--scope project` installs for one project.
 
@@ -66,53 +82,90 @@ Use only the official npm package @litfamily/litmuse. Show me your plan and wait
 
 Headless runs work the same way: `muse exec --json "lit plan a tiny todo app" < /dev/null`.
 
+## The status card
+
+Muse's `/hud` is a fixed list of on/off fields, so plugins add nothing to it. LitMuse keeps its own live record instead: the route, the plan progress, and the child agents running right now. `/lit-status` and `litmuse status --card` show that record. For the terminal chrome around the card, the recommended `/hud` and theme preset lives in [docs/hud-preset.md](./docs/hud-preset.md).
+
+Read the card from top to bottom. The first line names the workflow and how long it has run, or says no route is active in this workspace. A second line names the plan file with ticked and total rows and the next open row. A lanes line names each running tool with its elapsed time, then each finished lane.
+
+At rest the card reports no active route:
+
+<p align="center"><img src="./docs/assets/card/idle.webp" width="960" alt="The status card with no active route in this workspace." /></p>
+
+While a plan runs, the card names the route, the plan file, and the next open row:
+
+<p align="center"><img src="./docs/assets/card/working.webp" width="960" alt="The status card while the lit-plan route is active, naming the plan file with 0 of 2 rows ticked and the next open row." /></p>
+
+Ticking a row moves the count and the next-row pointer:
+
+<p align="center"><img src="./docs/assets/card/after.webp" width="960" alt="The same card after the first row is ticked: 1 of 2 with the second row named next." /></p>
+
+The card reads the hook-kept state under `~/.local/state/litmuse/`, outside the project.
+
+## Automatic handoff
+
+A long session fills the model's context, and when Muse compacts it, detail drops out of the summary. Before the compaction, the PreCompact hook writes a handoff file; after it, SessionStart reads the fresh file back into the conversation. Two commands put this to work: `lit handoff` before you stop, `lit recap` when you return. The packet names what was built, how it was checked, and what is left.
+
+The hook answers with one recorded line:
+
+<p align="center"><img src="./docs/assets/handoff/saved.webp" width="960" alt="The PreCompact hook output line recording that it saved .litmuse/handoff/latest.md." /></p>
+
+The snapshot names the trigger, the session, the route, the plan with its open rows, and recent ledger lines:
+
+<p align="center"><img src="./docs/assets/handoff/latest.webp" width="960" alt="The handoff snapshot: trigger, session, the lit-plan route, the plan with 0 ticked and 2 open rows, and recent ledger lines." /></p>
+
 ## What you get
 
-**39 skills**, each a dense Muse skill loaded on demand, with the references, scripts, templates and engines it needs inside its own folder. The catalog only holds their short descriptions, about 3.7 KB in total, so they keep their place even next to a large personal skill collection:
+**39 skills**, each a dense Muse skill loaded on demand, with the references, scripts, templates and engines it needs inside its own folder. The catalog only holds their short descriptions, about 3.7 KB in total, so they keep their place even next to a large personal skill collection.
 
-- Loop and goals: lit-loop, litgoal, litwork
-- Ideas and planning: lit-brainstorm, deep-interview, lit-crucible, lit-plan
-- Building: start-work, lit-code, debugging, refactor, lit-commit, lsp, lsp-setup
-- Review and cleanup: review-work (plan review and work review), visual-qa, comment-checker, lit-burnoff, lit-burnoff-file
-- Research and knowledge: litresearch, autoresearch, autoconference, wikify, lit-comprehend
-- Teams: lit-team
-- Prose: lit-humanizer (Korean and English)
-- Continuity and guidance: lit-recap, lit-handoff, lit-init, rules
-- Interface and docs: frontend-ui-ux, readme-studio
-- Documents and figures: lit-docx, lit-pptx, lit-scientific-visualization, lit-diagram-drawer
-- Film and covers: lit-typographic-motion (short films, kinetic type, lyric videos and seamless README cover loops, each rendered, gated on the decoded file and looked at frame by frame)
-- Tools: structural-search, browser-drive
+### The work loop
 
-The document, diagram, README-cover and figure skills ship pinned engines (`office`, `diagram`, `readme`, `sciviz`). Each installs on first use into `~/.local/share/litmuse/runtime/<name>` and nowhere else; inside Muse's proxy-only sandbox that first install can be refused, so pre-warm them from a terminal with `npx @litfamily/litmuse runtime install all` (`runtime status` shows each one). The motion skill's engine (`motion`: its font set and type-engine package) never installs from a session at all, so `runtime install motion` (or `all`) from a terminal is the only way it gets there. They also call programs already on your machine: Python 3.10 to 3.14 (a newer `python3` is passed over for the newest `python3.X` in that range), LibreOffice, pandoc, Poppler, Chrome or Chromium, ffmpeg, libwebp (`img2webp`, `dwebp`), ast-grep and the language checkers the `lsp` skill drives. `doctor` lists what is missing and the command that installs it; LitMuse never installs software globally.
+Add `lit` to a request. Muse pins the goal, writes a failing test first, makes the smallest change that passes it, checks the real result, and leaves a record in the project: lit-loop, litgoal, litwork.
+
+### Plan first, then build
+
+For a larger change, `lit plan` writes a plan with numbered tasks and a yes-or-no check for each one, and edits nothing yet. Once you approve it, `/start-work` runs it task by task with lit-code, debugging, refactor, lit-commit, lsp and lsp-setup on call. Brainstorming and pressure-testing come first when they help: lit-brainstorm, deep-interview, lit-crucible.
+
+### A second look before you merge
+
+`lit review` picks a mode from what exists: plan review for a plan that has not started, work review for a finished change. review-work, visual-qa, comment-checker, lit-burnoff and lit-burnoff-file cover the check and the cleanup.
+
+### Research you can trace
+
+`lit research` splits a question, sends parallel searchers over public sources, and keeps facts and uncertainty apart. autoresearch, autoconference, wikify and lit-comprehend carry the longer arcs, and lit-team coordinates child agents behind one packet.
+
+### Prose, and carrying work forward
+
+lit-humanizer polishes Korean and English prose and keeps the facts. lit-recap, lit-handoff, lit-init and rules carry work into the next session. frontend-ui-ux and readme-studio shape interfaces and READMEs. lit-docx, lit-pptx, lit-scientific-visualization and lit-diagram-drawer produce documents and figures. lit-typographic-motion renders short films and seamless README cover loops, each gated on the decoded file and checked frame by frame. structural-search and browser-drive handle code shape and live pages.
+
+The document, diagram, README-cover and figure skills ship pinned engines (`office`, `diagram`, `readme`, `sciviz`). Each installs on first use into `~/.local/share/litmuse/runtime/<name>` and nowhere else; inside Muse's proxy-only sandbox that first install can be refused, so pre-warm them from a terminal with `npx @litfamily/litmuse runtime install all` (`runtime status` shows each one). The motion skill's engine (`motion`: its font set and type-engine package) installs from a terminal only, so `runtime install motion` (or `all`) is the way it gets there. They also call programs already on your machine: Python 3.10 to 3.14 (a newer `python3` is passed over for the newest `python3.X` in that range), LibreOffice, pandoc, Poppler, Chrome or Chromium, ffmpeg, libwebp (`img2webp`, `dwebp`), ast-grep and the language checkers the `lsp` skill drives. `doctor` lists what is missing and the command that installs it; LitMuse installs nothing globally.
 
 **4 commands**: `/lit <route> <task>`, `/lit-korean <file or text>`, `/lit-status`, `/lit-hud`.
 
-**10 hooks**: SessionStart (LitMuse context and routes; after a compaction it re-injects the saved handoff once, and it adds the answer style you chose with `litmuse style`), UserPromptSubmit (`lit` activation; a later `lit` while its route is active continues it, `lit <other route>` switches, a bare `lit` resumes a started plan, `lit new` or `lit restart` starts over), PreToolUse (during lit-plan: writes through write_file, edit_file, apply_patch or delete_file stay inside `plans/` and `.litmuse/`, shell commands must be read-only, and only read-only LitMuse agents may be spawned; on every route: guards against clustered negations and clustered hedges that a write adds to Markdown or text prose), PostToolUse (the tool ledger, plus the whole-line comments an edit added for comment-checker and an advisory lit-humanizer check on written prose; on the motion route it also notes each render and each image `read_file` opened), PostToolUseFailure (ledger), Stop (a lit-plan turn ends after its plan file exists; a motion turn ends when the skill's done-check passes on the last render, or after two holds with a plain not-done notice; start-work keeps going while plan rows are open and litgoal while criteria are open, each at most 3 holds in a row without progress), PreCompact (writes `.litmuse/handoff/latest.md` before Muse compacts), SubagentStart (the return format for child agents), SubagentStop and SessionEnd (ledger lines). The hooks also keep a live record of the route, plan progress and running child agents, which `/lit-status` and `npx @litfamily/litmuse status --card` show, because Muse's `/hud` cannot show plugin text.
+**10 hooks**: SessionStart (LitMuse context and routes; after a compaction it re-injects the saved handoff once, and it adds the answer style you chose with `litmuse style`), UserPromptSubmit (`lit` activation; a later `lit` while its route is active continues it, `lit <other route>` switches, a bare `lit` resumes a started plan, `lit new` or `lit restart` starts over), PreToolUse (during lit-plan: writes through write_file, edit_file, apply_patch or delete_file stay inside `plans/` and `.litmuse/`, shell commands are read-only, and only read-only LitMuse agents may be spawned; on every route: guards against clustered negations and clustered hedges that a write adds to Markdown or text prose), PostToolUse (the tool ledger, plus the whole-line comments an edit added for comment-checker and an advisory lit-humanizer check on written prose; on the motion route it also notes each render and each image `read_file` opened), PostToolUseFailure (ledger), Stop (a lit-plan turn ends after its plan file exists; a motion turn ends when the skill's done-check passes on the last render, or after two holds with a plain not-done notice; start-work keeps going while plan rows are open and litgoal while criteria are open, each at most 3 holds in a row without progress), PreCompact (writes `.litmuse/handoff/latest.md` before Muse compacts), SubagentStart (the return format for child agents), SubagentStop and SessionEnd (ledger lines). The hooks also keep a live record of the route, plan progress and running child agents, which `/lit-status` and `npx @litfamily/litmuse status --card` show, because Muse's `/hud` shows fixed fields only.
 
 **11 agents**, spawned as `litmuse/<name>`: lit-planner, lit-executor, lit-verifier, qa-runner, quality-reviewer, librarian-researcher, and five Korean prose agents. Reviewers and the Korean agents get read and search tools only.
 
 **Models**: `npx @litfamily/litmuse models` lists the models and effort tiers your Muse install offers, read from Muse's own catalog. A model Meta adds later shows up there with no LitMuse update.
 
-**Status bar**: Muse's `/hud` is a list of on/off fields. The recommended preset and theme are in [docs/hud-preset.md](./docs/hud-preset.md).
-
 ## What a planning turn may do
 
-`lit plan` turns are planning only, and the PreToolUse hook enforces that with an allowlist. Anything unlisted is refused, including MCP tools and tools a later Muse release adds.
+`lit plan` turns are planning only, and the PreToolUse hook holds that line with an allowlist. Anything unlisted is refused, including MCP tools and tools a later Muse release adds.
 
 - Read-only tools: `read_file`, `search`, `read_skill`, `web_search`, `web_fetch`, `read_memory`, `work_status`, `work_list`, `subagent_status`, `subagent_wait`, `subagent_read_result`, `subagent_cancel`, `request_user_input`, `get_goal`, `cron_list`.
 - File writes (`write_file`, `edit_file`, `apply_patch`, `delete_file`) only inside `plans/` and `.litmuse/`, after `..` and symlinks are resolved.
 - Shell (`bash`, `exec_command`, `shell`) only for one plain command from `ls`, `cat`, `head`, `tail`, `wc`, `rg` or `git log|status|diff|show`, with listed flags and no `;`, `&`, `|`, `<`, `>`, backticks, `$` or line breaks. `bash_input` is refused.
 - Child agents only as read-only `litmuse/*` agents (lit-planner, librarian-researcher, lit-verifier, quality-reviewer and the Korean prose agents).
 
-Route state lives outside the project, under `~/.local/state/litmuse/`, so no tool in a planning turn can reach it. If that state goes missing or is damaged while a plan turn is active, the limit stays on. Each hook's declared command carries a digest of its code, so when an update changes a hook, Muse asks you to approve it again.
+Route state lives outside the project, under `~/.local/state/litmuse/`, so no tool in a planning turn reaches it. If that state goes missing or breaks during a plan turn, the limit stays on. Each hook's declared command carries a digest of its code, so when an update changes a hook, Muse asks you to approve it again.
 
 ## Living next to other tools
 
-Muse also reads personal rules and skills written for other coding tools, such as a user rules file or a personal skills folder. LitMuse leaves that on, because those rules are yours. Its session context asks Muse to use the LitMuse skill for every lit route, and `doctor` warns when a personal skill shares a name with a LitMuse skill or comes from another tool's plugin folder. To keep a run clean, switch off "Personal rules fallback" and "Personal skills fallback" in `/settings`; a headless run takes `muse exec --no-foreign-personal-context` (the interactive `muse` rejects that flag on 1.4.11).
+Muse also reads personal rules and skills written for other coding tools, such as a user rules file or a personal skills folder. LitMuse leaves that on, because those rules are yours. Its session context asks Muse to use the LitMuse skill for every lit route, and `doctor` warns when a personal skill shares a name with a LitMuse skill or comes from another tool's plugin folder. For a clean run, switch off "Personal rules fallback" and "Personal skills fallback" in `/settings`; a headless run takes `muse exec --no-foreign-personal-context` (the interactive `muse` rejects that flag on 1.4.11).
 
 ## Safety and uninstall
 
-- The installer writes to `~/.local/share/litmuse/` and, through the `muse` CLI, to Muse's own plugin store and settings. It backs up `~/.config/muse/settings.json` and Muse's `installed.json` first, and it never reads Muse's credential file.
+- The installer writes to `~/.local/share/litmuse/` and, through the `muse` CLI, to Muse's own plugin store and settings. It backs up `~/.config/muse/settings.json` and Muse's `installed.json` first, and it reads Muse's credential file in no step.
 - It refuses to replace a bundle directory that is a symbolic link, holds someone else's files, or was edited after install.
 - It writes nothing under `~/.claude` or `~/.codex`; a test pins that.
 - Hooks fail open: if one breaks, your session continues.
