@@ -27,6 +27,15 @@
 
 LitMuse는 실제 프로젝트에서 Muse Code를 쓰는 사람에게 맞습니다. 원하는 것은 두 가지입니다. 끝났다는 말보다 먼저 확인한 증거, 그리고 지난번에 멈춘 자리에서 이어지는 세션입니다. 한 번에 끝나지 않는 일에서 가장 쓸모가 있습니다. 테스트를 곁들인 기능, 리팩터, 조사 질문이 그런 일입니다. 발표 슬라이드와 Word 보고서도 만들고, 굳은 한국어와 영어 글도 다듬습니다.
 
+Muse가 세션을 돌리고 lit이 주변 순서를 더합니다.
+
+| 호스트 | lit이 더하는 것 |
+| --- | --- |
+| 한 줄을 받고 바로 일을 시작합니다 | 목표를 고정하고 떨어지는 테스트를 먼저 씁니다 |
+| 긴 세션에서 컨텍스트가 찹니다 | 컴팩션 전에 인계를 쓰고 뒤에 다시 읽습니다 |
+| 다음 세션은 빈자리에서 시작합니다 | `lit recap`이 인계를 읽고 다음 일을 가리킵니다 |
+| 모델이 끝났다고 하면 끝납니다 | 계획에 맞춰 테스트와 실제 확인으로 검증합니다 |
+
 ## 왜 LitMuse인가
 
 Muse Code는 시작이 빠릅니다. 터미널에 한 줄 적으면 바로 일을 시작합니다. 문제는 그다음에 옵니다. 세션이 길어지면 컨텍스트가 차고, 다음 세션은 지난 세션이 알던 것을 모른 채 시작합니다. "끝났다"는 말도 모델이 그렇게 말했다는 뜻일 때가 많습니다. 결국 어디까지 했는지 다시 설명하고, 무엇이 실제로 돌아가는지 손으로 확인하게 됩니다.
@@ -54,6 +63,16 @@ npx @litfamily/litmuse doctor
 모두 갖춰지면 `doctor`의 마지막 줄이 `LitMuse doctor: PASS`입니다. 아직 승인을 기다리는 항목은 `APPROVAL NEEDED`와 실행할 명령으로 표시됩니다.
 
 업데이트하려면 설치 명령을 다시 실행하세요. 전부 지우려면 아래 안전과 제거를 보세요.
+
+설치부터 제거까지 이 표의 명령으로 처리합니다.
+
+| 작업 | 명령 |
+| --- | --- |
+| 설치 | `npx @litfamily/litmuse install` |
+| 미리 보기 | `npx @litfamily/litmuse install --dry-run` |
+| 업데이트 | `npx @litfamily/litmuse install` |
+| 확인 | `npx @litfamily/litmuse doctor` |
+| 제거 | `npx @litfamily/litmuse uninstall` |
 
 자주 쓰는 옵션: `--dry-run`은 미리 보기만 하고 아무것도 쓰지 않습니다. `--yes`는 터미널이 붙지 않은 에이전트나 CI 셸에서 설치를 허용합니다(그런 셸에서는 기본으로 미리 보기만 합니다). `--approve`는 질문 없이 승인까지 진행하는 스크립트용입니다. `--scope project`는 한 프로젝트에만 설치합니다.
 
@@ -118,25 +137,22 @@ Muse의 `/hud`는 켜고 끄는 고정 항목 목록이라서 플러그인 글�
 
 **스킬 39개.** 필요할 때 불러오는 밀도 높은 Muse 스킬이며, 각 스킬에 필요한 참고 문서, 스크립트, 템플릿, 엔진이 그 스킬 폴더 안에 함께 들어 있습니다. 카탈로그에는 짧은 설명만 올라가며, 모두 합쳐 약 3.7 KB라서 개인 스킬이 많은 환경에서도 자리를 지킵니다.
 
-### 작업 고리
+아래 모든 스킬은 각자 폴더에 들어 있으며 필요할 때 불러옵니다. 하려는 일에 맞는 행을 찾으세요.
 
-요청 앞에 `lit`을 붙이세요. Muse가 목표를 고정하고, 떨어지는 테스트를 먼저 쓰고, 통과하는 가장 작은 변경을 만들고, 실제 결과를 확인하고, 기록을 프로젝트에 남깁니다: lit-loop, litgoal, litwork.
-
-### 먼저 계획하고, 그다음 구현
-
-큰 변경은 `lit plan`으로 먼저 계획합니다. 번호가 매겨진 작업과 각 작업의 통과 기준을 적고, 아직은 아무것도 고치지 않습니다. 마음에 들면 `/start-work`가 한 줄씩 실행하고, lit-code, debugging, refactor, lit-commit, lsp, lsp-setup가 뒤를 받칩니다. 도움이 되면 먼저 아이디어를 넓히고 압박 테스트를 거칩니다: lit-brainstorm, deep-interview, lit-crucible.
-
-### 합치기 전에 다시 보기
-
-`lit review`는 있는 것에서 방식을 고릅니다. 시작하지 않은 계획은 계획 리뷰, 끝난 변경은 작업 리뷰로 봅니다. review-work, visual-qa, comment-checker, lit-burnoff, lit-burnoff-file이 확인과 정리를 맡습니다.
-
-### 근거가 남는 조사
-
-`lit research`는 질문을 나누고 여러 탐색을 공공 자료에 병렬로 보내고, 사실과 불확실을 갈라 둡니다. autoresearch, autoconference, wikify, lit-comprehend가 긴 흐름을 잇고, lit-team이 자식 에이전트를 하나의 패킷 뒤에서 엮습니다.
-
-### 글, 그리고 이어 가기
-
-lit-humanizer는 한국어와 영어 글을 다듬고 사실을 지킵니다. lit-recap, lit-handoff, lit-init, rules가 작업을 다음 세션으로 넘깁니다. frontend-ui-ux와 readme-studio가 화면과 README를 빚습니다. lit-docx, lit-pptx, lit-scientific-visualization, lit-diagram-drawer가 문서와 그림을 만듭니다. lit-typographic-motion은 짧은 영상과 끊김 없이 도는 README 표지 고리를 렌더하고, 인코딩된 파일을 그대로 검사하고 프레임을 직접 열어 봅니다. structural-search와 browser-drive가 코드 모양과 살아 있는 페이지를 맡습니다.
+| 분야 | 스킬 | 역할 |
+| --- | --- | --- |
+| 작업 고리 | lit-loop, litgoal, litwork | 목표 고정, 떨어지는 테스트 먼저, 기록 남기기 |
+| 계획과 구현 | lit-plan, start-work, lit-code, debugging, refactor, lit-commit, lsp, lsp-setup | 계획서 작성, 행별 구현 |
+| 아이디어 다지기 | lit-brainstorm, deep-interview, lit-crucible | 넓히기, 묻기, 압박 테스트 |
+| 검토와 정리 | review-work, visual-qa, comment-checker, lit-burnoff, lit-burnoff-file | 다시 보기, 잔재 지우기 |
+| 조사 | litresearch, autoresearch, autoconference, wikify, lit-comprehend | 병렬 탐색, 근거 추적 |
+| 팀 | lit-team | 하나의 패킷 뒤 자식 에이전트 |
+| 글 | lit-humanizer | 한국어와 영어 다듬기, 사실 유지 |
+| 이어 가기 | lit-recap, lit-handoff, lit-init, rules | 인계, 회고, 길잡이 |
+| 화면과 문서 | frontend-ui-ux, readme-studio | 접근 쉬운 화면, 사실 확인된 README |
+| 문서와 그림 | lit-docx, lit-pptx, lit-scientific-visualization, lit-diagram-drawer | 데크, 꾸민 문서, 그래프, 다이어그램 |
+| 영상과 표지 | lit-typographic-motion | 짧은 영상과 표지 고리, 인코딩본 검사 |
+| 도구 | structural-search, browser-drive | 코드 모양 검색, 살아 있는 페이지 |
 
 문서, 다이어그램, README 표지, 그림 스킬은 버전이 고정된 엔진(`office`, `diagram`, `readme`, `sciviz`)을 함께 씁니다. 엔진은 처음 쓸 때 `~/.local/share/litmuse/runtime/<이름>`에만 설치됩니다. Muse의 프록시 전용 샌드박스에서는 이 첫 설치가 막힐 수 있으니 터미널에서 `npx @litfamily/litmuse runtime install all`로 미리 설치해 두세요(`runtime status`로 상태를 봅니다). 모션 스킬의 엔진(`motion`: 글꼴 묶음과 타입 엔진 패키지)은 터미널에서만 설치되므로, `runtime install motion`(또는 `all`)으로 들입니다. 이 스킬들은 내 컴퓨터에 이미 있는 프로그램도 씁니다: Python 3.10~3.14(더 새로운 `python3`는 건너뛰고 이 범위에서 가장 새로운 `python3.X`를 씀), LibreOffice, pandoc, Poppler, Chrome 또는 Chromium, ffmpeg, libwebp(`img2webp`, `dwebp`), ast-grep, 그리고 `lsp` 스킬이 부르는 언어 검사 도구. 빠진 것과 설치 명령은 `doctor`가 알려 주며, LitMuse가 전역으로 무언가를 설치하는 일은 없습니다.
 

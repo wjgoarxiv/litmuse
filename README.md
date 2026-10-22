@@ -27,6 +27,15 @@ it ends     "Plan saved. Run /start-work when you are happy with it."
 
 LitMuse suits people who run Muse Code on real projects and want two things from it: proof before done, and sessions that pick up where the last one stopped. It helps most on work that runs longer than one sitting: a feature with tests, a refactor, a research question. It also builds slides and Word reports and cleans up stiff Korean or English prose.
 
+Muse runs the session while lit adds the routine around it.
+
+| The host | What lit adds |
+| --- | --- |
+| Takes a line and gets to work | Pins the goal and writes the failing test first |
+| Fills its context over a long session | Writes the handoff before compaction, reads it back after |
+| Opens the next session blank | `lit recap` reads the handoff and names the next step |
+| Calls it done when the model says so | Checks the plan with tests and real-surface proof |
+
 ## Why LitMuse
 
 Muse Code starts fast: you type a line in the terminal and it gets to work. The trouble shows up later. A long session fills its context, the next session begins without what the last one learned, and "done" often means the model said so. You end up re-explaining where you were and checking by hand what really works.
@@ -54,6 +63,16 @@ npx @litfamily/litmuse doctor
 `doctor` ends with `LitMuse doctor: PASS` when everything is in place. Each capability that still waits for approval appears as `APPROVAL NEEDED` together with the exact command.
 
 To update, run the install command again. To remove everything, see Safety and uninstall below.
+
+The lifecycle runs through this table.
+
+| Task | Command |
+| --- | --- |
+| Install | `npx @litfamily/litmuse install` |
+| Preview first | `npx @litfamily/litmuse install --dry-run` |
+| Update | `npx @litfamily/litmuse install` |
+| Check | `npx @litfamily/litmuse doctor` |
+| Remove | `npx @litfamily/litmuse uninstall` |
 
 Useful switches: `--dry-run` previews and writes nothing; `--yes` lets an agent or CI shell install (a shell without a terminal otherwise only previews); `--approve` approves the capabilities without the question, for scripts; `--scope project` installs for one project.
 
@@ -118,25 +137,22 @@ The snapshot names the trigger, the session, the route, the plan with its open r
 
 **39 skills**, each a dense Muse skill loaded on demand, with the references, scripts, templates and engines it needs inside its own folder. The catalog only holds their short descriptions, about 3.7 KB in total, so they keep their place even next to a large personal skill collection.
 
-### The work loop
+Every skill below ships in its own folder and loads on demand. Find the row that matches the task at hand.
 
-Add `lit` to a request. Muse pins the goal, writes a failing test first, makes the smallest change that passes it, checks the real result, and leaves a record in the project: lit-loop, litgoal, litwork.
-
-### Plan first, then build
-
-For a larger change, `lit plan` writes a plan with numbered tasks and a yes-or-no check for each one, and edits nothing yet. Once you approve it, `/start-work` runs it task by task with lit-code, debugging, refactor, lit-commit, lsp and lsp-setup on call. Brainstorming and pressure-testing come first when they help: lit-brainstorm, deep-interview, lit-crucible.
-
-### A second look before you merge
-
-`lit review` picks a mode from what exists: plan review for a plan that has not started, work review for a finished change. review-work, visual-qa, comment-checker, lit-burnoff and lit-burnoff-file cover the check and the cleanup.
-
-### Research you can trace
-
-`lit research` splits a question, sends parallel searchers over public sources, and keeps facts and uncertainty apart. autoresearch, autoconference, wikify and lit-comprehend carry the longer arcs, and lit-team coordinates child agents behind one packet.
-
-### Prose, and carrying work forward
-
-lit-humanizer polishes Korean and English prose and keeps the facts. lit-recap, lit-handoff, lit-init and rules carry work into the next session. frontend-ui-ux and readme-studio shape interfaces and READMEs. lit-docx, lit-pptx, lit-scientific-visualization and lit-diagram-drawer produce documents and figures. lit-typographic-motion renders short films and seamless README cover loops, each gated on the decoded file and checked frame by frame. structural-search and browser-drive handle code shape and live pages.
+| Area | Skills | Role |
+| --- | --- | --- |
+| Work loop | lit-loop, litgoal, litwork | Goal pinned, failing test first, record left |
+| Plan and build | lit-plan, start-work, lit-code, debugging, refactor, lit-commit, lsp, lsp-setup | Written plan, then row-by-row build |
+| Ideas first | lit-brainstorm, deep-interview, lit-crucible | Diverge, clarify, pressure-test |
+| Review and cleanup | review-work, visual-qa, comment-checker, lit-burnoff, lit-burnoff-file | Second look, then residue stripped |
+| Research | litresearch, autoresearch, autoconference, wikify, lit-comprehend | Parallel searchers, traced claims |
+| Teams | lit-team | Child agents behind one packet |
+| Prose | lit-humanizer | Korean and English cleanup, facts kept |
+| Continuity | lit-recap, lit-handoff, lit-init, rules | Handoffs, recaps, orientation |
+| Interface and docs | frontend-ui-ux, readme-studio | Accessible UI, fact-checked READMEs |
+| Documents and figures | lit-docx, lit-pptx, lit-scientific-visualization, lit-diagram-drawer | Decks, styled docs, plots, diagrams |
+| Film and covers | lit-typographic-motion | Short films and cover loops, gated on decoded output |
+| Tools | structural-search, browser-drive | Syntax-shaped search, live pages |
 
 The document, diagram, README-cover and figure skills ship pinned engines (`office`, `diagram`, `readme`, `sciviz`). Each installs on first use into `~/.local/share/litmuse/runtime/<name>` and nowhere else; inside Muse's proxy-only sandbox that first install can be refused, so pre-warm them from a terminal with `npx @litfamily/litmuse runtime install all` (`runtime status` shows each one). The motion skill's engine (`motion`: its font set and type-engine package) installs from a terminal only, so `runtime install motion` (or `all`) is the way it gets there. They also call programs already on your machine: Python 3.10 to 3.14 (a newer `python3` is passed over for the newest `python3.X` in that range), LibreOffice, pandoc, Poppler, Chrome or Chromium, ffmpeg, libwebp (`img2webp`, `dwebp`), ast-grep and the language checkers the `lsp` skill drives. `doctor` lists what is missing and the command that installs it; LitMuse installs nothing globally.
 
