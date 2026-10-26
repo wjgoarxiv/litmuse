@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.1.2 — 2026-10-27
+
+- Three new skills, so LitMuse now has 42. `lit-schematic` draws P&IDs with ISA-5.1 tags and control loops, apparatus figures for papers and isometric cutaways, as editable SVG with a QA gate. `lit-hijack` studies a tool you point it at and rebuilds what you want from it clean-room, with a gate after each phase. `lit-adhd` (also `lit-rewind`) is a briefing across your recent Muse sessions: what each one asked, did and is waiting on, with a single next step that a bare `go` picks up.
+- Workflow stacks: a lit route started inside another one pauses the first, and `lit continue` picks it back up. start-work waits for a typed `lit start plans/<name>.md` before it acts on a plan, and a bare `go` follows the next step the brief suggested.
+- The LIT card (`/lit-status`, `litmuse status --card`) shows a row per open thread, an amber `YOUR TURN` headline when Muse waits on you, and a rainbow headline for every way of opening `lit-adhd` (`/lit-adhd`, `/litmuse:lit-adhd`, `lit-rewind`).
+- Slides: five new tonalities (`bauhaus`, `computational-brutalism`, `neo-brutalism`, `newsroom`, `riso`), hero and decoration on every pack, grid zones, and JetBrains Mono as a face for titles and labels beside Pretendard. The slide, document, interface, diagram, schematic, README and film skills ask which theme or style you want before building, unless you already named one or said to choose.
+- Films: house styles, a storyboard board you see before the full render, a 3D stage and an original layered score made for each film.
+- The README has a gallery of real renders from these skills.
+- Security fixes from review: the session brief masks secrets more reliably, including those in URLs and environment values; streamed downloads have size caps; three.js is pinned; and `lit-hijack` and the film asset downloads connect only to the address they checked and re-check every redirect, which closes a DNS-rebinding gap.
+- The hook code changed, so Muse asks you to approve the LitMuse hooks again after the update; `npx @litfamily/litmuse install` lists them and asks once.
+
 ## 0.1.1 — 2026-10-26
 
 - The README studio's HyperFrames and Remotion cover templates pin newer `hono` and `fast-uri` in their lockfiles, picking up upstream fixes. A fresh template setup installs these versions.
