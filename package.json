@@ -1,6 +1,6 @@
 {
   "name": "@litfamily/litmuse",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Installer for LitMuse: skills, hooks and agents that help Meta's Muse Code plan, build, check and hand off work.",
   "keywords": [
     "muse",

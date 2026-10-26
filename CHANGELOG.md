@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.1 — 2026-10-26
+
+- The README studio's HyperFrames and Remotion cover templates pin newer `hono` and `fast-uri` in their lockfiles, picking up upstream fixes. A fresh template setup installs these versions.
+- Both READMEs are rewritten with real Muse Code captures of the LIT card, the handoff and a short demo, plus tables for how LitMuse adds to the host, the session lifecycle and the skills. The six captures ship in the package, so the npm page shows them too.
+- The hook code is the same as 0.1.0, so hook approvals carry over. `muse plugins update` asks you to approve the LitMuse agents again; `npx @litfamily/litmuse install` lists them and asks once.
+
 ## 0.1.0 — 2026-10-22
 
 First release of LitMuse, the LitFamily member for Meta's Muse Code (built and probed against Muse Code 1.4.10).
