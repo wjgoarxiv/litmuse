@@ -133,6 +133,26 @@ Muse의 `/hud`는 켜고 끄는 고정 항목 목록이라서 플러그인 글�
 
 <p align="center"><img src="./docs/assets/handoff/latest.webp" width="960" alt="인계 스냅샷. 실행 계기와 세션, lit-plan 경로, 0개 체크와 2개 열린 행의 계획, 최근 기록 줄을 보여 줍니다." /></p>
 
+## 만들 수 있는 것
+
+품질 패리티 라운드에서 Mac에서 직접 렌더한 결과물 4종입니다. 파일을 열어 눈으로 읽고, 어색한 곳은 고쳐 다시 렌더했습니다.
+
+<p align="center"><img src="./docs/assets/parity/lit-adhd-brief.png" width="960" alt="실제 터미널의 lit-adhd 브리프. 무지개 헤드라인, 목표와 작업 시간이 적힌 활성 세션 카드 하나, 도구, 완료된 커밋, 박스형 권장 다음 단계." /></p>
+
+`lit-adhd`는 실행 중 세션을 브리핑합니다. 상태 뱃지가 달린 세션 카드와 종료 표, 박스형 권장 다음 단계 — 터미널 색상 그대로, 내부 필드 이름은 새지 않습니다.
+
+<p align="center"><img src="./docs/assets/parity/lit-pptx-deck.png" width="960" alt="lit-pptx 상태 덱. KPI 행과 웨이브별 스위트 증가 막대 차트." /></p>
+
+`lit-pptx`는 자료로 실제 덱을 엮습니다. 이 덱은 포팅 웨이브별 테스트 스위트 증가를 그립니다.
+
+<p align="center"><img src="./docs/assets/parity/lit-schematic-pid.png" width="960" alt="lit-schematic P&ID. 탱크 TK-101, 상용·예비 도징 펌프, 릴리프 밸브 스필백, 계장 버블, 라인 번호, 심벌 범례, EX-PID-001 타이틀 블록을 갖춘 차아염소산나트륨 도징 스키드." /></p>
+
+`lit-schematic`은 QA를 통과한 P&ID를 그립니다. 실제 심벌과 범례, 라인 번호, 타이틀 블록을 갖춘 도징 스키드이며, 모든 라벨이 읽힐 때까지 일곱 번 고쳐 그렸습니다.
+
+<p align="center"><img src="./docs/assets/parity/lit-frontend-page.png" width="960" alt="frontend-ui-ux 갤러리 페이지. 어두운 원장과 형광 악센트, 렌더마다 플레이트 하나, 휴대전화·태블릿·데스크톱 너비에서 확인." /></p>
+
+`frontend-ui-ux`는 이를 감싸는 페이지를 만듭니다. 렌더 한 종마다 플레이트 하나인 갤러리이며, 휴대전화·태블릿·데스크톱 너비에서 확인했습니다.
+
 ## 들어 있는 것
 
 **스킬 39개.** 필요할 때 불러오는 밀도 높은 Muse 스킬이며, 각 스킬에 필요한 참고 문서, 스크립트, 템플릿, 엔진이 그 스킬 폴더 안에 함께 들어 있습니다. 카탈로그에는 짧은 설명만 올라가며, 모두 합쳐 약 3.7 KB라서 개인 스킬이 많은 환경에서도 자리를 지킵니다.

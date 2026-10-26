@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { mkdtempSync, readFileSync, writeFileSync, mkdirSync, symlinkSync, existsSync, readdirSync } from 'node:fs';
+import { mkdtempSync, readFileSync, writeFileSync, mkdirSync, symlinkSync, existsSync, readdirSync, utimesSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -99,6 +99,81 @@ test('card: no record yields an inactive card', () => {
   assert.match(renderCard(card), /no active route/);
 });
 
+test('card: one rainbow-tinted line marks the lit-adhd turn and nothing else', () => {
+  const text = renderCard({ active: true, route: 'lit-adhd', activeMs: 1000, kind: 'ignite', plan: null, lanes: [], goal: null, now: 0 });
+  const lines = text.split('\n');
+  assert.equal(lines.filter((line) => line.includes('\u001b[')).length, 1, 'exactly one tinted line');
+  assert.match(lines[0].replace(/\u001b\[[0-9;]*m/g, ''), /lit-adhd · brief on screen/);
+  assert.match(lines[0], /\u001b\[38;5;196m/);
+  assert.ok(lines[0].endsWith('\u001b[0m'));
+  const plain = renderCard({ active: true, route: 'lit-loop', activeMs: 1000, kind: 'ignite', plan: null, lanes: [], goal: null, now: 0 });
+  assert.ok(!plain.includes('\u001b['), 'other routes stay plain');
+});
+
+test('card: an idle workspace with fresh stacks offers lit adhd as the way back in', () => {
+  const e = env(); const ws = workspace();
+  assert.ok(!renderCard(buildCard({ cwd: ws, env: e })).includes('lit adhd'), 'no stacks, no suggestion');
+  mkdirSync(join(ws, '.litmuse', 'workflow-stack'), { recursive: true });
+  writeFileSync(join(ws, '.litmuse', 'workflow-stack', 's.json'), '{"version":1,"frames":[]}');
+  assert.match(renderCard(buildCard({ cwd: ws, env: e })), /idle — say `lit adhd` for the cross-session brief/);
+});
+
+test('card: thread rows nest paused spines under running sides with one-source counts', () => {
+  const e = env(); const ws = workspace();
+  const dir = join(ws, '.litmuse', 'workflow-stack');
+  mkdirSync(dir, { recursive: true });
+  const at = new Date().toISOString();
+  writeFileSync(join(dir, 'own.json'), JSON.stringify({ version: 1, sessionId: 'own', frames: [
+    { skill: 'lit-loop', family: 'loop', stage: 'RED', role: 'spine', status: 'paused', n: 2, total: 4, at },
+    { skill: 'lit-brainstorm', family: 'main', stage: 'interview', role: 'side', status: 'active', at },
+  ] }));
+  const card = buildCard({ cwd: ws, session: 'own', env: e });
+  const text = renderCard(card);
+  assert.match(text, /threads:/);
+  assert.match(text, /├─ lit-loop RED paused \[▉▉░░\] 2\/4/);
+  assert.match(text, /└─ lit-brainstorm interview active \[…\] running/);
+  assert.ok(!/[?]/.test(text), 'no placeholder glyph on the card');
+  assert.equal(renderCard(buildCard({ cwd: ws, session: 'own', env: e })), text, 'repaint is stable');
+});
+
+test('card: thread counts fall back from recorded to plan to goal to pulse', () => {
+  const e = env(); const ws = workspace();
+  const dir = join(ws, '.litmuse', 'workflow-stack');
+  mkdirSync(dir, { recursive: true });
+  const at = new Date().toISOString();
+  mkdirSync(join(ws, 'plans'));
+  writeFileSync(join(ws, 'plans', 'p.md'), '# P\n- [x] 1. a\n- [ ] 2. b\n');
+  writeFileSync(join(dir, 's1.json'), JSON.stringify({ version: 1, sessionId: 's1', frames: [
+    { skill: 'start-work', family: 'main', stage: 'work', role: 'spine', status: 'active', ref: { plan: 'plans/p.md' }, at },
+  ] }));
+  let text = renderCard(buildCard({ cwd: ws, session: 's1', env: e }));
+  assert.match(text, /start-work work active \[▉░\] 1\/2/, 'plan rows resolve the count');
+  mkdirSync(join(ws, '.litmuse', 'goals'), { recursive: true });
+  writeFileSync(join(ws, '.litmuse', 'goals', 'g.json'), JSON.stringify({ slug: 'g', objective: 'o', status: 'active', criteria: [{ id: 'c1', status: 'pass' }, { id: 'c2', status: 'open' }] }));
+  writeFileSync(join(dir, 's1.json'), JSON.stringify({ version: 1, sessionId: 's1', frames: [
+    { skill: 'lit-loop', family: 'loop', stage: 'PIN', role: 'spine', status: 'active', at },
+  ] }));
+  text = renderCard(buildCard({ cwd: ws, session: 's1', env: e }));
+  assert.match(text, /lit-loop PIN active \[▉░\] 1\/2/, 'goal criteria resolve the count');
+});
+
+test('card: sibling stacks show fresh paused tops, cap at six rows, drop stale frames', () => {
+  const e = env(); const ws = workspace();
+  const dir = join(ws, '.litmuse', 'workflow-stack');
+  mkdirSync(dir, { recursive: true });
+  const at = new Date().toISOString();
+  writeFileSync(join(dir, 'own.json'), JSON.stringify({ version: 1, sessionId: 'own', frames: [] }));
+  for (let i = 0; i < 8; i += 1) {
+    writeFileSync(join(dir, `sib${i}.json`), JSON.stringify({ version: 1, sessionId: `sib${i}`, frames: [{ skill: 'lit-loop', stage: 'RED', role: 'spine', status: 'paused', n: 1, total: 2, at }] }));
+  }
+  const stale = join(dir, 'old.json');
+  writeFileSync(stale, JSON.stringify({ version: 1, sessionId: 'old', frames: [{ skill: 'lit-loop', stage: 'RED', role: 'spine', status: 'paused', at }] }));
+  utimesSync(stale, new Date(Date.now() - 20 * 60_1000), new Date(Date.now() - 20 * 60_1000));
+  const text = renderCard(buildCard({ cwd: ws, session: 'own', env: e, now: Date.now() }));
+  assert.match(text, /\+2 more/, 'six rows shown, two omitted');
+  assert.ok(!text.includes('(old)'), 'stale sibling dropped');
+});
+
 test('stage: a record failure leaves hook output unchanged', () => {
   const e = env(); const ws = workspace();
   const payload = { prompt: 'lit plan a thing', session_id: 'st6', turn_id: 't1', cwd: ws };
@@ -139,4 +214,99 @@ test('route state: pauseRequested is a boolean derived from the prompt, never th
   runHook('user-prompt-submit', { prompt: 'lit go on', session_id: 'pz1', turn_id: 't4', cwd: ws }, ws, e);
   assert.equal(state().pauseRequested, false);
   assert.ok(!JSON.stringify(state()).includes('go on'));
+});
+
+// Skill looks (BRIEF-mod-looks): static TTY colour plus a label, never animation.
+test('look: a paused thread turns the headline amber with YOUR TURN', () => {
+  const e = env(); const ws = workspace();
+  runHook('user-prompt-submit', { prompt: 'lit loop fix it', session_id: 'w1', turn_id: 't1', cwd: ws }, ws, e);
+  const dir = join(ws, '.litmuse', 'workflow-stack');
+  mkdirSync(dir, { recursive: true });
+  writeFileSync(join(dir, 'w1.json'), JSON.stringify({ version: 1, sessionId: 'w1', frames: [
+    { skill: 'lit-loop', family: 'loop', stage: 'PIN', role: 'spine', status: 'paused', at: new Date().toISOString() },
+  ] }));
+  const text = renderCard(buildCard({ cwd: ws, session: 'w1', env: e }));
+  assert.match(text, /LIT · lit-loop · YOUR TURN/);
+  assert.ok(text.includes(String.fromCharCode(27) + '[33;1m'), 'the waiting headline is amber');
+});
+
+test('look: a failed lane means YOUR TURN', () => {
+  const e = env(); const ws = workspace();
+  runHook('user-prompt-submit', { prompt: 'lit loop fix it', session_id: 'w2', turn_id: 't1', cwd: ws }, ws, e);
+  runHook('subagent-start', { session_id: 'w2', cwd: ws, agent_id: 'a9', agent_type: 'litmuse/lit-executor' }, ws, e);
+  runHook('subagent-stop', { session_id: 'w2', cwd: ws, agent_id: 'a9', status: 'failed' }, ws, e);
+  const text = renderCard(buildCard({ cwd: ws, env: e }));
+  assert.match(text, /YOUR TURN/);
+});
+
+test('look: review-work draws five lane segments from real verdicts only', () => {
+  const e = env(); const ws = workspace();
+  runHook('user-prompt-submit', { prompt: 'lit review this branch', session_id: 'rv1', turn_id: 't1', cwd: ws }, ws, e);
+  const dir = join(ws, '.litmuse', 'workflow-stack');
+  mkdirSync(dir, { recursive: true });
+  writeFileSync(join(dir, 'rv1.json'), JSON.stringify({ version: 1, sessionId: 'rv1', frames: [
+    { skill: 'review-work', family: 'main', stage: 'review', role: 'spine', status: 'active',
+      verdicts: { goal: 'pass', security: 'fail' }, at: new Date().toISOString() },
+  ] }));
+  const text = renderCard(buildCard({ cwd: ws, session: 'rv1', env: e }));
+  assert.match(text, /review lanes:/);
+  const order = ['scope', 'package', 'security', 'tests+evidence', 'surface'];
+  let last = -1;
+  for (const name of order) { const at = text.indexOf(name); assert.ok(at > last, name + ' keeps lane order'); last = at; }
+  assert.ok(!text.includes('package ●'), 'an unreported lane never fills');
+});
+
+test('look: NO_COLOR strips every look to plain text', () => {
+  const e = env(); e.NO_COLOR = '1'; const ws = workspace();
+  runHook('user-prompt-submit', { prompt: 'lit adhd', session_id: 'nc1', turn_id: 't1', cwd: ws }, ws, e);
+  const text = renderCard(buildCard({ cwd: ws, env: e }));
+  assert.ok(!text.includes(String.fromCharCode(27)), 'no escape byte under NO_COLOR');
+  assert.match(text, /lit-adhd · brief on screen/);
+});
+
+test('look: a freshly completed plan bursts once, a stale one settles', () => {
+  const e = env(); const ws = workspace();
+  runHook('user-prompt-submit', { prompt: 'lit loop x', session_id: 'b1', turn_id: 't1', cwd: ws }, ws, e);
+  mkdirSync(join(ws, 'plans'));
+  writeFileSync(join(ws, 'plans', 'done.md'), '# D\n- [x] 1. a\n- [x] 2. b\n');
+  const fresh = renderCard(buildCard({ cwd: ws, env: e }));
+  assert.match(fresh, /✨ done: plans\/done.md/);
+  const old = Date.now() / 1000 - 3600;
+  utimesSync(join(ws, 'plans', 'done.md'), old, old);
+  const settled = renderCard(buildCard({ cwd: ws, env: e }));
+  assert.ok(!settled.includes('✨'), 'a stale completion settles');
+});
+
+// BRIEF-idle-lanes sibling check: the port has no idle->blocked mapping. Thread rows
+// carry paused/active only (frameRow maps every other status to active), lanes carry
+// running/done/failed, and no stalled/blocked/quiet-for vocabulary exists in the render
+// path. This test locks that in across every frame status the stack can record.
+test('look: no thread or lane state ever renders as blocked', () => {
+  const e = env(); const ws = workspace();
+  runHook('user-prompt-submit', { prompt: 'lit loop x', session_id: 'nb1', turn_id: 't1', cwd: ws }, ws, e);
+  const dir = join(ws, '.litmuse', 'workflow-stack');
+  mkdirSync(dir, { recursive: true });
+  const at = new Date().toISOString();
+  const sides = ['active', 'done', 'finished', 'idle'].map((status, i) => ({
+    skill: 'lit-loop', family: 'loop', stage: 'S' + i, role: 'side', status, at,
+  }));
+  writeFileSync(join(dir, 'nb1.json'), JSON.stringify({ version: 1, sessionId: 'nb1', frames: [
+    { skill: 'lit-loop', family: 'loop', stage: 'PIN', role: 'spine', status: 'paused', at },
+    ...sides,
+  ] }));
+  runHook('subagent-start', { session_id: 'nb1', cwd: ws, agent_id: 'a1', agent_type: 'litmuse/lit-executor' }, ws, e);
+  runHook('subagent-stop', { session_id: 'nb1', cwd: ws, agent_id: 'a1', status: 'failed' }, ws, e);
+  const text = renderCard(buildCard({ cwd: ws, session: 'nb1', env: e }));
+  assert.doesNotMatch(text, /blocked|stalled|quiet for/i, 'no idle->blocked vocabulary reaches the card');
+});
+
+test('look: an all-pass goal bursts while fresh', () => {
+  const e = env(); const ws = workspace();
+  runHook('user-prompt-submit', { prompt: 'lit loop x', session_id: 'b2', turn_id: 't1', cwd: ws }, ws, e);
+  mkdirSync(join(ws, '.litmuse', 'goals'), { recursive: true });
+  writeFileSync(join(ws, '.litmuse', 'goals', 'g.json'), JSON.stringify({
+    slug: 'g', objective: 'ship it', status: 'active',
+    criteria: [{ id: 'c1', text: 'a', status: 'pass' }],
+  }));
+  assert.match(renderCard(buildCard({ cwd: ws, env: e })), /✨ goal done/);
 });

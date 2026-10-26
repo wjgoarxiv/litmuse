@@ -14,6 +14,7 @@ import { homedir, tmpdir } from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { failureDetail, pickPython, spawnNpm } from "../../../../lib/host-process.mjs";
+import { readCapped } from "../../../../lib/capped-fetch.mjs";
 
 export const SKILL_ROOT = fileURLToPath(new URL("../../", import.meta.url));
 export const ENGINE_ROOT = path.join(SKILL_ROOT, "engine");
@@ -195,8 +196,10 @@ function withLock(root, fn) {
   return Promise.resolve().then(fn).finally(() => rmSync(lock, { recursive: true, force: true }));
 }
 
+const RUNTIME_FETCH_LIMIT = 128 * 1024 * 1024;
+
 /** Fetch bytes from an http(s) or file URL. A mirror (tests, air-gapped hosts) serves files by sha256. */
-async function fetchBytes(url, { sha256: expected, env }) {
+export async function fetchBytes(url, { sha256: expected, env }) {
   const mirror = env.LITMUSE_MOTION_MIRROR;
   const source = mirror && expected ? `${mirror.replace(/\/$/u, "")}/${expected}` : url;
   let bytes;
@@ -204,7 +207,7 @@ async function fetchBytes(url, { sha256: expected, env }) {
   else {
     const response = await fetch(source, { signal: AbortSignal.timeout(120000) });
     if (!response.ok) throw new Error(`HTTP ${response.status} for ${source}`);
-    bytes = Buffer.from(await response.arrayBuffer());
+    bytes = await readCapped(response, RUNTIME_FETCH_LIMIT, source);
   }
   if (expected && sha256(bytes) !== expected) throw new Error(`sha256 mismatch for ${url} (expected ${expected}, got ${sha256(bytes)})`);
   return bytes;
@@ -274,7 +277,7 @@ export async function installNode({ env = process.env, log = () => {} } = {}) {
       const integrity = Buffer.from(pkg.integrity.replace(/^sha512-/u, ""), "base64").toString("hex");
       const mirror = env.LITMUSE_MOTION_MIRROR.replace(/\/$/u, "");
       const source = `${mirror}/${path.basename(new URL(pkg.resolved).pathname)}`;
-      const bytes = source.startsWith("file://") ? readFileSync(fileURLToPath(source)) : Buffer.from(await (await fetch(source)).arrayBuffer());
+      const bytes = source.startsWith("file://") ? readFileSync(fileURLToPath(source)) : await readCapped(await fetch(source), RUNTIME_FETCH_LIMIT, source);
       if (createHash("sha512").update(bytes).digest("hex") !== integrity) throw new Error(`integrity mismatch for ${name}`);
       const tarball = path.join(cache, path.basename(new URL(pkg.resolved).pathname));
       writeAtomic(tarball, bytes);

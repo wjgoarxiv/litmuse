@@ -1,0 +1,22 @@
+import { writeFileSync } from 'node:fs';
+import { join } from 'node:path';
+import { createFigure } from '../../scripts/lib/figure.mjs';
+
+const out = process.argv[2] ?? '.';
+const fig = createFigure({ width: 85 });
+const feed = fig.canvas('a');
+feed.box(8, 24, 30, 26, 'MFC feed');
+feed.box(44, 24, 30, 26, 'column');
+feed.stream('sample in', 0, 37, 8, 37);
+feed.stream('vent', 74, 37, 84, 37);
+feed.label('(a) Adsorption rig, feed section', 8, 14);
+feed.commit();
+const det = fig.canvas('b');
+det.box(8, 24, 30, 26, 'GC');
+det.box(44, 24, 30, 26, 'trap');
+det.stream('effluent', 0, 37, 8, 37);
+det.label('(b) Detection section', 8, 14);
+det.commit();
+fig.key(['sample in', 'vent', 'effluent'], 8, 62);
+writeFileSync(join(out, 'drawing.svg'), fig.toSVG());
+console.log('wrote drawing.svg');

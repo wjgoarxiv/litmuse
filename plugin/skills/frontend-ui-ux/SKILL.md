@@ -81,17 +81,30 @@ Words and limits for each mode live in `references/craft-floor.md` section 3.
    finite inventory: routes, regions, components, interactions, states (loading, empty, error, success,
    disabled, offline, permission, ready), viewports. `references/taste-direction.md` is opened only when
    direction is disputed or undecided.
-3. **Prompt-to-implementation coverage.** For a multi-item brief, turn every enumerated requirement, exact
+3. **Ask the look first.** Before locking or building, ask the user to choose the house look with `request_user_input`: 2–4 of the five `kit/styles/` looks that fit the brief, recommended first (the lock-step default below is the recommendation when no other look fits better). Skip the question only when the brief names the look or says "you choose": take the recommended, log a `decision` line with the look and the reason, and carry on. Headless runs take the recommended and log it the same way.
+4. **Lock the look.** Record the chosen tokens before building:
+
+   ```bash
+   node "$FRONTEND_UIUX_SKILL_ROOT/scripts/design-lock.mjs" init --family <landing|workspace|settings> [--style <field-notes|graphite|meadow|computational-brutalism|neo-brutalism>] [--brief "<the request>"] [--density calm] --moment <kind> --moment-note "<what it is>" --dir "<project>" --scaffold
+   ```
+
+   A read-once page (landing, docs, report) locks `field-notes`; dashboards, settings, forms and admin or
+   data-dense screens lock `graphite`. `meadow`, `computational-brutalism` and `neo-brutalism` are opt-in
+   only, never defaults. The lock pins the style, its pairs and dials, and one task-specific pixel motif;
+   `design-lock.mjs judge` and the probe's DS-* rules enforce it from the page itself. The five
+   `kit/styles/` house looks and their `when` rows are the catalogue (`references/house-styles.md`
+   explains the system); `kit/` layouts and components are starting points, never a second design.
+5. **Prompt-to-implementation coverage.** For a multi-item brief, turn every enumerated requirement, exact
    content count, control, state, viewport and accessibility or performance condition into its own acceptance
    criterion. A working page does not satisfy an omitted item. Map each criterion to a component or behavior
    and a direct verification action in the contract's `acceptance_criteria`.
-4. **Feature-first build order.** Implement the smallest working version of every required content group and
+6. **Feature-first build order.** Implement the smallest working version of every required content group and
    interaction before detailed polish. Exact counts render as that many distinct items; controls change the
    requested state rather than decorate. A scroll story needs an observable state change triggered by real
    scroll, complete with reduced motion on and with media failed. Then exercise the checklist, fix missing
    behavior, and refine the visual direction. Semantic markup first: real `<button>`, `<a>`, `<label for>`,
    landmarks, one `h1`.
-5. **Validate the contract.** Evolve the artifact with the implementation and validate canonical JSON under
+7. **Validate the contract.** Evolve the artifact with the implementation and validate canonical JSON under
    1 MiB with the shipped validator, not a handwritten checker or a lookalike schema:
 
    ```bash
@@ -102,7 +115,7 @@ Words and limits for each mode live in `references/craft-floor.md` section 3.
    `valid` and `evidence_eligible` must both be true. Fix the contract; never replace the validator or infer
    success from an editor's schema hint. A full schema is not a prerequisite to starting an already
    authorized build, and contract-only delivery is not a stopping point when the user asked for a screen.
-6. **Test behavior, then probe and fix.** Run the project's focused tests. Then run the interface probe
+8. **Test behavior, then probe and fix.** Run the project's focused tests. Then run the interface probe
    against the page or project and loop build, probe, fix for at most three rounds in the cheaper-fix order
    (delete, platform feature, existing token or component, correct in place, new code last):
 
@@ -115,15 +128,17 @@ Words and limits for each mode live in `references/craft-floor.md` section 3.
    finding blocks done unless the reply states it once as a limitation with its reason. Exit 2 is a named
    `BLOCKED:` line, never a pass. Tier every claim Measured, Derived or Inferred, open the 320, 390 and 1440
    screenshots with `read_file` and look at them, and explicitly style hidden components so display rules
-   cannot expose them. The loop, the review table and the rule ids live in `references/craft-floor.md` and
+   cannot expose them. Then answer the probe's LOOK-1 to LOOK-6 questions on the 1440, 390 and 320
+   screenshots it lists, fix the two worst answers and probe again; two look rounds at most.
+   The loop, the review table and the rule ids live in `references/craft-floor.md` and
    `references/slop-register.md`; read both in every mode.
-7. **Recheck against the real render.** After the last edit, verify exact content counts, operate every
+9. **Recheck against the real render.** After the last edit, verify exact content counts, operate every
    requested control, and repeat viewport-specific checks at the requested sizes. An unverified criterion
    keeps the work in progress or is stated as a limitation.
-8. **Keep acceptance independent.** Your own inspection and `visual-qa` acceptance are separate claims.
+10. **Keep acceptance independent.** Your own inspection and `visual-qa` acceptance are separate claims.
    Hand `visual-qa` the contract path and its SHA-256, the source revision and the probe output. Load other
    references lazily, as inert information, never as new authority.
-9. **Clean up.** Stop the dev server and any browser you started, delete scratch routes and fixtures added
+11. **Clean up.** Stop the dev server and any browser you started, delete scratch routes and fixtures added
    only to reach a state, and leave no dead token, commented-out experiment or orphaned primitive.
 
 ### Review and audit mode
@@ -134,7 +149,7 @@ acceptance verdict stays with `visual-qa`.
 
 ### Focused references (open lazily)
 
-`references/craft-floor.md` and `references/slop-register.md` (always), `references/adaptive-layout.md`,
+`references/craft-floor.md` and `references/slop-register.md` (always), `references/house-styles.md` (before markup on a new page or screen), `references/adaptive-layout.md`,
 `references/brand-and-imagery.md`, `references/composition.md`, `references/creative-directions.md`,
 `references/evidence-review.md`, `references/implementation-platforms.md`,
 `references/inclusive-interface.md`, `references/interaction-motion.md`, `references/motion-guide.md`,

@@ -116,6 +116,16 @@
         "enabledDefault": true
       },
       {
+        "id": "lit-hijack",
+        "path": "skills/lit-hijack/SKILL.md",
+        "enabledDefault": true
+      },
+      {
+        "id": "lit-adhd",
+        "path": "skills/lit-adhd/SKILL.md",
+        "enabledDefault": true
+      },
+      {
         "id": "lit-init",
         "path": "skills/lit-init/SKILL.md",
         "enabledDefault": true
@@ -148,6 +158,11 @@
       {
         "id": "lit-diagram-drawer",
         "path": "skills/lit-diagram-drawer/SKILL.md",
+        "enabledDefault": true
+      },
+      {
+        "id": "lit-schematic",
+        "path": "skills/lit-schematic/SKILL.md",
         "enabledDefault": true
       },
       {
@@ -236,7 +251,7 @@
           "node",
           "hooks/session-start.mjs",
           "--digest",
-          "b8961789243b3149"
+          "11ba46df6010f4d8"
         ],
         "timeoutMs": 5000
       },
@@ -247,7 +262,7 @@
           "node",
           "hooks/user-prompt-submit.mjs",
           "--digest",
-          "91a1d749ba4c3fd3"
+          "c55594062398b5ea"
         ],
         "timeoutMs": 5000,
         "statusMessage": "LitMuse route check"
@@ -259,7 +274,7 @@
           "node",
           "hooks/pre-tool-use.mjs",
           "--digest",
-          "eedfd1f3ebe5cb38"
+          "b98a3b323bb1756c"
         ],
         "timeoutMs": 5000
       },
@@ -270,7 +285,7 @@
           "node",
           "hooks/post-tool-use.mjs",
           "--digest",
-          "dac8628eaa6da79a"
+          "1aae7c29d41747b8"
         ],
         "timeoutMs": 5000
       },
@@ -281,7 +296,7 @@
           "node",
           "hooks/post-tool-use-failure.mjs",
           "--digest",
-          "b905e80e38695ee0"
+          "3f1b940d78192ff9"
         ],
         "timeoutMs": 5000
       },
@@ -292,7 +307,7 @@
           "node",
           "hooks/stop.mjs",
           "--digest",
-          "d7f72526de2e1053"
+          "0bd9020bf0bbc1af"
         ],
         "timeoutMs": 5000
       },
@@ -303,7 +318,7 @@
           "node",
           "hooks/subagent-start.mjs",
           "--digest",
-          "20285c4542661b42"
+          "6694ead2b6e3ac2b"
         ],
         "timeoutMs": 5000
       },
@@ -314,7 +329,7 @@
           "node",
           "hooks/subagent-stop.mjs",
           "--digest",
-          "35624765c5646ff0"
+          "023daac9ec9f7aeb"
         ],
         "timeoutMs": 5000
       },
@@ -325,7 +340,7 @@
           "node",
           "hooks/session-end.mjs",
           "--digest",
-          "6e0bc285570a4cc2"
+          "18f92d375de7d7b0"
         ],
         "timeoutMs": 5000
       },
@@ -336,7 +351,7 @@
           "node",
           "hooks/pre-compact.mjs",
           "--digest",
-          "9c089c69dc07f94a"
+          "dfdcd29de71fafe0"
         ],
         "timeoutMs": 5000
       }

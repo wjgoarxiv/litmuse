@@ -102,6 +102,14 @@
       "minSkillBytes": 16000,
       "minFiles": 8
     },
+    "lit-hijack": {
+      "minSkillBytes": 30000,
+      "minFiles": 7
+    },
+    "lit-adhd": {
+      "minSkillBytes": 12000,
+      "minFiles": 4
+    },
     "lit-humanizer": {
       "minSkillBytes": 19700,
       "minFiles": 78
@@ -125,6 +133,10 @@
     "lit-recap": {
       "minSkillBytes": 13600,
       "minFiles": 1
+    },
+    "lit-schematic": {
+      "minSkillBytes": 12000,
+      "minFiles": 20
     },
     "lit-scientific-visualization": {
       "minSkillBytes": 16900,

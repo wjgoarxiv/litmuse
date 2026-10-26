@@ -19,11 +19,11 @@ const DESCRIPTION_MAX = 120;
 const DESCRIPTION_TOTAL_MAX = 30000;
 const CATALOG_CAP = 32 * 1024;
 
-test('manifest: native shape, plugin id and 39 skills', () => {
+test('manifest: native shape, plugin id and 42 skills', () => {
   assert.equal(manifest.schemaVersion, 1);
   assert.equal(manifest.name, 'litmuse');
   assert.equal(manifest.compat.manifestDir, '.muse-plugin');
-  assert.equal(skills.length, 39);
+  assert.equal(skills.length, 42);
   for (const key of ['tools', 'agents', 'outputStyles', 'settings', 'apps']) assert.equal(key in manifest.capabilities, false, key);
 });
 

@@ -91,9 +91,12 @@ export const DETECTORS = Object.freeze({
   "SLOP-040": (text) => every(/>[^<>{}]*(?:—|(\S)\s+–\s+(\S))[^<>{}]*</gu, copyOf(text), (m) => m[0].slice(1, -1).trim())
     .filter(({ value }) => value.includes("—") || [...value.matchAll(/(\S)\s+–\s+(\S)/gu)].some((m) => !(/\d/u.test(m[1]) && /\d/u.test(m[2])))),
   "SLOP-036": (text) => every(new RegExp(`>[^<>{}]*?(?<![\\p{L}\\p{N}])(${RULES["SLOP-036"].threshold.phrases.map(escapeRegExp).join("|")})(?![\\p{L}\\p{N}])[^<>{}]*<`, "giu"), copyOf(text), (m) => m[1]),
+  "DS-006": (text) => every(new RegExp(RULES["DS-006"].threshold.pattern, "gu"), copyOf(text)),
 });
 
 export const STATIC_RULES = Object.freeze(Object.keys(DETECTORS));
+// A detector listed here reads only these file types: framework templates use {{ }} on purpose.
+const DETECTOR_EXTENSIONS = Object.freeze({ "DS-006": [".html", ".htm"] });
 
 export function staticProbe(target) {
   const files = listSourceFiles(target);
@@ -103,6 +106,7 @@ export function staticProbe(target) {
   for (const file of files) {
     const text = readFileSync(file, "utf8");
     for (const id of STATIC_RULES) {
+      if (DETECTOR_EXTENSIONS[id] && !DETECTOR_EXTENSIONS[id].includes(extname(file).toLowerCase())) continue;
       for (const hit of DETECTORS[id](text)) {
         const selector = `${relative(root, file) || file}:${lineOf(text, hit.index)}`;
         if (RULES[id].judgment) {

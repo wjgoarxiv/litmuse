@@ -52,7 +52,7 @@ State lives in the output folder: `treatment.json`, `look.json`, `stills/`, `man
 | Mode | Trigger | Finish line |
 | --- | --- | --- |
 | lit default | the motion route from `lit` | Ask no questions. Choose format from the channel, length from the genre and a generated sound bed, and label each default in the reply. Done by `references/look.md`. |
-| explicit | `lit-typographic-motion …` or the user names format and length | The same loop. One short question only when the user is present, named neither format nor length, and the channel does not decide it. |
+| explicit | `lit-typographic-motion …` or the user names format and length | The same loop. One short question only when the user is present, named neither format nor length, and the channel does not decide it. With the user present, show the board after round 1 and ask once before the full render; a request that names the style or says "you choose" skips the asking and takes the recommended. |
 | cover | `treatment.json` has `"mode": "cover"` | Done by `references/cover.md`: the decoded cover reaches every TARGET gate and the last look round viewed its sheet, poster and seam pair. |
 | review only | a critique of an existing render | Open the frames, run `gate <dir>` or `cover-gate <file> --strict`, report. Write nothing. |
 | blocked | exit 10, 11, 12, 14, 15, 21 or 22 | Stop. Name the state and its fix; never route around it with another pipeline. |
@@ -65,8 +65,12 @@ State lives in the output folder: `treatment.json`, `look.json`, `stills/`, `man
 Commands, all from the output folder's parent:
 
 ```bash
+node "$SKILL_ROOT/scripts/motion.mjs" styles --out <dir> [--format 16:9|9:16]
+node "$SKILL_ROOT/scripts/motion.mjs" assets --out <dir> --url <link> [--cover]
+node "$SKILL_ROOT/scripts/motion.mjs" scaffold --out <dir>
 node "$SKILL_ROOT/scripts/motion.mjs" stage --out <dir> --round <N> [--stills-only]
 node "$SKILL_ROOT/scripts/motion.mjs" make <brief.json> --out <dir> --round <N> [--stills-only]
+node "$SKILL_ROOT/scripts/motion.mjs" blender --out <dir> [--final]
 node "$SKILL_ROOT/scripts/motion.mjs" sound --out <dir>
 node "$SKILL_ROOT/scripts/motion.mjs" look --out <dir> --round <N> --answers <file>
 node "$SKILL_ROOT/scripts/motion.mjs" gate <dir>
@@ -76,10 +80,10 @@ node "$SKILL_ROOT/scripts/motion.mjs" cover-gate <dir>/cover.webp --strict
 
 Every frame and every track passes through these renderers. A film assembled by hand with ffmpeg, a Python script, a raster flipbook or a screen recording is not the deliverable, even when it looks right.
 
-1. **Treatment.** Read `references/treatment.md` and write `<dir>/treatment.json`: the idea in one sentence that is more than the request restated, the audience and channel, format and length, the beats of the genre's arc, the subject (invent one when the request names none), the visual devices that carry it, the type plan, palette, sound and copy. Its path rule sets `path: stage` or `path: type`. For a cover, write the cover treatment from `references/cover.md` instead and skip to step 8.
-2. **Path references.** Stage path: `references/stage.md`. Type path: `references/brief-schema.md`, `references/style-bibles.md`, `references/type-craft.md` and `references/craft-loop.md`; open `references/engine-contract.md` and `references/runtime.md` only when you need the engine's internals. Both paths: `references/look.md` and `references/sound.md`.
-3. **Build.** Stage path: write `<dir>/stage/index.html` and its local assets with the kit the renderer serves (`references/stage.md`). Type path: write `<dir>/brief.json` for the engine.
-4. **Round 1, stills only.** Render with `--round 1 --stills-only`. Open every beat still, every transition strip and the contact sheet in `<dir>/stills/` with `read_file`, answer the nine look questions, name the weakest beat and the one change you will make, and record it with `look --round 1 --answers <file>`. Then make that change.
+1. **Treatment.** Read `references/treatment.md`, then `references/studio.md` (house styles, shots, the scaffold, the board round, the house file, the rich register). A product link in the request runs `assets` first: the real logo, images and words; when nothing can be fetched, ask the user for them. Write `<dir>/treatment.json`: the story and its turn, the protagonist, the beats of the genre's arc as shots, the subject (invent one when the request names none), the product, the visual devices, the type plan, the style's palette, a score with its on-screen events, and copy. `style`, `format`, `durationSec`, `genre` and `fps` follow the rules, not taste. Maximal by default (`register: rich` with a layered `world`); minimal only when the request asks for calm or minimal. For a cover, write the cover treatment from `references/cover.md` instead and skip to step 8.
+2. **Path references.** Stage path: `references/stage.md`, and `references/depth.md` when the subject is drawn in 3D. Type path: `references/brief-schema.md`, `references/style-bibles.md`, `references/type-craft.md` and `references/craft-loop.md`; open `references/engine-contract.md` and `references/runtime.md` only when you need the engine's internals. Both paths: `references/look.md` and `references/sound.md`.
+3. **Build.** Stage path: `scaffold --out <dir>` writes `<dir>/stage/index.html` from the treatment; draw each shot's subject in its `DRAW` function (`references/stage.md`). Type path: write `<dir>/brief.json` for the engine. A 3D film takes `depth: 3d`: the GPU rung builds the world in three.js on the scaffold page, while a path-traced look with Blender installed takes `render3d: blender` with `stage/scene.py` and `blender --final` for the plate.
+4. **Round 1, the board.** Render with `--round 1 --stills-only`. Exit 13 names the failed board rules: fix the page and render the board again. Open `stills/board.png`, every beat still, every transition strip and the contact sheet with `read_file`, answer the nine look questions, name the weakest beat and the one change you will make, and record it with `look --round 1 --answers <file>`. Then make that change. A preview (`preview: true`) stops here: show the board and say the film is not rendered yet.
 5. **Full render.** Render `--round 2` without `--stills-only`. The full render runs detached and writes `<dir>/.run/progress.json`; if the bash call times out, run the same command again and it attaches to the running render. Never shorten the film to save render time. Then read `gate-report.txt`, open the poster, the sheet, every beat still and every strip with `read_file`, and record `look --round 2`.
 6. **Round 3** only when the gate fails or a look answer asks for another round. After round 3, deliver what you have and name the open items plainly.
 7. **Reply** (below).
@@ -93,8 +97,8 @@ Every frame and every track passes through these renderers. A film assembled by 
 | `preview.webp`, `preview.gif` | a looping preview of at most 3 MB |
 | `poster.png`, `reduced-motion.png` | a poster of at most 1 MB, and the settled final state for readers who turn motion off |
 | `treatment.json`, `look.json` | the plan, and every look round with the frames it viewed |
-| `stills/` | beat stills, one transition strip per cut, a 12-frame contact sheet and `index.json`; in cover mode the decoded sheet with its difference plot, the poster and the seam pair |
-| `sound/`, `sound-cues.json` | the generated bed or the prepared supplied track, and each cue against its cut |
+| `stills/` | beat stills, one transition strip per cut, a 12-frame contact sheet, `board.png` with `check.json`, and `index.json`; in cover mode the decoded sheet with its difference plot, the poster and the seam pair |
+| `sound/`, `sound-cues.json` | the layered score (or a minimal film's generated bed, or the prepared supplied track), every stem under `sound/stems/`, and each cue against its cut |
 | `manifest.json`, `render.jsonl`, `gate-report.txt` | the run manifest, the per-frame log and the gate report |
 | `withheld/` | only after a flash-audit FAIL: diagnostics, never deliverables |
 | `cover.webp`, `assets.json` | cover mode: the loop (2 MiB or less at TARGET) and the checked list of the art it uses |
@@ -113,7 +117,7 @@ Every frame and every track passes through these renderers. A film assembled by 
 
 While the motion route is active, LitMuse's PostToolUse hook records every `motion.mjs` run (its subcommand, `--out`, `--round` and the `exit N NAME` line when the tool output carries it) and every image `read_file` opened. The Stop hook then runs this skill's own done-check, `engine/node/done.mjs`, on the last output folder.
 
-A film is done with all of these: a valid treatment; gate PASS on the final full render; at least two look rounds, the first a stills round that names a change; the last round stamped with the final render's stills manifest; and that round's viewed list covering the poster, the contact sheet, every beat still and every transition strip, each one opened with `read_file`. A cover is done when the decoded cover passed every TARGET gate on its last render and the last look round viewed that render's sheet, poster and seam pair.
+A film is done with all of these: a valid treatment; gate PASS on the final full render; at least two look rounds, the first a board round that names a change; the last round stamped with the final render's stills manifest; and that round's viewed list covering the board, the poster, the contact sheet, every beat still and every transition strip, each one opened with `read_file`. A preview is done at its board: a passed board check, looked at, the board viewed. A cover is done when the decoded cover passed every TARGET gate on its last render and the last look round viewed that render's sheet, poster and seam pair.
 
 When it is not done, the Stop hook holds the turn with the named reason, at most twice, and then asks the reply to say plainly that the work is not done, why, and what to run to finish it. A BLOCKED exit goes straight to that notice. A finished render with a downgrade, an open look item or a generated asset holds once so the reply says so. When no image can be opened at all, record `look --blocked no-vision-tool`; the result is DONE_UNVIEWED and the reply must say nobody looked at the frames.
 

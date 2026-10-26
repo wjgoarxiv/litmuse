@@ -110,6 +110,8 @@ Read `references/canonical-workflow.md` for the code that goes with each rule. S
    (89, 120, 183 mm) or `figure_size_for_journal()`.
 10. Colors are colorblind safe: Okabe-Ito (the `rcparams()` default), Wong, Tol (`apply_palette()`), and `viridis`,
     `plasma`, `cividis` for continuous data. Never `jet` or `rainbow`.
+11. Rich layering is the default: annotated values, a reference band or fit curve, and a takeaway glyph join the data
+    layer. A brief asking for minimal or calm renders the quiet form with data and axes alone.
 
 Statistical rigor on every data figure: error bars with their meaning (SD, SEM or CI) stated for the caption, the sample
 size n, significance markers only when a verified analysis supports them, and individual data points when possible. Never

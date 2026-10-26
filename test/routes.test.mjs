@@ -40,7 +40,7 @@ test('ordinary prose stays unrouted', () => {
 test('every keyword route targets a known skill', () => {
   const ids = new Set(SKILL_ROUTES.map((r) => r.id));
   for (const target of Object.values(KEYWORD_ROUTES)) assert.ok(ids.has(target), target);
-  assert.equal(SKILL_ROUTES.length, 39);
+  assert.equal(SKILL_ROUTES.length, 42);
   for (const r of SKILL_ROUTES) assert.ok(r.when.length > 10, r.id);
 });
 
@@ -52,6 +52,15 @@ test('slash command forms route like bare lit', () => {
   assert.equal(detectRoute('LitMuse route request: plan a cache')?.route, 'lit-plan');
   assert.equal(detectRoute('/literature x'), null);
   assert.equal(detectRoute('/lit-status'), null, 'other LitMuse commands are not routes');
+});
+
+// Every prompt form that runs the brief switches to the rewind look: the hook records
+// route lit-adhd and the LIT card paints its rainbow headline. A direct skill slash
+// (`/lit-adhd`, `/litmuse:lit-rewind`) counts the same as the bare forms.
+test('every brief entry route switches to lit-adhd', () => {
+  for (const prompt of ['lit adhd', 'lit adhd now', '/lit adhd', 'lit rewind', '/lit rewind', 'lit-adhd', 'lit-adhd now', '/lit-adhd', '/lit-adhd now', '/litmuse:lit-adhd', 'lit-rewind', '/lit-rewind', '/litmuse:lit-rewind', 'LitMuse route request: adhd now']) {
+    assert.equal(detectRoute(prompt)?.route, 'lit-adhd', prompt);
+  }
 });
 
 // M8 D2 + parity port: the new skills are reachable by keyword and by their own id.
@@ -99,4 +108,20 @@ test('a lit that is not a word of its own, or sits in code, quotes, a path or a 
 test('a leading lit keeps its route words; the trailing form never overrides them', () => {
   assert.equal(detectRoute('lit plan a cache lit')?.route, 'lit-plan');
   assert.equal(detectRoute('lit plan a cache lit')?.trailing, undefined);
+});
+
+test('an English build or redesign request routes to the frontend skill', () => {
+  for (const prompt of [
+    'lit build a landing page for my product',
+    'lit create a dashboard for sales',
+    'lit redesign the settings screen',
+    'lit make a marketing site',
+  ]) {
+    assert.equal(detectRoute(prompt)?.route, 'frontend-ui-ux', prompt);
+  }
+  // An explicit keyword still wins over the build intent.
+  assert.equal(detectRoute('lit review this checkout page for accessibility')?.route, 'review-work');
+  // No interface noun, no UI route: a video stays a film, a bug stays a loop.
+  assert.equal(detectRoute('lit fix the login bug')?.route, 'lit-loop');
+  assert.equal(detectRoute('lit 연구 성과 발표를 영상으로 만들어줘')?.route, 'lit-typographic-motion');
 });

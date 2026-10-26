@@ -169,6 +169,9 @@ A recap also does not turn into completion. It may say "targeted tests passed"; 
 the release guardrails actually ran and approval boundaries are satisfied. It may say "review not yet run"; it does not
 hide a missing review behind a cheerful next step.
 
+A recap covers this session only. For the brief across every recent session — other windows, worktrees and pauses
+with one next step — send the user to `lit adhd`.
+
 ## Muse tools and approvals
 
 - `read_file`, `search`, and `bash` for read-only commands only: `ls`, `cat`, `wc`, `stat`, `head`, `tail`, `jq` on JSON

@@ -34,7 +34,7 @@ test('after the approvals doctor passes and lists every skill and the catalog by
   const out = collect();
   const code = await doctor({ env, flags: {}, print: out.print });
   assert.equal(code, 0, out.text());
-  assert.match(out.text(), /PASS skills: 39\/39 enrolled/);
+  assert.match(out.text(), /PASS skills: 42\/42 enrolled/);
   assert.match(out.text(), /catalog: LitMuse descriptions \d+ B/);
   assert.match(out.text(), /LitMuse doctor: PASS/);
 });

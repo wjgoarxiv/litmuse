@@ -10,7 +10,7 @@ const PLUGIN = join(LIB, '..', '..');
 
 // Files outside hooks/lib that a hook loads at run time: PostToolUse runs the lit-humanizer detector, and Stop runs the
 // lit-typographic-motion done-check with every engine module it imports.
-const MOTION_DONE = ['node/done.mjs', 'node/cover-assets.mjs', 'core/constants.mjs', 'node/chrome.mjs', 'node/cover-image.mjs', 'node/cover-treatment.mjs', 'node/treatment.mjs', 'node/sound.mjs', 'core/util.mjs', 'node/look.mjs', 'node/stills.mjs', 'node/analysis.mjs', 'core/flash.mjs', 'node/png.mjs'];
+const MOTION_DONE = ['node/done.mjs', 'node/cover-assets.mjs', 'core/constants.mjs', 'node/chrome.mjs', 'node/cover-image.mjs', 'node/cover-treatment.mjs', 'node/treatment.mjs', 'node/sound.mjs', 'node/house.mjs', 'node/styles.mjs', 'node/score.mjs', 'core/presets.mjs', 'core/util.mjs', 'node/look.mjs', 'node/stills.mjs', 'node/analysis.mjs', 'core/flash.mjs', 'node/png.mjs'];
 export const DIGEST_EXTRAS = ['skills/lit-humanizer/scripts/core.mjs', 'skills/lit-humanizer/rules.json', ...MOTION_DONE.map((f) => `skills/lit-typographic-motion/engine/${f}`)];
 
 const listed = (dir, ext) => readdirSync(dir).filter((f) => f.endsWith(ext)).sort().map((f) => join(dir, f));

@@ -3,7 +3,10 @@
 Load this once the treatment says `path: stage`. On this path the film is a web page you write, and the
 LitMuse renderer turns it into frames: it serves the page to a headless Chrome on a private origin,
 drives a virtual clock from zero, captures every frame in order, then encodes, replays and gates the
-result. You draw everything the treatment promised, the subject first. The kit described below supplies
+result. You draw everything the treatment promised, the subject first. The house style gives the frame
+(palette, type roles, layout zones, motion tokens, hand-offs), served as `/lit/style.css` and
+`/lit/style.js`. Start every page from `motion.mjs scaffold --out <dir>`, which writes the treatment's
+structure for you; fill its `DRAW` functions with the drawing. The kit described below supplies
 timing and reveal primitives and nothing pictorial, so no two stage films start from the same template.
 
 ## The page contract
@@ -12,10 +15,14 @@ The page lives at `<dir>/stage/index.html`, next to the local files it uses (SVG
 CSS, WAV). Only that folder is served, under the origin `http://lit.stage`; a symlink that resolves
 outside it is a contract error.
 
-Two routes come from the renderer itself and are always available:
+Four routes come from the renderer itself and are always available:
 
 - `<link rel="stylesheet" href="/lit/fonts.css">` declares the verified faces (table below).
 - `<script src="/lit/stage-kit.js"></script>` defines the global `LitStage`.
+- `<link rel="stylesheet" href="/lit/style.css">` and `<script src="/lit/style.js"></script>` serve the
+  film's house style for its format: custom properties, the type-role and colour classes, `window.LitStyle`
+  (tokens and pixel zones) and `window.LitTimeline` (the treatment's shots). Set copy with the classes;
+  the gate checks the rendered result either way.
 
 The page hands the renderer its spec with `LitStage.define({ width, height, fps, duration, render })`, or
 by assigning the same object to `window.litStage`. `define` checks the spec as soon as it is called:
@@ -193,15 +200,32 @@ node "$SKILL_ROOT/scripts/motion.mjs" stage --out <dir> --round 2
 ```
 
 The stills-only round writes `<dir>/stills/`: one PNG per beat midpoint, one transition strip per cut (the
-frames 6 before, at and 6 after the cut, side by side at half size), a 12-frame contact sheet, and
-`stills/index.json`. Nothing is encoded. Open those PNGs with `read_file` and record the round as
-`references/look.md` describes before the full render.
+frames 6 before, at and 6 after the cut, side by side at half size), a 12-frame contact sheet,
+`stills/board.png` with `stills/check.json`, and `stills/index.json`. Nothing is encoded. The board round
+also runs the board check, the gate's text and style rules on the board frames, and exits 13 naming each
+failed rule. Open the board and those PNGs with `read_file` and record the round as `references/look.md`
+describes before the full render.
 
 The full render captures the master, encodes the MP4 (with the planned sound muxed), builds the preview
 WebP or GIF, the poster and the reduced-motion still, runs the determinism replay and the text QA in
 parallel, and writes `gate-report.txt`, `manifest.json` and `render.jsonl`. It runs detached and logs its
 phase to `<dir>/.run/progress.json`. If the `bash` call times out, run the same command again: it attaches
 to the render already running and returns its result. Never cut the film short to finish sooner.
+
+## The 3D route
+
+When the treatment says `depth: 3d`, the subject is drawn as a three.js world (`references/depth.md`).
+The scaffold page already carries the shape: an import map onto the vendored build at `/lit/three/`, a
+full-frame canvas behind the shots, one persistent protagonist group `HERO`, and one `WORLD` function per
+shot that poses the hero, the camera and anything else as a function of the shot's progress. The renderer
+serves the pinned build and its few addons; pages import them through the import map, never from a URL.
+A 3D film asks for the GPU rung; the software rung is the fallback, slower, with the same frames.
+
+A path-traced look with Blender installed takes the offline rung instead (`render3d: blender`): write the
+world in `stage/scene.py`, render preview stills with `motion.mjs blender --out <dir>`, then the plate with
+`--final` into `stage/plate/`, and show it under HTML type and labels with `LitStage.plate()`. The plate
+frames are listed by name and size in `stage/plate/plate.json`; the scan trusts them and holds everything
+else to the raster limits.
 
 ## The stage gate
 

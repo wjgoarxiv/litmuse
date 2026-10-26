@@ -25,6 +25,8 @@ export const SKILL_ROUTES = [
   { id: 'lit-humanizer', when: 'polish Korean or English prose into the writer\'s voice' },
   { id: 'lit-recap', when: 'where does the work stand (read-only)' },
   { id: 'lit-handoff', when: 'before stopping or switching sessions' },
+  { id: 'lit-hijack', when: 'port published know-how into your own skill, clean-room' },
+  { id: 'lit-adhd', when: 'brief every recent session: asked, did, waiting, roadmap, one next step' },
   { id: 'lit-init', when: 'orient in an unfamiliar repository; leaves AGENTS.md' },
   { id: 'frontend-ui-ux', when: 'build or restyle a user interface' },
   { id: 'readme-studio', when: 'write or refresh a README from repo facts' },
@@ -32,6 +34,7 @@ export const SKILL_ROUTES = [
   { id: 'lit-pptx', when: 'a slide deck (needs Python)' },
   { id: 'lit-scientific-visualization', when: 'a publication-ready figure from data' },
   { id: 'lit-diagram-drawer', when: 'an architecture, workflow or timeline diagram' },
+  { id: 'lit-schematic', when: 'a P&ID, PFD, apparatus figure or isometric cutaway of real hardware' },
   { id: 'lit-typographic-motion', when: 'make a short film, kinetic type or lyric video, or a seamless README cover loop' },
   { id: 'autoresearch', when: 'a budgeted experiment loop against a metric' },
   { id: 'structural-search', when: 'find or rewrite code by syntax shape (ast-grep)' },
@@ -70,6 +73,14 @@ export const KEYWORD_ROUTES = {
   idea: 'lit-brainstorm',
   ideas: 'lit-brainstorm',
   team: 'lit-team',
+  hijack: 'lit-hijack',
+  hijacking: 'lit-hijack',
+  '하이재킹': 'lit-hijack',
+  '하이잭': 'lit-hijack',
+  adhd: 'lit-adhd',
+  rewind: 'lit-adhd',
+  approve: 'start-work',
+  deny: 'start-work',
   conference: 'autoconference',
   rules: 'rules',
   lsp: 'lsp',
@@ -100,6 +111,44 @@ export function motionIntent(task) {
   const text = String(task ?? '');
   if (NOT_A_FILM.test(text)) return false;
   return FILM_COMPOUND.test(text) || (VIDEO_NOUN.test(text) && MAKE_VERB.test(text));
+}
+
+// Hardware wording (P&ID, PFD, cutaway, isometric, apparatus, and the Korean plant-drawing
+// words) routes a `lit` prompt to lit-schematic. Software-architecture wording keeps its
+// existing route: the guard below screens those prompts out.
+const SCHEMATIC_WORD = /P&ID|P&I\b|PFD|BFD|schematic|cutaway|isometric|apparatus|Piping and Instrumentation|모식|장치도|공정도|계장도|배관계장/i;
+const NOT_A_SCHEMATIC = /codebase|auth flow|boxes and arrows|software|entity-relationship|org chart|timeline|swimlane|sequence diagram/i;
+function schematicIntent(task) {
+  const t = String(task ?? '');
+  if (NOT_A_SCHEMATIC.test(t)) return false;
+  return SCHEMATIC_WORD.test(t);
+}
+
+// A deck asked for by slide wording routes a `lit` prompt to lit-pptx: a slide noun with a making
+// verb, or a slide count beside a slide noun ("덱 10장", "a 10-slide deck") with no verb at all.
+// Code documentation and photo retouching ("사진 10장 보정") stay where they were.
+const SLIDE_NOUN = /\b(?:slides?|slide\s?deck|deck|presentation|pptx?|powerpoint|keynote)\b|발표|슬라이드|피피티|파워포인트|(?<![가-힣])덱(?![가-힣])|(?<![가-힣])덱을|(?<![가-힣])덱으로/i;
+const MAKE_DECK = /\b(?:make|making|made|create|creating|write|writing|draft|drafting|prepare|preparing|build|building|generate|generating|produce|producing)\b|만들|만드|작성|써\s?줘|써\s?주|써서|써봐|쓰고|정리해|정리하|준비|초안|뽑아|짜\s?줘|구성해/i;
+const SLIDE_COUNT = /\d+\s?장|\b\d+[\s-]?slides?\b/i;
+const NOT_A_DECK = /readme|changelog|contributing|api\s?(?:문서|docs?\b|reference)|docstrings?|jsdoc|주석|\bdocs\/|\b(?:bug|test|coverage|error|crash|lint|issue|incident)\s+reports?\b|사진\s?\d+\s?장\s?보정|보정해|보정하/i;
+function deckIntent(task) {
+  const t = String(task ?? '');
+  if (NOT_A_DECK.test(t)) return false;
+  // A presentation asked for as a video is a film, not a deck.
+  if (motionIntent(t)) return false;
+  return SLIDE_NOUN.test(t) && (MAKE_DECK.test(t) || SLIDE_COUNT.test(t));
+}
+
+// An English request to build, redesign or review a page or site routes to the frontend skill: a making
+// verb beside an interface noun, a UI target named outright, or an artefacts review beside a page noun.
+const UI_NOUN = /\b(?:pages?|sites?|websites?|landing(?:\s?pages?)?|homepages?|portfolios?|dashboards?|forms?|checkouts?|onboardings?|wizards?|modals?|tooltips?|popovers?|navbars?|footers?|heros?|carousels?|galleries?|grids?|tables?|cards?|buttons?|inputs?|dropdowns?|tabs?|accordions?|themes?|layouts?|wireframes?|mockups?|prototypes?|redesigns?|uis?|ux|frontends?|front[-\s]?ends?|css|stylesheets?|responsive|accessibility|a11y|viewports?|breakpoints?|components?|design[-\s]?systems?|styleguides?|tokens?|interfaces?)\b/i;
+const UI_VERB = /\b(?:build|building|create|creating|make|makes|making|design|designing|redesign|redesigning|restyle|restyling|revamp|revamping|polish|polishing|harden|hardening|audit|auditing|review|reviewing|fix|fixing|improve|improving|modernize|modernizing|responsive)\b/i;
+const UI_TARGET = /^[^]*\b(?:page|site|website|landing|ui|ux|frontend|front-end|stylesheet|redesign|mockup|prototype|wireframe|theme|layout|component|design-system|styleguide)\b[^]*/i;
+function uiBuildIntent(task) {
+  const text = String(task ?? '');
+  if (!text.trim()) return false;
+  if (UI_VERB.test(text) && UI_NOUN.test(text)) return true;
+  return UI_TARGET.test(text);
 }
 
 // `lit new …` and `lit restart …` start over; `lit continue` and `lit resume` pick the work up where it stands.
@@ -136,6 +185,12 @@ function detectLeading(prompt) {
   const marker = slash ? null : /^LitMuse route request:/.exec(text);
   if (slash) text = `lit ${text.slice(slash[0].length).trimStart()}`;
   else if (marker) text = `lit ${text.slice(marker[0].length).split('\n')[0].trim()}`;
+  // A direct skill slash for the brief (`/lit-adhd`, `/litmuse:lit-rewind`) names the
+  // route the same way a bare `lit-adhd` prompt does; without this the hook records no
+  // route and the LIT card keeps its normal headline while the brief runs.
+  if (/^\/(?:litmuse:)?lit-(?:adhd|rewind)(?=$|\s)/.test(text)) {
+    return { route: 'lit-adhd', keyword: null, bare: false, resume: false, restart: false, trailing: false };
+  }
   const m = /^([A-Za-z][A-Za-z-]*)(?=$|[\s:,.!?])/.exec(text);
   if (!m) return null;
   const token = m[1];
@@ -152,9 +207,13 @@ function detectLeading(prompt) {
     const resume = !restart && CONTINUE_WORDS.has(word);
     const bare = !restart && (word === '' || (resume && rest.slice(word.length).trim() === ''));
     const route = KEYWORD_ROUTES[word];
+    if (!route && !bare && !resume && schematicIntent(rest)) return { route: 'lit-schematic', keyword: null, bare, resume, restart };
+    if (!route && !bare && !resume && deckIntent(rest)) return { route: 'lit-pptx', keyword: null, bare, resume, restart };
     if (!route && !bare && !resume && motionIntent(rest)) return { route: 'lit-typographic-motion', keyword: null, bare, resume, restart };
+    if (!route && !bare && !resume && uiBuildIntent(rest)) return { route: 'frontend-ui-ux', keyword: null, bare, resume, restart };
     return { route: route ?? 'lit-loop', keyword: route ? word : null, bare, resume, restart };
   }
+  if (lower === 'lit-rewind') return { route: 'lit-adhd', keyword: null, bare: false, resume: false, restart: false, trailing: false };
   if (lower.startsWith('lit') && SKILL_IDS.has(lower)) return { route: lower, keyword: null, bare: false, resume: false, restart: false };
   return null;
 }

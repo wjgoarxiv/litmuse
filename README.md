@@ -133,6 +133,26 @@ The snapshot names the trigger, the session, the route, the plan with its open r
 
 <p align="center"><img src="./docs/assets/handoff/latest.webp" width="960" alt="The handoff snapshot: trigger, session, the lit-plan route, the plan with 0 ticked and 2 open rows, and recent ledger lines." /></p>
 
+## What you can make
+
+Four real outputs rendered on a Mac during the quality parity round, each opened, read, and fixed until it looked right:
+
+<p align="center"><img src="./docs/assets/parity/lit-adhd-brief.png" width="960" alt="The lit-adhd brief in a real terminal: rainbow headline, one active session card with goal and work time, tools, the finished commit, and a boxed recommended next step." /></p>
+
+`lit-adhd` briefs your live sessions: session cards with status badges, an ended table, and a boxed recommended step — colour on TTY, no internal field names leaking.
+
+<p align="center"><img src="./docs/assets/parity/lit-pptx-deck.png" width="960" alt="A lit-pptx status deck: KPI row and a column chart of suite growth per wave." /></p>
+
+`lit-pptx` compiles real decks from data: this one charts the port's own test-suite growth, wave by wave.
+
+<p align="center"><img src="./docs/assets/parity/lit-schematic-pid.png" width="960" alt="A lit-schematic P&ID: a sodium hypochlorite dosing skid with tank TK-101, duty and standby dosing pumps, a relief-valve spillback, instrument bubbles, line numbers, a drawn-symbol legend, and title block EX-PID-001." /></p>
+
+`lit-schematic` draws QA-checked P&IDs: a dosing skid with real symbols, a drawn legend, line numbers, and a title block — seven look rounds until every label read cleanly.
+
+<p align="center"><img src="./docs/assets/parity/lit-frontend-page.png" width="960" alt="A frontend-ui-ux gallery page: dark ledger, phosphor accents, one plate per render, checked at phone, tablet, and desktop widths." /></p>
+
+`frontend-ui-ux` builds the page around them: one gallery, one plate per render, checked at phone, tablet, and desktop widths.
+
 ## What you get
 
 **39 skills**, each a dense Muse skill loaded on demand, with the references, scripts, templates and engines it needs inside its own folder. The catalog only holds their short descriptions, about 3.7 KB in total, so they keep their place even next to a large personal skill collection.

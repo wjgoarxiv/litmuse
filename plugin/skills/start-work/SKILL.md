@@ -106,6 +106,12 @@ action named, on the paths named, for this run.
 - **Resume** happens when the user grants the boundary in their own words, or sends a bare `lit` / `lit continue` /
   `/start-work`. Re-read the plan, ledger and evidence before acting; quote the grant in a `decision` line with the
   scope it covers. A grant for one action does not extend to the next boundary.
+- **Typed answers.** A `lit approve` / `lit deny` prompt routes here and carries the boundary's decision: `lit approve`
+  allows the named action on the named paths for this run (record it as the grant), `lit deny` refuses it for this
+  run (carry on without it, and say so if a task cannot be done otherwise). With no paused boundary waiting, either
+  word changes nothing: say so in one sentence and start no other work.
+- **Typed start.** A prompt that names the plan file (`lit start plans/<slug>.md`) is the approval for that plan:
+  begin row 1 without a separate approval turn. Ask only when no single plan can be chosen.
 - **Cancel** when the user says stop. Stop spawning work, cancel running children (`subagent_cancel`), stop the
   processes the run started, remove the run's scratch files, append `CANCELLED: <reason>` as a ledger `note`, leave
   the plan as it stands (ticked rows stay ticked; an open row stays open), set the goal record to `blocked` with the

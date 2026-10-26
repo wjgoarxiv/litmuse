@@ -21,7 +21,7 @@ test('film treatment: a stage film validates; restating the request, too few bea
   assert.equal(t.path, 'stage');
   const bad = [
     [{ genre: 'vlog' }, 'genre'],
-    [{ beats: stageFilm().beats.slice(0, 1) }, 'beats[0]'],
+    [{ beats: [{ ...stageFilm().beats[0] }, { ...stageFilm().beats[1], transition: 'end', t1: 4 }] }, 'beats'],
     [{ idea: 'render a short check clip for the hallway panel' }, 'idea'],
     [{ path: 'video' }, 'path'],
   ];
@@ -73,7 +73,8 @@ test('stage path: stills-only writes beat stills, one strip per cut, the sheet a
   assert.equal(r.status, 0, r.stdout + r.stderr);
   const index = JSON.parse(readFileSync(join(out, 'stills', 'index.json'), 'utf8'));
   assert.equal(index.stillsOnly, true);
-  assert.deepEqual(index.files.map((f) => f.kind).sort(), ['beat', 'beat', 'beat', 'sheet', 'strip', 'strip']);
+  assert.deepEqual(index.files.map((f) => f.kind).sort(), ['beat', 'beat', 'beat', 'board', 'sheet', 'strip', 'strip']);
+  assert.ok(existsSync(join(out, 'stills', 'board.png')), 'the board round draws the storyboard');
   for (const f of index.files) assert.ok(existsSync(join(out, f.file)), f.file);
   assert.equal(existsSync(join(out, 'film.mp4')), false);
 });
@@ -105,14 +106,19 @@ test('type path: make --stills-only renders a brief through the WebGL2 type engi
     ...stageFilm(),
     request: '"물은 낮은 곳으로 흘러 결국 바다가 된다" 이 문장으로 키네틱 타이포 영상 만들어줘',
     genre: 'type-led', path: 'type', pathReason: 'The user gave one sentence and asked for kinetic type; the words are the film.',
+    style: 'swiss-signal', fps: 60,
     idea: 'One breath that slows as it runs downhill and opens out at the last word.',
     durationSec: 6,
     beats: [
       { t0: 0, t1: 3, purpose: 'Set the first clause.', onScreen: 'The first clause, large and left-aligned.', motion: 'Words land one eojeol at a time.', sound: 'None.' },
       { t0: 3, t1: 6, purpose: 'Land the last clause.', onScreen: 'The last clause alone, centred.', motion: 'Settle and hold.', sound: 'None.' },
     ],
-    subject: { name: 'the supplied sentence', source: 'user', specifics: ['A sentence about water finding the sea.'] },
+    story: { expect: 'Water that keeps falling until it is gone.', turn: 'The falling line stops shrinking and opens out wide.', beat: 1, payoff: 'The last phrase holds wide, like the sea.' },
+    subject: { name: 'the supplied sentence', source: 'user', specifics: ['A sentence about water finding its way down to the sea.'] },
     visualDevices: [],
+    typePlan: { faces: ['Pretendard'], hierarchy: 'One clause per beat, the last phrase largest.', maxWordsOnScreen: 6 },
+    palette: [{ color: '#0e1a24', role: 'deep ground' }, { color: '#e8f1f4', role: 'type' }, { color: '#6fb3c8', role: 'single accent' }],
+    sound: { mode: 'score', plan: 'A deep groove with a rise into the last clause and a cadence at the end.' },
     copy: { source: 'user', lines: ['물은 낮은 곳으로 흘러', '결국 바다가 된다'] },
     inventions: [],
   };

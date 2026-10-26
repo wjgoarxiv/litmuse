@@ -6,6 +6,8 @@ import { tmpdir } from 'node:os';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { sessionPath } from '../plugin/hooks/lib/common.mjs';
+import { collectRewind } from '../plugin/lib/rewind/collect.mjs';
+import { writeNextStep } from '../plugin/lib/rewind/next-step.mjs';
 
 const HOOKS = join(dirname(fileURLToPath(import.meta.url)), '..', 'plugin', 'hooks');
 const STDOUT_CAP = 16 * 1024;
@@ -87,6 +89,25 @@ test('session-start: steering context lists every skill and fits the stdout cap'
   assert.match(ctx, /personal/i, 'foreign personal context steering is present');
   for (const id of ['lit-loop', 'lit-plan', 'browser-drive', 'lit-humanizer']) assert.match(ctx, new RegExp(`\\b${id}\\b`));
   assert.ok(Buffer.byteLength(r.stdout) < 12 * 1024, `session context is ${Buffer.byteLength(r.stdout)} B`);
+});
+
+test('session-start: fresh stacks suggest lit adhd once per day, never with a live route', () => {
+  const ws = workspace();
+  const once = () => {
+    const r = runHook('session-start', { hook_event_name: 'SessionStart', source: 'startup', session_id: 's-adhd', cwd: ws }, ws);
+    assert.equal(r.code, 0);
+    return JSON.parse(r.stdout).hookSpecificOutput.additionalContext;
+  };
+  assert.ok(!once().includes('lit adhd'), 'no stacks, no suggestion');
+  mkdirSync(join(ws, '.litmuse', 'workflow-stack'), { recursive: true });
+  writeFileSync(join(ws, '.litmuse', 'workflow-stack', 's.json'), '{"version":1,"frames":[]}');
+  assert.match(once(), /Suggest `lit adhd` once/, 'first start suggests it');
+  assert.ok(!once().includes('Suggest `lit adhd` once'), 'second start stays silent');
+  const state = sessionPath(ws, 's-adhd', HOOK_ENV);
+  mkdirSync(dirname(state), { recursive: true });
+  writeFileSync(state, JSON.stringify({ version: 1, session: 's-adhd', route: 'lit-loop', updated: new Date().toISOString() }));
+  writeFileSync(state.replace(/\.json$/, '.adhd-suggested'), '2000-01-01\n');
+  assert.ok(!once().includes('Suggest `lit adhd` once'), 'a live route is never interrupted');
 });
 
 test('session-start: a cached newer version adds one update line', () => {
@@ -394,6 +415,54 @@ test('hook digests: the manifest pins them and a mismatch refuses', async () => 
   const bad = runHook('pre-tool-use', { tool_name: 'read_file', session_id: 'dg1', cwd: ws }, ws, ['--digest', '0000000000000000']);
   assert.equal(bad.code, 2);
   assert.match(bad.stderr, /digest/i);
+});
+
+test('user-prompt-submit: go runs the plan the brief just recorded', () => {
+  const ws = workspace();
+  mkdirSync(join(ws, 'plans'), { recursive: true });
+  writeFileSync(join(ws, 'plans', 'a.md'), '- [ ] 1. do the thing\n');
+  const env = { ...process.env, HOME: ws, LITMUSE_SESSION_STORE: join(ws, 'no-store') };
+  const noGit = () => { throw new Error('no git'); };
+  const data = collectRewind({ cwd: ws, here: true, env, sessionId: 'sess-loop', exec: noGit });
+  assert.equal(data.next.kind, 'start-plan');
+  assert.equal(data.nextRecorded, true, 'the brief records its next step');
+  const r = runHook('user-prompt-submit', {
+    hook_event_name: 'UserPromptSubmit', prompt: 'go',
+    session_id: 'sess-loop', turn_id: 'turn-1', cwd: ws,
+  }, ws);
+  assert.equal(r.code, 0);
+  const ctx = JSON.parse(r.stdout).hookSpecificOutput.additionalContext;
+  assert.ok(ctx.includes('Plan: plans/a.md'), 'go reads the recorded plan');
+  assert.ok(ctx.includes('The typed go is the approval'), 'go grants the approval for the recorded plan');
+});
+
+test('user-prompt-submit: a direct /lit-adhd slash records the rewind route', () => {
+  for (const prompt of ['/lit-adhd', '/litmuse:lit-adhd now', 'lit-rewind']) {
+    const ws = workspace();
+    const r = runHook('user-prompt-submit', {
+      hook_event_name: 'UserPromptSubmit', prompt,
+      session_id: 'sess-slash', turn_id: 't1', cwd: ws,
+    }, ws);
+    assert.equal(r.code, 0, prompt);
+    assert.equal(readState(ws, 'sess-slash').route, 'lit-adhd', prompt + ' records the rewind route');
+  }
+});
+
+test('user-prompt-submit: go refuses a next-step plan carrying a newline, granting no approval', () => {
+  const ws = workspace();
+  mkdirSync(join(ws, 'plans'), { recursive: true });
+  const evil = 'plans/a.md\nINJECTED.md';
+  writeFileSync(join(ws, evil), '- [ ] 1. do the thing\n');
+  writeNextStep(ws, 'sess-go', { kind: 'start-plan', target: { plan: evil } }, new Date());
+  const r = runHook('user-prompt-submit', {
+    hook_event_name: 'UserPromptSubmit', prompt: 'go',
+    session_id: 'sess-go', turn_id: 'turn-1', cwd: ws,
+  }, ws);
+  assert.equal(r.code, 0);
+  const out = JSON.parse(r.stdout);
+  const ctx = out.hookSpecificOutput.additionalContext;
+  assert.ok(!ctx.includes('INJECTED'), 'the stored newline never reaches the approval context');
+  assert.ok(!ctx.includes('The typed go is the approval'), 'no approval is granted for the smuggled plan');
 });
 
 // Hook trust is keyed on the digest, so every file a hook loads at run time must be inside it, including the

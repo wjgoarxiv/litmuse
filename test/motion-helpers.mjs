@@ -128,12 +128,14 @@ export function coverRun(fixture, over = {}) {
 const clone = (v) => JSON.parse(JSON.stringify(v));
 
 // A short stage film for renderer tests: genre other (three beats), a muted wall panel so sound may be none, and the
-// copy line the fixture pages print.
+// copy line the fixture pages print. It carries the end-state fields (style, register, story, protagonist,
+// world) so the round-3 validator accepts it.
 const STAGE_FILM = {
-  request: 'render a short check clip for the hallway panel',
+  request: 'render a 4 s short check clip for the hallway panel at 30 fps',
   genre: 'other',
   path: 'stage',
   pathReason: 'The clip has to show a shape moving and changing, which type alone cannot draw.',
+  style: 'swiss-signal',
   idea: 'A single tile drifts across a dark wall, rounds into a lantern and settles under its line.',
   audience: 'People walking past a hallway panel.',
   channel: 'A muted loop on a hallway panel.',
@@ -141,14 +143,21 @@ const STAGE_FILM = {
   formatReason: 'The hallway panel is a landscape screen.',
   durationSec: 4,
   beats: [
-    { t0: 0, t1: 1.333, purpose: 'Open on the moving tile.', onScreen: 'One tile drifting over a dark ground.', motion: 'Constant drift with a slow turn.', sound: 'None.' },
-    { t0: 1.333, t1: 2.667, purpose: 'Change the tile.', onScreen: 'The tile rounds into a disc.', motion: 'A timed corner change.', sound: 'None.' },
-    { t0: 2.667, t1: 4, purpose: 'Hold the line.', onScreen: 'The copy line under the disc.', motion: 'Hold.', sound: 'None.' },
+    { t0: 0, t1: 1.333, layout: 'title', hero: 'The tile crosses the dark wall.', transition: 'wipe', purpose: 'Open on the moving tile.', onScreen: 'One tile drifting over a dark ground.', motion: 'Constant drift with a slow turn.', sound: 'None.' },
+    { t0: 1.333, t1: 2.667, layout: 'split', hero: 'The tile rounds into a disc.', transition: 'match', purpose: 'Change the tile.', onScreen: 'The tile rounds into a disc.', motion: 'A timed corner change.', sound: 'None.' },
+    { t0: 2.667, t1: 4, layout: 'stage', hero: 'The line lands under the disc.', transition: 'end', purpose: 'Hold the line.', onScreen: 'The copy line under the disc.', motion: 'Hold.', sound: 'None.' },
   ],
+  story: { expect: 'Tiles that keep drifting past without changing.', turn: 'The drifting tile folds itself into a lantern.', beat: 1, payoff: 'The lantern holds still and the line lands under it.' },
+  protagonist: { name: 'the paper tile', kind: 'object', look: 'A square paper tile, a palm wide, that folds into a disc lantern.', acts: [{ beat: 0, action: 'Drifts across the dark wall.' }, { beat: 1, action: 'Rounds into a disc.' }, { beat: 2, action: 'Settles and holds under the line.' }] },
   subject: { name: 'Hallway Lantern Night', source: 'invented', specifics: ['A lantern walk held in a school hallway.', 'Each lantern is a paper tile that folds into a disc.'] },
   visualDevices: [{ kind: 'shape', role: 'subject', beats: [0, 1, 2] }, { kind: 'icon', role: 'support', beats: [2] }],
   typePlan: { faces: ['Pretendard'], hierarchy: 'One headline over one caption line.', maxWordsOnScreen: 6 },
-  palette: [{ color: '#101820', role: 'night ground' }, { color: '#f4efe6', role: 'type' }, { color: '#e0a040', role: 'lantern accent' }],
+  palette: [{ color: '#0c0e13', role: 'night ground' }, { color: '#e9ebe4', role: 'type' }, { color: '#0f7a82', role: 'signal accent' }],
+  world: {
+    layers: ['Back: a dark hallway wall with faint panel seams.', 'Middle: drifting paper tiles at several depths.', 'Front: the tile, the disc and the copy line.'],
+    labels: ['밤 복도', 'tile 03', 'lantern walk', 'disc holds', 'line lands', 'quiet loop'],
+    camera: [{ beat: 0, move: 'A slow push-in on the drifting tile.' }, { beat: 2, move: 'A gentle truck to the settled disc.' }],
+  },
   sound: { mode: 'none', plan: 'Silent: the panel plays muted.' },
   copy: { source: 'invented', lines: ['Lanterns drift home'] },
   inventions: ['Hallway Lantern Night (the name)', 'the copy line'],
