@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.1.3 — 2026-10-28
+
+- After you save a plan, typing `go` within 30 minutes starts it. A plan saved by another session, or an older one, does not.
+- lit-plan checks that every command touching a path outside the project is covered by a `Scope roots:` line, and start-work points to that check. A command quoted in a code block or inline code is treated as text and does not count.
+- The LIT card is clearer about other sessions: running ones come first, then idle ones, each named by its skill and, inside herdr, its pane. A finished start-work stays as done for a minute and then leaves. When a newer LitMuse is installed than the one this session loaded, the card says `restart to <version>`.
+- `lit-adhd` reads your plans before transcripts, keeps finished plans as complete, picks up the `## Next` section of this worktree's handoff, marks sessions as done or idle, and opens with a three-line summary. Its next step no longer repeats one that is already done.
+- A linked git worktree keeps its own `.litmuse` state instead of writing into the main checkout's.
+- New `TRADEMARK.md`: the code stays MIT; the LitMuse and LitFamily names and art are covered there.
+- The hook code changed, so Muse asks you to approve the LitMuse hooks again after the update; `npx @litfamily/litmuse install` lists them and asks once.
+
 ## 0.1.2 — 2026-10-27
 
 - Three new skills, so LitMuse now has 42. `lit-schematic` draws P&IDs with ISA-5.1 tags and control loops, apparatus figures for papers and isometric cutaways, as editable SVG with a QA gate. `lit-hijack` studies a tool you point it at and rebuilds what you want from it clean-room, with a gate after each phase. `lit-adhd` (also `lit-rewind`) is a briefing across your recent Muse sessions: what each one asked, did and is waiting on, with a single next step that a bare `go` picks up.
