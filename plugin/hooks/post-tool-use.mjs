@@ -4,6 +4,7 @@ import { pathToFileURL } from 'node:url';
 import { run, activeRoute, appendLedger, emitContext, toolName, toolInput, workspaceOf, PLUGIN_ROOT } from './lib/common.mjs';
 import { extractAddedComments } from './lib/added-comments.mjs';
 import { MOTION_ROUTE, recordMotionTool } from './lib/motion.mjs';
+import { markLiveness } from './lib/stage.mjs';
 
 const FILE_TOOLS = new Set(['write_file', 'edit_file', 'apply_patch']);
 const PROSE_FILE = /\.(md|mdx|markdown|txt)$/i;
@@ -82,6 +83,7 @@ async function proseBlock(tool, input, cwd) {
 }
 
 run((payload) => {
+  markLiveness(payload, 'alive');
   postWrite(payload).catch(() => {});
 });
 

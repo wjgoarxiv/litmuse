@@ -4,6 +4,8 @@ import { homedir } from 'node:os';
 import { run, emitContext, PLUGIN_ROOT, pluginVersion, cachedLatest, newerThan, readSession, sessionPath, workspaceOf } from './lib/common.mjs';
 import { SKILL_ROUTES } from './lib/routes.mjs';
 import { readFreshSnapshot } from './lib/handoff-snapshot.mjs';
+import { resolveProjectStateRoot } from './lib/workflow-stack.mjs';
+import { recordLoadedVersion } from './lib/stage.mjs';
 
 const STDOUT_BUDGET = 15 * 1024;
 const STYLE_FILES = { eli5: 'style-eli5.md', 'asd-ste100': 'style-asd-ste100.md' };
@@ -53,7 +55,7 @@ function suggestAdhdOnce(payload) {
     const cwd = workspaceOf(payload);
     const rec = readSession(payload);
     if (rec && rec.route) return null;
-    const dir = join(cwd, '.litmuse', 'workflow-stack');
+    const dir = join(resolveProjectStateRoot(cwd), '.litmuse', 'workflow-stack');
     const day = 24 * 60 * 60 * 1000;
     const fresh = readdirSync(dir).some((name) => name.endsWith('.json') && Date.now() - statSync(join(dir, name)).mtimeMs <= day);
     if (!fresh) return null;
@@ -81,6 +83,7 @@ function fenced(text, room) {
 
 run((payload) => {
   const version = pluginVersion();
+  recordLoadedVersion(payload, version);
   const base = readFileSync(join(PLUGIN_ROOT, 'context', 'session.md'), 'utf8').replaceAll('{{version}}', version);
   const routes = SKILL_ROUTES.map((r) => `- ${r.id}: ${r.when}`).join('\n');
   const parts = [base.trim(), `LitMuse routes (skill id: use when)\n${routes}`];

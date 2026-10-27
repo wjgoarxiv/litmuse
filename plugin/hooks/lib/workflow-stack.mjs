@@ -8,7 +8,7 @@
 // file per session, whole, and the status card reads it back through its own guarded read. Frames
 // keep skills, stages and counts only; never a prompt, a command or a path other than a
 // project-relative plan name.
-import { closeSync, constants, fstatSync, lstatSync, mkdirSync, openSync, readSync, renameSync, writeFileSync, existsSync } from 'node:fs';
+import { closeSync, constants, fstatSync, lstatSync, mkdirSync, openSync, readSync, realpathSync, renameSync, writeFileSync, existsSync } from 'node:fs';
 import { basename, dirname, join, resolve } from 'node:path';
 
 export const MAX_FRAMES = 3;
@@ -239,17 +239,35 @@ export const applyStackEvent = (stack, event, now = new Date()) => {
 };
 
 // State placement: the outermost git root owns `.litmuse`, so a nested package shares its
-// parent's state; without git the workspace itself owns it.
+// parent's state; without git the workspace itself owns it. A linked worktree (its `.git` is a
+// file) is its own root: the climb stops there, so its state never lands in the main checkout.
+// Every reader and writer of `.litmuse` resolves through this one function.
 export const resolveProjectStateRoot = (startDir = process.cwd()) => {
   const start = resolve(startDir);
   let root = null;
   let current = start;
   for (;;) {
-    if (existsSync(join(current, '.git'))) root = current;
+    const git = join(current, '.git');
+    if (existsSync(git)) {
+      root = current;
+      try {
+        if (!lstatSync(git).isDirectory()) return root;
+      } catch { /* vanished between checks: keep climbing */ }
+    }
     const parent = dirname(current);
     if (parent === current) return root ?? start;
     current = parent;
   }
+};
+
+// The project a recorded cwd belongs to, for comparing records: links resolved first, so a session
+// that reached the project through a symlinked path (`/var` vs `/private/var`) is the same project.
+export const projectKey = (dir) => {
+  let real = resolve(dir);
+  try {
+    real = realpathSync(real);
+  } catch { /* gone or unreadable: compare as written */ }
+  return resolveProjectStateRoot(real);
 };
 
 const fileName = (sessionId) => `${String(sessionId ?? 'session').replace(/[^A-Za-z0-9_-]/gu, '_').slice(0, 128) || 'session'}.json`;

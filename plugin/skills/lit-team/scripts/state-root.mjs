@@ -1,27 +1,14 @@
 // state-root.mjs: where LitMuse keeps project-local working state.
 // State belongs at the outermost Git root (or the start directory when there is no repository), so a nested
-// package never grows its own .litmuse folder. Node builtins only.
+// package never grows its own .litmuse folder; a linked worktree keeps its own. The rule lives once, in the
+// hooks' workflow-stack module, so team state lands where the hooks and the status card look.
 
-import { closeSync, constants, existsSync, lstatSync, openSync, writeSync } from "node:fs";
+import { closeSync, constants, lstatSync, openSync, writeSync } from "node:fs";
 import { basename, dirname, join, resolve } from "node:path";
 
+export { resolveProjectStateRoot } from "../../../hooks/lib/workflow-stack.mjs";
+
 export const PROJECT_STATE_DIR = ".litmuse";
-
-const outermostGitRoot = (startDir) => {
-  let root = null;
-  let current = startDir;
-  for (;;) {
-    if (existsSync(join(current, ".git"))) root = current;
-    const parent = dirname(current);
-    if (parent === current) return root;
-    current = parent;
-  }
-};
-
-export const resolveProjectStateRoot = (startDir = process.cwd()) => {
-  const start = resolve(startDir);
-  return outermostGitRoot(start) ?? start;
-};
 
 const STATE_GITIGNORE = "# Created by LitMuse: local working state, not for commits.\n*\n";
 

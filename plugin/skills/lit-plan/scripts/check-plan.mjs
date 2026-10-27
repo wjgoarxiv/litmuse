@@ -10,8 +10,9 @@
 // Exit 0 = pass, 1 = findings, 2 = usage. A planning turn cannot run this (the route policy refuses node);
 // start-work, a terminal and the test suite do.
 
-import { existsSync, lstatSync, readFileSync } from 'node:fs';
-import { dirname, join, resolve } from 'node:path';
+import { existsSync, lstatSync, readFileSync, realpathSync, statSync } from 'node:fs';
+import { homedir } from 'node:os';
+import { basename, dirname, isAbsolute, join, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 export const SLUG_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/u;
@@ -56,7 +57,67 @@ export function visibleLines(text) {
   return out;
 }
 
-export function checkPlan(text, { complete = false } = {}) {
+// `Scope roots: <path> (<action>, <action>)`: an outside folder the plan's todos reach, granted up front.
+export const SCOPE_ROOT_LINE = /^Scope roots?:[ \t]*(\S+)[ \t]*\(([a-z, -]+)\)[ \t]*$/u;
+// An absolute path with at least two segments. Inside an inline code span only a span that is one bare
+// path counts; a span holding spaces is a quoted command, which is data rather than a folder.
+const ABSOLUTE_PATH = /(?<![\w.~/-])\/[\w.@+%,=~-]+(?:\/[\w.@+%,=~-]+)+\/?/gu;
+const pathsIn = (line) => line
+  .replace(/`([^`]*)`/gu, (_, span) => (/\s/u.test(span.trim()) ? ' ' : ` ${span.trim()} `))
+  .match(ABSOLUTE_PATH) ?? [];
+
+const realOr = (path) => {
+  try {
+    return realpathSync(path);
+  } catch {
+    return path;
+  }
+};
+const within = (root, path) => {
+  const rel = relative(root, path);
+  return rel === '' || (!rel.startsWith('..') && !isAbsolute(rel));
+};
+const existingFolder = (path) => {
+  for (let at = path; ; at = dirname(at)) {
+    try {
+      if (statSync(at).isDirectory()) return at;
+    } catch { /* not there: climb */ }
+    if (dirname(at) === at) return at;
+  }
+};
+
+/**
+ * Absolute paths named under `## Todos` (up to `## Final verification wave`, fences skipped) that lie
+ * outside `projectRoot` and outside every `Scope roots:` line, one entry per folder: `{path, suggestion}`
+ * with the line to add, or `{path, problem}` when the nearest existing folder is too broad to grant.
+ */
+export function uncoveredScopePaths(text, projectRoot) {
+  const project = realOr(resolve(projectRoot));
+  const lines = visibleLines(text);
+  const granted = lines.map(({ line }) => SCOPE_ROOT_LINE.exec(line.trim())).filter(Boolean)
+    .map(([, path]) => realOr(isAbsolute(path) ? path : resolve(project, path)));
+  const found = new Map();
+  let todos = false;
+  for (const { line } of lines) {
+    const heading = line.trimEnd();
+    if (heading === '## Todos') todos = true;
+    else if (/^## /u.test(heading)) todos = false;
+    if (!todos) continue;
+    for (const raw of pathsIn(line)) {
+      const path = raw.replace(/[.,:;)]+$/u, '');
+      const folder = realOr(existingFolder(path));
+      const covered = [realOr(path), folder].some((p) => within(project, p) || granted.some((root) => within(root, p)));
+      if (covered || found.has(folder)) continue;
+      const tooBroad = dirname(folder) === dirname(dirname(folder)) || folder === realOr(homedir());
+      found.set(folder, tooBroad
+        ? { path, problem: `${path} is outside the project; name a narrower existing folder on a Scope roots line` }
+        : { path, suggestion: `Scope roots: ${folder} (read)` });
+    }
+  }
+  return [...found.values()];
+}
+
+export function checkPlan(text, { complete = false, projectRoot = null } = {}) {
   const problems = [];
   const lines = visibleLines(text);
 
@@ -115,6 +176,10 @@ export function checkPlan(text, { complete = false } = {}) {
 
   if (/<fill\b/u.test(text)) problems.push('unfilled <fill ...> placeholders remain: the plan is not decision-complete');
 
+  if (projectRoot) {
+    for (const entry of uncoveredScopePaths(text, projectRoot)) problems.push(entry.problem ?? `${entry.path} is outside the project and no Scope roots line covers it; add: ${entry.suggestion}`);
+  }
+
   if (complete) {
     for (const { line } of marked) {
       if (/^- \[ \] /u.test(line)) problems.push(`row still open: ${line.trim()}`);
@@ -138,7 +203,9 @@ function checkFile(planPath, options) {
   }
   if (stat.isSymbolicLink() || !stat.isFile()) return fail(`FAIL PLAN_UNSAFE: ${path} must be a regular file`);
   if (stat.size > MAX_PLAN_BYTES) return fail(`FAIL PLAN_TOO_LARGE: ${path}`);
-  const result = checkPlan(readFileSync(path, 'utf8'), options);
+  // The project is the folder holding plans/; a plan kept elsewhere is checked against the cwd.
+  const projectRoot = basename(dirname(path)) === 'plans' ? dirname(dirname(path)) : process.cwd();
+  const result = checkPlan(readFileSync(path, 'utf8'), { ...options, projectRoot });
   if (!result.ok) {
     for (const problem of result.problems) process.stderr.write(`FAIL ${problem}\n`);
     return 1;

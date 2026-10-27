@@ -47,7 +47,8 @@
     "README.md",
     "README_ko-KR.md",
     "CHANGELOG.md",
-    "LICENSE"
+    "LICENSE",
+    "TRADEMARK.md"
   ],
   "publishConfig": {
     "access": "public"

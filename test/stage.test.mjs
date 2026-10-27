@@ -12,7 +12,9 @@ import { buildCard, renderCard, fmtDuration } from '../lib/stage-card.mjs';
 const HOOKS = join(dirname(fileURLToPath(import.meta.url)), '..', 'plugin', 'hooks');
 
 function env() {
-  return { ...process.env, XDG_STATE_HOME: mkdtempSync(join(tmpdir(), 'litmuse-stage-state-')) };
+  const e = { ...process.env, XDG_STATE_HOME: mkdtempSync(join(tmpdir(), 'litmuse-stage-state-')) };
+  delete e.HERDR_PANE_ID;
+  return e;
 }
 const workspace = () => mkdtempSync(join(tmpdir(), 'litmuse-stage-ws-'));
 
@@ -309,4 +311,165 @@ test('look: an all-pass goal bursts while fresh', () => {
     criteria: [{ id: 'c1', text: 'a', status: 'pass' }],
   }));
   assert.match(renderCard(buildCard({ cwd: ws, env: e })), /✨ goal done/);
+});
+
+const liveness = (e, sid) => readStage(join(e.XDG_STATE_HOME, 'litmuse', 'stage', 'liveness', `${sid}.json`));
+
+test('liveness: tool calls say alive, Stop says idle, SessionEnd says ended, with a checked pane id', () => {
+  const e = { ...env(), HERDR_PANE_ID: 'w2B:p3' }; const ws = workspace();
+  runHook('post-tool-use', { session_id: 'lv1', cwd: ws, tool_name: 'read_file', tool_input: {} }, ws, e);
+  let rec = liveness(e, 'lv1');
+  assert.equal(rec.state, 'alive');
+  assert.equal(rec.pane, 'w2B:p3');
+  assert.equal(rec.cwd, ws);
+  runHook('stop', { session_id: 'lv1', cwd: ws, turn_id: 't1' }, ws, e);
+  assert.equal(liveness(e, 'lv1').state, 'idle');
+  runHook('post-tool-use-failure', { session_id: 'lv1', cwd: ws, tool_name: 'bash', tool_input: {} }, ws, e);
+  assert.equal(liveness(e, 'lv1').state, 'alive');
+  runHook('session-end', { session_id: 'lv1', cwd: ws }, ws, e);
+  rec = liveness(e, 'lv1');
+  assert.equal(rec.state, 'ended');
+  runHook('post-tool-use', { session_id: 'lv2', cwd: ws, tool_name: 'read_file', tool_input: {} }, ws, { ...e, HERDR_PANE_ID: 'p1; rm -rf /' });
+  assert.equal(liveness(e, 'lv2').pane, null, 'a pane id outside the allowed shape is dropped');
+});
+
+test('liveness: a repeat of the same state within 30 s writes nothing; a change always writes', async () => {
+  const { markLiveness } = await import('../plugin/hooks/lib/stage.mjs');
+  const e = env(); const ws = workspace();
+  const payload = { session_id: 'lv3', cwd: ws };
+  const t0 = Date.parse('2026-10-28T10:00:00Z');
+  assert.equal(markLiveness(payload, 'alive', { env: e, now: t0 }), true);
+  assert.equal(markLiveness(payload, 'alive', { env: e, now: t0 + 29_000 }), false, 'throttled');
+  assert.equal(liveness(e, 'lv3').at, new Date(t0).toISOString());
+  assert.equal(markLiveness(payload, 'alive', { env: e, now: t0 + 31_000 }), true, 'refreshed after 30 s');
+  assert.equal(markLiveness(payload, 'idle', { env: e, now: t0 + 32_000 }), true, 'a new state is written at once');
+  assert.equal(markLiveness(payload, 'sleeping', { env: e, now: t0 + 33_000 }), false, 'unknown states are refused');
+});
+
+test('liveness: a linked liveness folder or record is refused', async () => {
+  const { markLiveness } = await import('../plugin/hooks/lib/stage.mjs');
+  const e = env(); const ws = workspace(); const elsewhere = workspace();
+  mkdirSync(join(e.XDG_STATE_HOME, 'litmuse', 'stage'), { recursive: true });
+  symlinkSync(elsewhere, join(e.XDG_STATE_HOME, 'litmuse', 'stage', 'liveness'));
+  assert.equal(markLiveness({ session_id: 'lv4', cwd: ws }, 'alive', { env: e }), false);
+  assert.deepEqual(readdirSync(elsewhere), []);
+  const e2 = env();
+  const dir = join(e2.XDG_STATE_HOME, 'litmuse', 'stage', 'liveness');
+  mkdirSync(dir, { recursive: true });
+  symlinkSync(join(elsewhere, 'target.json'), join(dir, 'lv5.json'));
+  assert.equal(markLiveness({ session_id: 'lv5', cwd: ws }, 'alive', { env: e2 }), false);
+  assert.equal(existsSync(join(elsewhere, 'target.json')), false);
+});
+
+// Other sessions of this workspace: a stack file per session plus its liveness record.
+const sibling = (ws, sid, frames, mtime = null) => {
+  const dir = join(ws, '.litmuse', 'workflow-stack');
+  mkdirSync(dir, { recursive: true });
+  const path = join(dir, `${sid}.json`);
+  writeFileSync(path, JSON.stringify({ version: 1, sessionId: sid, frames }));
+  if (mtime) utimesSync(path, new Date(mtime), new Date(mtime));
+};
+const frameAt = (skill, stage, extra = {}) => ({ skill, family: 'main', stage, role: 'spine', status: 'active', at: new Date().toISOString(), ...extra });
+
+test('card rows: other sessions list running before idle, whatever their names', async () => {
+  const { markLiveness } = await import('../plugin/hooks/lib/stage.mjs');
+  const e = env(); const ws = workspace();
+  sibling(ws, 'aaa', [frameAt('lit-loop', 'RED')]);
+  sibling(ws, 'bbb', [frameAt('litwork', 'GREEN')]);
+  markLiveness({ session_id: 'aaa', cwd: ws }, 'idle', { env: e });
+  markLiveness({ session_id: 'bbb', cwd: ws }, 'alive', { env: e });
+  const text = renderCard(buildCard({ cwd: ws, session: 'own', env: e }));
+  assert.ok(text.indexOf('litwork') < text.indexOf('lit-loop'), text);
+  assert.match(text, /litwork GREEN running .*\(bbb\)/);
+  assert.match(text, /lit-loop RED idle .*\(aaa\)/);
+});
+
+test('card rows: a finished start-work reads done for 60 s, then leaves', () => {
+  const e = env(); const ws = workspace();
+  mkdirSync(join(ws, 'plans'));
+  const plan = join(ws, 'plans', 'p.md');
+  writeFileSync(plan, '# P\n- [x] 1. a\n- [x] 2. b\n');
+  sibling(ws, 'sw', [frameAt('start-work', 'work', { ref: { plan: 'plans/p.md' } })]);
+  const finished = Date.now();
+  utimesSync(plan, new Date(finished), new Date(finished));
+  const at = (ms) => renderCard(buildCard({ cwd: ws, session: 'own', env: e, now: finished + ms }));
+  assert.match(at(59_000), /start-work work done \[▉▉\] 2\/2 \(sw\)/);
+  assert.doesNotMatch(at(61_000), /start-work/);
+});
+
+test('card rows: a lone other session shows, named by its herdr pane when it has one', async () => {
+  const { markLiveness } = await import('../plugin/hooks/lib/stage.mjs');
+  const e = env(); const ws = workspace();
+  markLiveness({ session_id: 'lone', cwd: ws }, 'alive', { env: { ...e, HERDR_PANE_ID: 'w2B:p3' } });
+  markLiveness({ session_id: 'elsewhere', cwd: workspace() }, 'alive', { env: e });
+  markLiveness({ session_id: 'own', cwd: ws }, 'alive', { env: e });
+  let text = renderCard(buildCard({ cwd: ws, session: 'own', env: e }));
+  assert.match(text, /threads:\n└─ session · w2B:p3 running/, 'one row, even alone');
+  assert.doesNotMatch(text, /elsewhere|\(own\)/, 'other workspaces and this session stay out');
+  sibling(ws, 'lone', [frameAt('lit-loop', 'RED', { n: 1, total: 2 })]);
+  text = renderCard(buildCard({ cwd: ws, session: 'own', env: e }));
+  assert.match(text, /└─ lit-loop · w2B:p3 RED running \[▉░\] 1\/2/);
+  assert.doesNotMatch(text, /\(lone\)/, 'the pane names the row instead of the session id');
+});
+
+test('card rows: a session reached through a symlinked path is the same project', async () => {
+  const { markLiveness } = await import('../plugin/hooks/lib/stage.mjs');
+  const e = env(); const ws = workspace();
+  const alias = join(workspace(), 'alias');
+  symlinkSync(ws, alias);
+  markLiveness({ session_id: 'via-link', cwd: alias }, 'alive', { env: e });
+  assert.match(renderCard(buildCard({ cwd: ws, session: 'own', env: e })), /└─ session running \(via-link\)/);
+});
+
+test('restart chip: shown when the installed bundle is newer than the code this session loaded', () => {
+  const ws = workspace();
+  const e = { ...env(), XDG_DATA_HOME: mkdtempSync(join(tmpdir(), 'litmuse-stage-data-')) };
+  runHook('session-start', { session_id: 'rs1', cwd: ws, source: 'startup' }, ws, e);
+  const loaded = readStage(stageFile(ws, 'rs1', e)).loadedVersion;
+  assert.match(loaded, /^\d+\.\d+\.\d+$/);
+  runHook('user-prompt-submit', { prompt: 'lit loop x', session_id: 'rs1', turn_id: 't1', cwd: ws }, ws, e);
+  assert.doesNotMatch(renderCard(buildCard({ cwd: ws, session: 'rs1', env: e })), /restart to/, 'no installed bundle: no chip');
+  const manifest = join(e.XDG_DATA_HOME, 'litmuse', 'bundle', '.muse-plugin');
+  mkdirSync(manifest, { recursive: true });
+  writeFileSync(join(manifest, 'plugin.json'), JSON.stringify({ version: loaded }));
+  assert.doesNotMatch(renderCard(buildCard({ cwd: ws, session: 'rs1', env: e })), /restart to/, 'same version: no chip');
+  writeFileSync(join(manifest, 'plugin.json'), JSON.stringify({ version: '99.0.0' }));
+  const text = renderCard(buildCard({ cwd: ws, session: 'rs1', env: e }));
+  assert.match(text, /restart to 99\.0\.0/);
+  assert.ok(!/[?]/.test(text), 'no question marks for old code');
+});
+
+// A main checkout (`.git` folder) holding a linked worktree (`.git` file) under `.worktrees/`.
+const nestedWorktree = () => {
+  const main = workspace();
+  mkdirSync(join(main, '.git'));
+  const wt = join(main, '.worktrees', 'wt');
+  mkdirSync(join(wt, 'sub'), { recursive: true });
+  writeFileSync(join(wt, '.git'), 'gitdir: ../../.git/worktrees/wt\n');
+  return { main, wt };
+};
+
+test('state root: a linked worktree keeps its own .litmuse; a nested package still shares the outer one', async () => {
+  const { resolveProjectStateRoot } = await import('../plugin/hooks/lib/workflow-stack.mjs');
+  const team = await import('../plugin/skills/lit-team/scripts/state-root.mjs');
+  const { main, wt } = nestedWorktree();
+  assert.equal(resolveProjectStateRoot(join(wt, 'sub')), wt);
+  assert.equal(team.resolveProjectStateRoot(join(wt, 'sub')), wt);
+  const pkg = join(main, 'packages', 'inner');
+  mkdirSync(join(pkg, '.git'), { recursive: true });
+  assert.equal(resolveProjectStateRoot(pkg), main, 'a nested .git folder does not stop the climb');
+  assert.equal(team.resolveProjectStateRoot(pkg), main);
+});
+
+test('state root: hooks in a linked worktree write where its card reads', () => {
+  const e = env();
+  const { main, wt } = nestedWorktree();
+  runHook('user-prompt-submit', { prompt: 'lit loop x', session_id: 'wt1', turn_id: 't1', cwd: wt }, wt, e);
+  assert.ok(existsSync(join(wt, '.litmuse', 'workflow-stack', 'wt1.json')), 'the stack lands in the worktree');
+  assert.ok(!existsSync(join(main, '.litmuse')), 'the main checkout stays untouched');
+  const at = new Date().toISOString();
+  writeFileSync(join(wt, '.litmuse', 'workflow-stack', 'wt1.json'), JSON.stringify({ version: 1, sessionId: 'wt1', frames: [
+    { skill: 'lit-loop', family: 'loop', stage: 'RED', role: 'spine', status: 'active', n: 1, total: 2, at },
+  ] }));
+  assert.match(renderCard(buildCard({ cwd: join(wt, 'sub'), session: 'wt1', env: e })), /lit-loop RED active \[▉░\] 1\/2/, 'a subfolder card reads the worktree root');
 });

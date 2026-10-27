@@ -1,11 +1,12 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { mkdtempSync, writeFileSync, mkdirSync, readFileSync } from 'node:fs';
+import { mkdtempSync, writeFileSync, mkdirSync, readFileSync, existsSync, symlinkSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { sessionPath } from '../plugin/hooks/lib/common.mjs';
+import { nextStepPath } from '../plugin/lib/rewind/next-step.mjs';
 
 const HOOKS = join(dirname(fileURLToPath(import.meta.url)), '..', 'plugin', 'hooks');
 const STATE_HOME = mkdtempSync(join(tmpdir(), 'litmuse-stop-state-'));
@@ -184,6 +185,46 @@ test('lit-plan gate is unchanged: held once, even with open plan rows and a goal
   assert.match(a.stderr, /lit-plan gate/);
   assert.equal(hook('stop', { session_id: 'l1', turn_id: 'tl', cwd: ws }, ws).code, 0);
   assert.ok(sessionPath(ws, 'l1', ENV));
+});
+
+test('lit-plan: a saved plan arms `go` for this session for 30 minutes', () => {
+  const ws = workspace();
+  prompt(ws, 'go1', 'lit plan a cache');
+  plan(ws, PLAN('approved', OPEN));
+  assert.equal(stop(ws, 'go1').code, 0, 'a written plan ends the planning turn');
+  const record = nextStepPath(ws, 'go1');
+  assert.deepEqual(JSON.parse(readFileSync(record, 'utf8')).target, { plan: 'plans/cache.md' });
+  assert.match(prompt(ws, 'other', 'go').stdout, /Nothing on record/, 'another session gets nothing');
+  const started = prompt(ws, 'go1', 'go');
+  assert.match(started.stdout, /LIT IGNITED · start-work/);
+  assert.match(started.stdout, /Plan: plans\/cache\.md/);
+  assert.equal(existsSync(record), false, 'the record is spent');
+});
+
+test('lit-plan: a stale record or an odd plan name starts nothing', () => {
+  const ws = workspace();
+  prompt(ws, 'go2', 'lit plan a cache');
+  plan(ws, PLAN('approved', OPEN));
+  stop(ws, 'go2');
+  const record = nextStepPath(ws, 'go2');
+  const old = JSON.parse(readFileSync(record, 'utf8'));
+  writeFileSync(record, JSON.stringify({ ...old, at: new Date(Date.now() - 31 * 60_000).toISOString() }));
+  assert.match(prompt(ws, 'go2', 'go').stdout, /Nothing on record/, '31 minutes is too late');
+  const ws2 = workspace();
+  prompt(ws2, 'go3', 'lit plan a cache');
+  plan(ws2, PLAN('approved', OPEN), 'my plan.md');
+  stop(ws2, 'go3');
+  assert.equal(existsSync(nextStepPath(ws2, 'go3')), false, 'a name outside plans/<slug>.md is never recorded');
+});
+
+test('lit-plan: the go record is never written through a linked .litmuse', () => {
+  const ws = workspace();
+  const elsewhere = workspace();
+  symlinkSync(elsewhere, join(ws, '.litmuse'));
+  prompt(ws, 'go4', 'lit plan a cache');
+  plan(ws, PLAN('approved', OPEN));
+  assert.equal(stop(ws, 'go4').code, 0);
+  assert.equal(existsSync(join(elsewhere, 'adhd')), false);
 });
 
 // The Stop payload may not carry the prompt, so the prompt hook records a pause flag in the route state.

@@ -164,7 +164,7 @@ run((payload) => {
       stackStart(payload, 'start-work', { plan }, false);
       recordRoute(payload, { route: 'start-work', keyword: 'go', kind: 'ignite', plan, activatedAt: Date.now() });
       emitContext('UserPromptSubmit', [
-        ...activation({ route: 'start-work', keyword: 'go', bare: false, resume: false, restart: false, trailing: false }, payload),
+        activation({ route: 'start-work', keyword: 'go', bare: false, resume: false, restart: false, trailing: false }, payload),
         `Plan: ${plan}. The typed go is the approval: the work starts without a separate approval turn; work through its open rows in order.`,
       ].join('\n'));
       return;

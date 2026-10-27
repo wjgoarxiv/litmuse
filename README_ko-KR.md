@@ -178,7 +178,7 @@ Muse의 `/hud`는 켜고 끄는 고정 항목 목록이라서 플러그인 글�
 
 **명령 4개**: `/lit <경로> <작업>`, `/lit-korean <파일 또는 글>`, `/lit-status`, `/lit-hud`.
 
-**훅 10개**: SessionStart(LitMuse 컨텍스트와 경로 표. 컴팩션 뒤에는 저장해 둔 인계 메모를 한 번 다시 넣고, `litmuse style`로 고른 답변 스타일도 더함), UserPromptSubmit(맨 앞의 `lit` 활성화. 같은 경로가 이미 켜져 있으면 이어서 진행, 다른 경로면 전환, 맨 `lit`은 시작한 계획을 재개, `lit new`·`lit restart`는 새로 시작), PreToolUse(lit-plan 동안 write_file·edit_file·apply_patch·delete_file 쓰기는 `plans/`와 `.litmuse/` 안으로 제한하고 셸 명령은 읽기 전용만 허용, 자식 에이전트는 읽기 전용 LitMuse 에이전트만 허용, 모든 경로에서 쓰기가 Markdown이나 텍스트 글에 새로 더하는 부정문 몰림과 얼버무림 몰림 검사), PostToolUse(도구 기록, 편집이 새로 더한 한 줄 주석을 comment-checker에 넘기고 쓴 글에는 lit-humanizer 참고 검사. 모션 경로에서는 렌더 실행과 `read_file`로 연 이미지도 기록), PostToolUseFailure(기록), Stop(lit-plan 턴은 계획 파일이 생긴 뒤 끝남. 모션 턴은 마지막 렌더가 스킬의 완료 검사를 통과하면 끝나고, 두 번 붙잡은 뒤에는 아직 끝나지 않았다고 분명히 말하게 함. start-work는 계획 행이, litgoal은 기준이 남아 있으면 이어 가되 진전 없이 연속 3번까지만 붙잡음), PreCompact(Muse가 컴팩션하기 전에 `.litmuse/handoff/latest.md`를 씀), SubagentStart(자식 에이전트의 보고 형식), SubagentStop·SessionEnd(기록 줄). 훅은 경로, 계획 진행, 실행 중인 자식 에이전트도 실시간 기록으로 남기며, Muse의 `/hud`는 고정 항목만 보여 주므로 이 기록은 `/lit-status`와 `npx @litfamily/litmuse status --card`로 봅니다.
+**훅 10개**: SessionStart(LitMuse 컨텍스트와 경로 표. 컴팩션 뒤에는 저장해 둔 인계 메모를 한 번 다시 넣고, `litmuse style`로 고른 답변 스타일도 더함), UserPromptSubmit(맨 앞의 `lit` 활성화. 같은 경로가 이미 켜져 있으면 이어서 진행, 다른 경로면 전환, 맨 `lit`은 시작한 계획을 재개, `lit new`·`lit restart`는 새로 시작), PreToolUse(lit-plan 동안 write_file·edit_file·apply_patch·delete_file 쓰기는 `plans/`와 `.litmuse/` 안으로 제한하고 셸 명령은 읽기 전용만 허용, 자식 에이전트는 읽기 전용 LitMuse 에이전트만 허용, 모든 경로에서 쓰기가 Markdown이나 텍스트 글에 새로 더하는 부정문 몰림과 얼버무림 몰림 검사), PostToolUse(도구 기록, 편집이 새로 더한 한 줄 주석을 comment-checker에 넘기고 쓴 글에는 lit-humanizer 참고 검사. 모션 경로에서는 렌더 실행과 `read_file`로 연 이미지도 기록), PostToolUseFailure(기록), Stop(lit-plan 턴은 계획 파일이 생긴 뒤 끝나고, 같은 세션에서 30분 안에 `go` 한 단어를 입력하면 그 계획을 start-work로 시작. 모션 턴은 마지막 렌더가 스킬의 완료 검사를 통과하면 끝나고, 두 번 붙잡은 뒤에는 아직 끝나지 않았다고 분명히 말하게 함. start-work는 계획 행이, litgoal은 기준이 남아 있으면 이어 가되 진전 없이 연속 3번까지만 붙잡음), PreCompact(Muse가 컴팩션하기 전에 `.litmuse/handoff/latest.md`를 씀), SubagentStart(자식 에이전트의 보고 형식), SubagentStop·SessionEnd(기록 줄). 훅은 경로, 계획 진행, 실행 중인 자식 에이전트와 세션별 활동 상태(PostToolUse는 alive, Stop은 idle, SessionEnd는 ended)도 실시간 기록으로 남기며, Muse의 `/hud`는 고정 항목만 보여 주므로 이 기록은 `/lit-status`와 `npx @litfamily/litmuse status --card`로 봅니다. 카드는 같은 프로젝트의 다른 세션을 실행 중인 것부터 쉬는 것 순으로 보여 주고, 끝난 start-work는 1분 동안 done으로 두었다가 지우며, herdr 창 세션은 `<skill> · <pane>`으로 표시하고, 세션 시작 뒤 더 새 LitMuse가 설치되면 `restart to <버전>`을 띄웁니다.
 
 **에이전트 11개**, `litmuse/<이름>`으로 띄웁니다: lit-planner, lit-executor, lit-verifier, qa-runner, quality-reviewer, librarian-researcher, 그리고 한국어 글 에이전트 다섯. 리뷰어와 한국어 에이전트는 읽기와 검색 도구만 씁니다.
 
@@ -215,3 +215,5 @@ LitMuse는 LitFamily 패키지 일곱 개 가운데 하나이고, 표지의 로�
 ## 라이선스
 
 MIT, © LitMuse contributors. LitMuse는 독립 커뮤니티 프로젝트이며 Meta와 제휴하거나 Meta의 보증을 받은 프로젝트가 아닙니다.
+
+LitMuse와 LitFamily 이름, 로고, 마스코트 그림에는 [TRADEMARK.md](./TRADEMARK.md)가 적용됩니다.

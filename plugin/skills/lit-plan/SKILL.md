@@ -169,6 +169,17 @@ Detail earns its place when it removes executor judgment, protects a boundary or
 8. The final verification wave.
 9. Commit strategy, success criteria, DoneClaim, risks and open questions.
 
+### Scope roots for outside folders
+
+When a todo names an absolute path outside the project (a shared notes folder, a sibling checkout, a temp area), the plan grants it before the work starts, with one line per folder anywhere outside a code fence:
+
+```text
+Scope roots: /abs/path/to/folder (read)
+Scope roots: /abs/path/to/scratch (read, write, execute)
+```
+
+Grant the narrowest existing folder and only the actions the todos need. Paths inside the project need no line. A command quoted in a fence or an inline code span (it holds a space) is data and needs no line; a code span that is one bare path counts. Before saving, search the Todos for `/` paths and add the missing lines. `start-work` runs `node scripts/check-plan.mjs --check plans/<slug>.md`, which fails on an uncovered folder and prints the exact line to add; a filesystem-root, top-level or home folder is never suggested, so name a narrower one.
+
 A task that builds or changes a user-facing web interface names `frontend-ui-ux` in its verification (the interface probe across the responsive matrix, with no HIGH finding left) and hands the acceptance verdict to `visual-qa`. A CLI, library or backend-only task names neither.
 
 ### Plan-row grammar (machine-checkable)
@@ -337,7 +348,7 @@ Refused on this route: `create_goal`, `update_goal`, `write_todos`, `add_memory`
 
 Stop when the plan file is written and passes the checklist, or when a missing answer blocks every useful task (then the plan carries the question as row 1 and the reply says `BLOCKED: <question>`). After two failed attempts at one section, surface what you tried and ask.
 
-Reply in reader form: the plan path, the TL;DR, the number of tasks, any assumption the user should confirm, and the next action: run `/start-work` (or `/litmuse:start-work`) to execute it. Approval covers plan generation; implementation, commit, push, versioning and publishing each need their own go-ahead. Keep logs, lane verdicts and command lists in the draft and ledger unless the user asks for them.
+Reply in reader form: the plan path, the TL;DR, the number of tasks, any assumption the user should confirm, and the next action. End the reply with this line, plan name filled in: "Type `go` within 30 minutes to start `plans/<slug>.md` with start-work, or run `/start-work` later." The Stop hook records the saved plan for this session only, so `go` from another session, or after 30 minutes, starts nothing. Approval covers plan generation; implementation, commit, push, versioning and publishing each need their own go-ahead. Keep logs, lane verdicts and command lists in the draft and ledger unless the user asks for them.
 
 ## Pitfalls
 

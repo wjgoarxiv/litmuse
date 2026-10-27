@@ -74,7 +74,10 @@ okay. When the two disagree, ask.
 
 ### Authority envelope
 
-The envelope is the plan's Scope plus the user's messages. Work inside it freely:
+The envelope is the plan's Scope, its `Scope roots: <path> (<actions>)` lines and the user's messages. A
+`Scope roots` line grants exactly its listed actions under that folder outside the workspace; a todo that reaches
+an uncovered outside folder fails the structure check (`check-plan.mjs --check` prints the line to add), so ask
+the user before treating that folder as in scope. Work inside the envelope freely:
 
 - read: any file in the workspace;
 - write: the paths on the current row's Files line, new test files for that row, `.litmuse/` records, and the one

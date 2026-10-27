@@ -17,6 +17,8 @@ const ACTIVE_MS = 15 * 60 * 1000;
 export const makeBudget = (limit = TOTAL_BUDGET_BYTES) => ({ limit, used: 0, exhausted: false });
 
 const readSlice = (fd, position, length, budget) => {
+  // An empty slice (a head-only peek) reads nothing; it must not mark the budget used up.
+  if (length <= 0) return '';
   const allowed = Math.min(length, budget.limit - budget.used);
   if (allowed <= 0) {
     budget.exhausted = true;

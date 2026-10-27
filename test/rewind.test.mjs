@@ -241,12 +241,13 @@ test('plans, litgoal, handoffs, stacks and git all feed the brief with redacted 
   };
   const data = collectRewind({ cwd: repo, env, now: NOW, exec, sessionId: 's-self' });
   assert.deepEqual(Object.entries(data.sources).filter(([, status]) => status !== 'ok').map(([name]) => name), ['startWork', 'herdr']);
-  assert.equal(data.roadmap.plans.length, 1);
-  const [plan] = data.roadmap.plans;
+  assert.equal(data.roadmap.plans.length, 2, 'the finished plan stays as done work');
+  const plan = data.roadmap.plans.find((item) => item.plan === 'plans/one.md');
   assert.equal(plan.progress.gauge, '[▉░░] 1/3');
   assert.match(plan.current, /^second with .*\[redacted\]$/u);
+  assert.equal(data.roadmap.plans.find((item) => item.plan === 'plans/done.md').current, null);
   assert.equal(data.roadmap.litgoal[0].progress.gauge, '[▉░] 1/2');
-  assert.equal(data.roadmap.progress.gauge, '[▉▉░░░] 2/5');
+  assert.equal(data.roadmap.progress.gauge, '[▉▉▉░░░] 3/6');
   assert.deepEqual(data.handoffs[0].headings, ['# Handoff', '## Now']);
   assert.equal(data.workflows[0].progress.gauge, '[▉▉░░] 2/4');
   const [session] = data.sessions;
@@ -333,6 +334,21 @@ test('writeNextStep round-trips through the hook reader; a stale record is delet
   assert.equal(existsSync(path), true, 'a foreign read leaves the record alone');
 });
 
+test('in a linked worktree the brief records its next step where `go` reads it, not in the main checkout', () => {
+  const { repo, env } = fixture();
+  mkdirSync(join(repo, '.git'));
+  const wt = join(repo, '.worktrees', 'wt');
+  mkdirSync(join(wt, 'plans'), { recursive: true });
+  writeFileSync(join(wt, '.git'), 'gitdir: ../../.git/worktrees/wt\n');
+  writeFileSync(join(wt, 'plans', 'a.md'), '# A\n- [ ] 1. first\n- [ ] 2. second\n');
+  const data = collectRewind({ cwd: wt, here: true, sessionId: 's1', env, now: NOW, exec: noGit });
+  assert.equal(data.next.kind, 'start-plan');
+  assert.equal(data.nextRecorded, true);
+  assert.equal(existsSync(nextStepPath(wt, 's1')), true, 'the record lands in the worktree');
+  assert.equal(existsSync(join(repo, '.litmuse')), false, 'the main checkout stays untouched');
+  assert.deepEqual(takeNextStep({ session_id: 's1', cwd: wt }, NOW), { kind: 'start-plan', target: { plan: 'plans/a.md' } });
+});
+
 test('--here keeps to this folder, herdr is asked only under HERDR_ENV=1, and the CLI rejects unknown flags', () => {
   const { repo, storeDir, env } = fixture();
   const other = join(repo, '..', 'sibling');
@@ -394,7 +410,7 @@ test('open plans list this worktree first under a cap, and the roadmap gauge cou
   assert.match(renderRewind(data, 80), /far: plans\/p9\.md/u);
 });
 
-test('the brief reads headline first: one card per session, a marked timeline, one next step', () => {
+test('the brief reads opener then headline: one card per session, a marked timeline, one next step', () => {
   const { repo, storeDir, env } = fixture();
   mkdirSync(join(repo, 'plans'));
   writeFileSync(join(repo, 'plans', 'one.md'), '# One\n- [x] first\n- [ ] second\n- [ ] third\n');
@@ -405,7 +421,7 @@ test('the brief reads headline first: one card per session, a marked timeline, o
     throw new Error('no log');
   };
   const text = renderRewind(collectRewind({ cwd: repo, env, now: NOW, exec }), 100);
-  assert.match(text, /^lit-adhd: 2 session\(s\) · \d+ waiting on you · next: /u, 'headline');
+  assert.match(text, /^Done so far: .*\nDoing now: .*\nNext: .*\nlit-adhd: 2 session\(s\) · \d+ waiting on you · next: /u, 'opener, then headline');
   assert.match(text, /● ACTIVE · aaaabbbb · 5m ago/u, 'active card with badge');
   assert.match(text, /^fix the deck$/mu, 'goal in plain words');
   assert.match(text, /last ask: "fix the deck"/u, 'known-facts line');
@@ -564,6 +580,115 @@ test('host log stamps read in microseconds, ISO strings and milliseconds pass th
   assert.equal(rec.lastMs, NOW - 8 * 60_000);
 });
 
+// Round-3 shape: one session finished its start-work, one stopped and sits idle, this one is briefing;
+// one plan is fully ticked, one is open, one went stale outside the window; HANDOFF.md has a Next item.
+const roundThree = () => {
+  const { repo, storeDir, env, home } = fixture();
+  const stateHome = join(home, 'xdg');
+  const stage = join(stateHome, 'litmuse', 'stage');
+  mkdirSync(join(stage, 'liveness'), { recursive: true });
+  mkdirSync(join(repo, 'plans'));
+  writeFileSync(join(repo, 'plans', 'a.md'), '# A\n- [x] 1. parse\n- [x] 2. render\n');
+  writeFileSync(join(repo, 'plans', 'b.md'), '# B\n- [x] 1. card\n- [ ] 2. chip\n');
+  const old = join(repo, 'plans', 'old.md');
+  writeFileSync(old, '# Old\n- [ ] 1. forgotten\n');
+  utimesSync(old, new Date(NOW - 10 * 864e5), new Date(NOW - 10 * 864e5));
+  utimesSync(join(repo, 'plans', 'a.md'), new Date(NOW - 2 * 60_000), new Date(NOW - 2 * 60_000));
+  writeFileSync(join(repo, 'HANDOFF.md'), '# Handoff\n## Next\n- Ship the brief to the family\n- later thing\n');
+  writeLog(storeDir, 'run00001', [routeLine(repo, 30), intentLine('run plan a', 30), toolLine('edit_file', 3)]);
+  writeLog(storeDir, 'idle0001', [routeLine(repo, 20), intentLine('check the card', 20), toolLine('bash', 5)]);
+  writeLog(storeDir, 'self0001', [routeLine(repo, 1), intentLine('lit adhd', 1)]);
+  writeFileSync(join(stage, 'run00001.json'), JSON.stringify({ version: 1, session: 'run00001', route: null, kind: 'clear', plan: 'plans/a.md', cwd: repo }));
+  writeFileSync(join(stage, 'liveness', 'idle0001.json'), JSON.stringify({ version: 1, session: 'idle0001', state: 'idle', at: iso(4), cwd: repo }));
+  const exec = (file, args) => {
+    if (args[0] === 'worktree') return `worktree ${repo}\nHEAD x\n`;
+    if (args[0] === 'rev-parse') return 'main\n';
+    return `abcdef1234\t${iso(2)}\tfeat: render the brief\n`;
+  };
+  return { repo, exec, env: { ...env, XDG_STATE_HOME: stateHome } };
+};
+
+test('lit-adhd brief: finished plans count as done, every plan is held to the window', () => {
+  const { repo, exec, env } = roundThree();
+  const data = collectRewind({ cwd: repo, env, now: NOW, exec, sessionId: 'self0001', record: false });
+  assert.deepEqual(data.roadmap.plans.map((plan) => plan.plan).sort(), ['plans/a.md', 'plans/b.md'], 'the stale local plan is out');
+  assert.equal(data.roadmap.progress.gauge, '[▉▉▉░] 3/4');
+  assert.match(renderRewind(data, 100), /^✓ plans\/a\.md \[▉▉\] 2\/2$/mu);
+});
+
+test('lit-adhd brief: a finished start-work reads done, a stopped session idle, and neither offers its last tool', () => {
+  const { repo, exec, env } = roundThree();
+  const data = collectRewind({ cwd: repo, env, now: NOW, exec, sessionId: 'self0001', record: false });
+  const status = Object.fromEntries(data.sessions.map((session) => [session.id8, session.status]));
+  assert.deepEqual(status, { self0001: 'active', run00001: 'done', idle0001: 'idle' });
+  assert.deepEqual(data.sessions.map((session) => session.id8), ['self0001', 'idle0001', 'run00001'], 'active, then idle, then done');
+  assert.ok(data.startWork.some((work) => work.status === 'complete' && work.plan === 'plans/a.md'));
+  const text = stripAnsi(renderRewind(data, 100));
+  assert.match(text, /✓ done · run00001/u);
+  assert.match(text, /◌ idle · idle0001/u);
+  assert.match(text, /➤ Next: start-work finished plans\/a\.md/u);
+  assert.doesNotMatch(text, /▶ Now: (edit_file|bash)/u, 'a done or idle session never offers its last tool call');
+});
+
+test('lit-adhd brief: a completed run recorded through a symlinked path still counts', () => {
+  const { repo, exec, env } = roundThree();
+  const alias = join(scratch(), 'alias');
+  symlinkSync(repo, alias);
+  const stage = join(env.XDG_STATE_HOME, 'litmuse', 'stage');
+  writeFileSync(join(stage, 'run00001.json'), JSON.stringify({ version: 1, session: 'run00001', route: null, kind: 'clear', plan: 'plans/a.md', cwd: alias }));
+  const data = collectRewind({ cwd: repo, env, now: NOW, exec, sessionId: 'self0001', record: false });
+  assert.ok(data.startWork.some((work) => work.status === 'complete' && work.plan === 'plans/a.md'));
+});
+
+test('lit-adhd brief: three opening lines, from records only', () => {
+  const { repo, exec, env } = roundThree();
+  const data = collectRewind({ cwd: repo, env, now: NOW, exec, sessionId: 'self0001', record: false });
+  assert.match(data.opener.done, /feat: render the brief/u);
+  assert.match(data.opener.done, /plans\/a\.md \(start-work complete\)/u);
+  assert.equal(data.next.kind, 'start-plan');
+  assert.equal(data.opener.next, 'start plan: plans/b.md (say "go")');
+  const lines = stripAnsi(renderRewind(data, 100)).split('\n');
+  assert.match(lines[0], /^Done so far: feat: render the brief; plans\/a\.md \(start-work complete\)$/u);
+  assert.match(lines[1], /^Doing now: /u);
+  assert.match(lines[2], /^Next: start plan: plans\/b\.md \(say "go"\)$/u);
+  assert.match(lines[3], /^lit-adhd: /u, 'the headline follows the opener');
+});
+
+test('lit-adhd brief: with no step for go, this worktree’s HANDOFF Next item leads, without a word to type', () => {
+  const { repo, env } = fixture();
+  writeFileSync(join(repo, 'HANDOFF.md'), '# Handoff\n## Next Steps\n1. Ship the brief to the family\n2. later\n');
+  const data = collectRewind({ cwd: repo, env, now: NOW, exec: noGit, record: false });
+  assert.equal(data.next.kind, 'none');
+  assert.equal(data.handoffs[0].next, 'Ship the brief to the family');
+  assert.equal(data.opener.next, 'Ship the brief to the family');
+  assert.equal(data.opener.done, 'nothing finished in this window');
+  assert.equal(data.opener.doing, 'nothing running');
+  const text = renderRewind(data, 100);
+  assert.match(text, /│ Ship the brief to the family\s+│/u);
+  assert.doesNotMatch(text, /say "go"/u);
+});
+
+test('lit-adhd brief: plans are read before transcripts, and plans past the budget are counted', () => {
+  const { repo, storeDir, env } = fixture();
+  mkdirSync(join(repo, 'plans'));
+  // Seven plans of about 1 MB each and eleven big transcripts together need more than the 8 MiB budget.
+  const bigPlan = (name) => writeFileSync(join(repo, 'plans', name), Array.from({ length: 20_000 }, (_, i) => `- [ ] ${i + 1}. row ${i + 1} of ${name} with enough words to weigh`).join('\n'));
+  for (let index = 0; index < 7; index += 1) bigPlan(`p${index}.md`);
+  const filler = `${JSON.stringify(toolLine('bash', 2))}\n`;
+  for (let index = 0; index < 11; index += 1) {
+    writeLog(storeDir, `big${String(index).padStart(5, '0')}`, [routeLine(repo, 2), intentLine('big one', 2), ...Array(Math.ceil((1024 * 1024) / filler.length)).fill(filler.trim())]);
+  }
+  let data = collectRewind({ cwd: repo, env, now: NOW, exec: noGit, max: 50, record: false });
+  assert.ok(data.budget.exhausted, 'plans and transcripts together used the budget up');
+  assert.equal(data.roadmap.plans.length, 7, 'every plan was read before the transcripts');
+  assert.equal(data.roadmap.plansSkipped, 0);
+  bigPlan('p7.md');
+  bigPlan('p8.md');
+  data = collectRewind({ cwd: repo, env, now: NOW, exec: noGit, max: 50, record: false });
+  assert.equal(data.roadmap.plansSkipped, 1, 'the ninth plan no longer fits');
+  assert.match(renderRewind(data, 100), /1 plan was not read \(read budget used up\)\./u);
+});
+
 test('the headline takes the static rainbow on a terminal only', () => {
   const { repo, storeDir, env } = fixture();
   const exec = () => {
@@ -571,8 +696,8 @@ test('the headline takes the static rainbow on a terminal only', () => {
   };
   mkdirSync(join(repo, 'plans'));
   const data = collectRewind({ cwd: repo, env, now: NOW, exec });
-  assert.match(renderRewind(data, 100), /^lit-adhd: /u);
+  assert.match(renderRewind(data, 100), /^lit-adhd: /mu);
   assert.match(renderRewind(data, 100, { color: true }), /\[/u);
-  assert.match(stripAnsi(renderRewind(data, 100, { color: true })), /^lit-adhd: 0 session\(s\) · 0 waiting on you · next: No session/u);
+  assert.match(stripAnsi(renderRewind(data, 100, { color: true })), /^lit-adhd: 0 session\(s\) · 0 waiting on you · next: No session/mu);
   assert.doesNotMatch(renderRewind(data, 100), /\[/u);
 });

@@ -1,20 +1,22 @@
 # lit-adhd status taxonomy
 
 The collector assigns every session exactly one status. The brief renders it in the user's language
-with the words below and never invents a fifth.
+with the words below and never invents another.
 
 | Status | Set when | English | 한국어 |
 | --- | --- | --- | --- |
 | `waiting-on-user` | The last transcript entry is the assistant asking something (a closing `?`, `lit approve`, `확인해 주세요`, `할까요`…), or the session holds a paused workflow frame or a start-work boundary | waiting on you | 나를 기다림 |
 | `active` | A transcript write within the last 15 minutes and not waiting | active | 진행 중 |
-| `ended` | Quiet for longer than 15 minutes | ended | 끝남 |
+| `idle` | Another session, otherwise active, whose last hook event is a Stop no older than its last log line | idle | 쉬는 중 |
+| `done` | Another session, otherwise active, whose start-work plan was fully ticked after its last log line | done | 완료 |
+| `ended` | Quiet for longer than 15 minutes, or its last hook event was SessionEnd | ended | 끝남 |
 | `unknown` | The transcript held no timestamp | unknown | 모름 |
 
 `waitingReason` says why a session waits: `asked the user`, `paused workflow` or
 `start-work boundary`. Name it in the card's status cell when present: `waiting on you (paused
 workflow)` / `나를 기다림 (멈춘 워크플로)`.
 
-Order in the brief: waiting sessions first, then active ones as full cards, newest first inside each group; ended sessions collapse into one short row each after the cards.
+Order in the brief: waiting sessions first, then active, idle and done ones as full cards, newest first inside each group; ended sessions collapse into one short row each after the cards. A done card's next line names the plan its run finished (`start-work finished plans/a.md` / `plans/a.md start-work 완료`).
 
 ## Sources
 
@@ -29,7 +31,7 @@ line and never filled in from memory.
 | `handoffs` | `HANDOFF*.md` and `.litmuse/handoff/latest.md` headings |
 | `git` | `git log --since` |
 | `workflowStack` | `.litmuse/workflow-stack/*.json` |
-| `startWork` | the session's own stage record |
+| `startWork` | the stage records: this session's live run, any session's completed run |
 | `herdr` | `herdr agent list`, only with `HERDR_ENV=1` |
 
 ## Next-step kinds
