@@ -11,6 +11,7 @@ import { paths } from '../lib/paths.mjs';
 import { installedPlugin, museVersion } from '../lib/muse.mjs';
 import { checkUpdate } from '../lib/update-check.mjs';
 import { runtime } from '../lib/runtime.mjs';
+import { agentFileState, configCommand, readAgentFileSetting } from '../lib/agent-file.mjs';
 import { buildCard, renderCard } from '../lib/stage-card.mjs';
 import { styleCommand } from '../lib/style.mjs';
 import { runRewindCli } from '../plugin/lib/rewind/collect.mjs';
@@ -25,6 +26,7 @@ Commands
   status       Short version of doctor plus an update check; --card shows the live LIT card for this folder
   models       List the models and effort tiers your Muse catalog offers
   hud          Show the recommended /hud and /theme preset
+  config       agentFile on|off: the short LitFamily block in Muse's user rules file (acts at once)
   style        eli5 | asd-ste100 | off | status: the answer style LitMuse adds to every session
   runtime      status [name] | install <name|all>: the pinned engine runtimes, cached under the LitMuse data dir
   rewind       Cross-session brief records [--json] [--here] [--since 7d] [--max 12] [--session <id>]
@@ -37,6 +39,7 @@ Options
   --approve    Approve the hooks and agents without asking (for scripts)
   --scope <s>  Muse install scope: user (default) or project
   --json       Machine-readable output (doctor, models)
+  --no-agent-file  install: leave Muse's user rules file alone for this run
   --offline    Skip the npm update check
   --discard-modified  uninstall: also remove a bundle edited after install
   --version    Print the version`;
@@ -51,6 +54,7 @@ function parse(argv) {
     else if (a === '--approve') flags.approve = true;
     else if (a === '--json') flags.json = true;
     else if (a === '--offline') flags.offline = true;
+    else if (a === '--no-agent-file') flags.noAgentFile = true;
     else if (a === '--discard-modified') flags.discardModified = true;
     else if (a === '--card') flags.card = true;
     else if (a === '--scope') flags.scope = argv[++i];
@@ -61,10 +65,11 @@ function parse(argv) {
   return { command: rest[0] ?? 'help', args: rest.slice(1), flags };
 }
 
-async function ask(question) {
+async function ask(question, { defaultYes = false } = {}) {
   const rl = createInterface({ input: process.stdin, output: process.stdout });
   try {
-    return /^y(es)?$/i.test((await rl.question(question)).trim());
+    const answer = (await rl.question(question)).trim();
+    return defaultYes ? !/^n/i.test(answer) : /^y(es)?$/i.test(answer);
   } finally {
     rl.close();
   }
@@ -104,6 +109,8 @@ async function main() {
     case 'hud':
       print(readFileSync(join(PACKAGE_ROOT, 'docs', 'hud-preset.md'), 'utf8'));
       return 0;
+    case 'config':
+      return configCommand(args, env, print);
     case 'style':
       return styleCommand(args, env, print);
     case 'status': {
@@ -120,6 +127,7 @@ async function main() {
         const u = await checkUpdate(env);
         if (u.latest && u.latest !== packageVersion()) print(`update: ${u.latest} available (npx @litfamily/litmuse@latest install)`);
       }
+      print(`agent file ${readAgentFileSetting(env).mode === 'off' ? 'off' : agentFileState({ path: paths(env).museRules, version: packageVersion() })}`);
       print('Run `npx @litfamily/litmuse doctor` for every check.');
       return 0;
     }

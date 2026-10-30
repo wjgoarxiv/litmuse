@@ -76,8 +76,9 @@ test('interactive install asks one yes/no for the approvals', async () => {
     const questions = [];
     const out = collect();
     await install({ env, flags: {}, interactive: true, print: out.print, ask: async (q) => { questions.push(q); return answer; } });
-    assert.equal(questions.length, 1);
-    assert.match(questions[0], /21/);
+    const approvalQuestions = questions.filter((q) => /21/.test(q));
+    assert.equal(approvalQuestions.length, 1);
+    assert.equal(questions.length - approvalQuestions.length, 1, 'plus the one rules-file question');
     for (const id of expectedApprovalIds()) assert.match(out.text(), new RegExp(id.replace('/', '\\/')));
     const approvals = museCalls(env).filter((c) => c[1] === 'approve').length;
     assert.equal(approvals, answer ? 21 : 0);

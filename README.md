@@ -199,14 +199,22 @@ Route state lives outside the project, under `~/.local/state/litmuse/`, so no to
 
 Muse also reads personal rules and skills written for other coding tools, such as a user rules file or a personal skills folder. LitMuse leaves that on, because those rules are yours. Its session context asks Muse to use the LitMuse skill for every lit route, and `doctor` warns when a personal skill shares a name with a LitMuse skill or comes from another tool's plugin folder. For a clean run, switch off "Personal rules fallback" and "Personal skills fallback" in `/settings`; a headless run takes `muse exec --no-foreign-personal-context` (the interactive `muse` rejects that flag on 1.4.11).
 
+## A short block in Muse's own rules file
+
+Muse keeps one user rules file of its own, `~/.config/muse/AGENTS.md` (`$XDG_CONFIG_HOME/muse/AGENTS.md` when that is set), and loads it as user-scope rules at the start of every session, trusted workspace or not. LitMuse's hooks already carry the full guidance, so the file gets only a short block of ground rules: `lit` is LitMuse's activation word, where plans and handoffs live, never push, publish, tag or bump a version without a yes, and call work done only after the tests pass and the changed surface was checked.
+
+You decide whether it goes in. An interactive install asks once (the default is yes; a No is remembered), `--yes` adds it, and an install without a terminal and without `--yes` never writes it. `--no-agent-file` skips it for one run. `npx @litfamily/litmuse config agentFile off` removes the block at once and keeps it off; `config agentFile on` puts it back.
+
+Only the lines between `<!-- litfamily:litmuse:start … -->` and `<!-- litfamily:litmuse:end -->` are LitMuse's. Your own text stays byte for byte: removing the block returns the file exactly as it was (a file the block created is deleted again), Windows line endings are kept, and a copy of your file goes to `~/.local/share/litmuse/backups/` the first time the block goes in. A symbolic link, a non-UTF-8 file or a damaged marker pair is left alone and reported. Muse cuts a rules file after 32,000 bytes, so on a file that long the installer writes nothing and `doctor` says the block would never be read. `doctor` and `status` show the state as `present`, `stale`, `absent`, `malformed` or `off`. If you run `/rules import` in Muse and choose to overwrite the file, the block goes with it; `install` puts it back.
+
 ## Safety and uninstall
 
-- The installer writes to `~/.local/share/litmuse/` and, through the `muse` CLI, to Muse's own plugin store and settings. It backs up `~/.config/muse/settings.json` and Muse's `installed.json` first, and it reads Muse's credential file in no step.
+- The installer writes to `~/.local/share/litmuse/` and, through the `muse` CLI, to Muse's own plugin store and settings. It backs up `~/.config/muse/settings.json` and Muse's `installed.json` first, and it reads Muse's credential file in no step. The one file it edits outside those is Muse's user rules file, and only inside its own marked block (see above).
 - It refuses to replace a bundle directory that is a symbolic link, holds someone else's files, or was edited after install.
 - It writes nothing under `~/.claude` or `~/.codex`; a test pins that.
 - Hooks fail open: if one breaks, your session continues.
 - Engine caches live under `~/.local/share/litmuse/runtime/`; `npx @litfamily/litmuse runtime status` shows what is installed. `uninstall` keeps them, so delete that folder to free the space.
-- Remove everything with `npx @litfamily/litmuse uninstall` (add `--dry-run` to preview). Plans and `.litmuse/` folders in your projects stay where they are.
+- Remove everything with `npx @litfamily/litmuse uninstall` (add `--dry-run` to preview); it takes the rules-file block out too. Plans and `.litmuse/` folders in your projects stay where they are.
 
 ## Family
 

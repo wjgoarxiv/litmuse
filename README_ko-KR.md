@@ -199,14 +199,22 @@ Muse의 `/hud`는 켜고 끄는 고정 항목 목록이라서 플러그인 글�
 
 Muse는 다른 코딩 도구용으로 써 둔 개인 규칙과 개인 스킬도 함께 읽습니다(사용자 규칙 파일, 개인 스킬 폴더 등). 그 규칙은 사용자 것이므로 LitMuse는 이 동작을 그대로 둡니다. 대신 세션 컨텍스트로 lit 경로마다 LitMuse 스킬을 쓰도록 안내하고, 개인 스킬 이름이 LitMuse 스킬과 같거나 다른 도구의 플러그인 폴더에서 왔으면 `doctor`가 경고합니다. 깨끗한 실행이 필요하면 `/settings`에서 "Personal rules fallback"과 "Personal skills fallback"을 끄세요. 헤드리스 실행은 `muse exec --no-foreign-personal-context`를 쓰면 됩니다(1.4.11의 대화형 `muse`는 이 플래그를 받지 않습니다).
 
+## Muse 자체 규칙 파일의 짧은 블록
+
+Muse에는 자기만의 사용자 규칙 파일 `~/.config/muse/AGENTS.md`(`$XDG_CONFIG_HOME`이 있으면 `$XDG_CONFIG_HOME/muse/AGENTS.md`)가 있고, 신뢰하는 작업 폴더인지와 상관없이 세션이 시작될 때마다 사용자 범위 규칙으로 읽습니다. 자세한 안내는 이미 LitMuse 훅이 싣고 있으므로 이 파일에는 기본 원칙만 짧은 블록으로 넣습니다. `lit`는 LitMuse의 활성화 단어라는 것, 계획과 핸드오프가 있는 곳, 사용자의 명시적인 동의 없이는 push·publish·tag·버전 올리기를 하지 않는다는 것, 테스트가 통과하고 바뀐 화면이나 동작을 실제로 확인한 뒤에만 끝났다고 말한다는 것입니다.
+
+넣을지는 사용자가 정합니다. 터미널에서 설치하면 한 번 묻고(기본값은 예, 아니요는 기억합니다), `--yes`를 주면 넣고, 터미널이 없고 `--yes`도 없는 설치는 절대 쓰지 않습니다. `--no-agent-file`은 이번 실행만 건너뜁니다. `npx @litfamily/litmuse config agentFile off`는 블록을 바로 지우고 꺼 둔 상태로 두며, `config agentFile on`은 다시 넣습니다.
+
+`<!-- litfamily:litmuse:start … -->`와 `<!-- litfamily:litmuse:end -->` 사이의 줄만 LitMuse의 것입니다. 나머지 내용은 바이트 그대로 남습니다. 블록을 지우면 파일이 원래대로 돌아오고(블록 때문에 새로 만든 파일이면 파일도 지웁니다), Windows 줄바꿈은 유지되며, 블록을 처음 넣을 때 원본 사본이 `~/.local/share/litmuse/backups/`에 한 부 저장됩니다. 심볼릭 링크, UTF-8이 아닌 파일, 짝이 맞지 않는 마커는 건드리지 않고 알려 줍니다. Muse는 규칙 파일을 32,000바이트에서 잘라 읽으므로, 그 이상 긴 파일에는 설치기가 아무것도 쓰지 않고 `doctor`가 블록이 읽히지 않는다고 알려 줍니다. `doctor`와 `status`는 상태를 `present`, `stale`, `absent`, `malformed`, `off` 중 하나로 보여 줍니다. Muse에서 `/rules import`로 파일을 덮어쓰면 블록도 함께 사라지는데, `install`을 다시 실행하면 돌아옵니다.
+
 ## 안전과 제거
 
-- 설치기는 `~/.local/share/litmuse/`에 쓰고, `muse` CLI를 거쳐 Muse의 플러그인 저장소와 설정에 씁니다. 그 전에 `~/.config/muse/settings.json`과 Muse의 `installed.json`을 백업하며, Muse 인증 파일은 열어 보지 않습니다.
+- 설치기는 `~/.local/share/litmuse/`에 쓰고, `muse` CLI를 거쳐 Muse의 플러그인 저장소와 설정에 씁니다. 그 전에 `~/.config/muse/settings.json`과 Muse의 `installed.json`을 백업하며, Muse 인증 파일은 열어 보지 않습니다. 이 밖에 손대는 파일은 Muse의 사용자 규칙 파일 하나뿐이고, 그것도 표시된 자기 블록 안에서만 씁니다(위 참고).
 - 번들 폴더가 심볼릭 링크이거나, 다른 사람의 파일이 들어 있거나, 설치 후 수정되었으면 교체를 거부합니다.
 - `~/.claude`와 `~/.codex` 아래에는 아무것도 쓰지 않으며, 테스트가 이를 고정합니다.
 - 훅은 실패해도 세션을 막지 않고 그대로 통과시킵니다.
 - 엔진 캐시는 `~/.local/share/litmuse/runtime/` 아래에 있고, 설치 상태는 `npx @litfamily/litmuse runtime status`로 봅니다. `uninstall`은 캐시를 남기므로 공간을 비우려면 그 폴더를 지우세요.
-- 전부 지우려면 `npx @litfamily/litmuse uninstall`(미리 보려면 `--dry-run`). 프로젝트 안의 계획과 `.litmuse/` 폴더는 그대로 남습니다.
+- 전부 지우려면 `npx @litfamily/litmuse uninstall`(미리 보려면 `--dry-run`). 규칙 파일의 블록도 함께 빠집니다. 프로젝트 안의 계획과 `.litmuse/` 폴더는 그대로 남습니다.
 
 ## 패밀리
 

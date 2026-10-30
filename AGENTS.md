@@ -65,13 +65,23 @@ order, the 33 active tool names, `plugins validate`, and the hook refusal path. 
 - `muse schema generate-ts --out <dir> --experimental` (offline) shows the goal block `{objective, status,
   percentComplete, currentWork?, nextWork?}` and the context-usage triple; hook payloads carry no context usage.
 - `--no-foreign-personal-context` exists only on `muse exec`; the interactive `muse` rejects it (1.4.11).
+- Muse owns a user rules file, `$XDG_CONFIG_HOME/muse/AGENTS.md` (else `~/.config/muse/AGENTS.md`; the binary calls it
+  `$CONFIG_DIR/AGENTS.md`). Probed on 1.4.14 in a throwaway HOME: the session log records it as a `rules_file` developer
+  reminder, `scope: user`, `source_kind: native`, `trust_admitted: true`, even in an untrusted workspace. A file past
+  32 000 bytes is cut ("startup context limit"), so the tail is never read. `/rules import` copies the foreign
+  `~/.claude/CLAUDE.md` and `$CODEX_HOME/AGENTS.md` into it and offers overwrite or append. No native Muse setting adds
+  an AI co-author line to commits or pull requests (no such string or settings key in the 1.4.14 binary).
 
 ## Rules for changes
 
 - After any change under `plugin/hooks/`, `plugin/context/` or a skill file listed in `DIGEST_EXTRAS` (`plugin/hooks/lib/digest.mjs`; today the lit-humanizer `scripts/core.mjs` and `rules.json`, and the lit-typographic-motion done-check `engine/node/done.mjs` with every engine module it imports), run `npm run sync:digests` (the hook commands carry a code digest; `test/hooks.test.mjs` fails on drift).
 
-- The installer writes only under `$XDG_DATA_HOME/litmuse` and through the `muse` CLI. Never write `~/.claude`,
-  `~/.codex`, or Muse's credential file; `lib/guard.mjs` and the install tests enforce it.
+- The installer writes only under `$XDG_DATA_HOME/litmuse` and through the `muse` CLI, plus one marked block in Muse's
+  own user rules file (`lib/agent-file.mjs`: consent first, add-then-remove returns the original bytes, a backup
+  goes to `$XDG_DATA_HOME/litmuse/backups`; `test/agent-file.test.mjs` pins it). Never write `~/.claude`,
+  `~/.codex`, or Muse's credential file; `lib/guard.mjs` and the install tests enforce it. The block text is
+  `lib/agent-file-block.md` (≤ 1 200 bytes, names only LitMuse and Muse); it is not a hook or context file, so
+  changing it needs no `sync:digests` and no hook re-approval.
 - `lit` re-entry lives in `plugin/hooks/user-prompt-submit.mjs` with `lib/reentry.mjs` and the intent flags from `detectRoute`; `test/reentry.test.mjs` pins it. A continue note stays under 600 bytes and never repeats the skill re-read line; unreadable state falls back to the full activation.
 - Add a skill on all four surfaces at once: manifest, `plugin/hooks/lib/routes.mjs`, the skill folder, and the
   description budget. `test/bundle.test.mjs` fails on an orphan.
