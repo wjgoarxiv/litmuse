@@ -153,7 +153,7 @@ test('the collector runs from the package bin and the skill fallback runs the sa
     const bin = spawnSync(process.execPath, [join(ROOT, 'bin', 'litmuse.mjs'), 'rewind', '--json', '--here'], {
       cwd: where.ws,
       encoding: 'utf8',
-      env: { ...process.env, LITMUSE_SESSION_STORE: join(where.ws, 'no-store') },
+      env: { ...process.env, LITMUSE_SESSION_STORE: join(where.ws, 'no-store'), HERDR_ENV: '' },
     });
     assert.equal(bin.status, 0, bin.stderr);
     const brief = JSON.parse(bin.stdout);
@@ -163,7 +163,7 @@ test('the collector runs from the package bin and the skill fallback runs the sa
     const fallback = spawnSync(process.execPath, [join(SKILL, 'scripts', 'rewind.mjs'), '--json', '--here'], {
       cwd: where.ws,
       encoding: 'utf8',
-      env: { ...process.env, LITMUSE_SESSION_STORE: join(where.ws, 'no-store') },
+      env: { ...process.env, LITMUSE_SESSION_STORE: join(where.ws, 'no-store'), HERDR_ENV: '' },
     });
     assert.equal(fallback.status, 0, fallback.stderr);
     assert.equal(JSON.parse(fallback.stdout).next.kind, 'start-plan');

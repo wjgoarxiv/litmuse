@@ -1,0 +1,66 @@
+# Runs the gates that need no Muse host on every push and pull request to main, so a change is checked before
+# anyone runs Publish. The runner has no `muse`: the install tests drive test/fixtures/fake-muse.mjs, and the
+# engine render tests skip with a reason when their runtime cache or Chrome is not there. The checks that call
+# the real host (`npm run qa:muse`, `muse plugins validate`) stay on a maintainer's machine.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  gates:
+    name: Gates (Node ${{ matrix.node }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        node: [22, 24]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: ${{ matrix.node }}
+
+      - name: Tests
+        env:
+          LITMUSE_CHROME_NO_SANDBOX: "1"
+        run: npm test
+
+      - name: Version lockstep
+        run: npm run check:version
+
+      - name: Hook digests
+        run: npm run check:digests
+
+      - name: Legacy-token scan
+        run: npm run scan:legacy-tokens
+
+      - name: Pack listing matches the pinned file list
+        run: |
+          npm pack --dry-run --json --ignore-scripts > "$RUNNER_TEMP/pack.json"
+          node -e "
+            const { readFileSync } = require('node:fs');
+            const packed = JSON.parse(readFileSync(process.env.RUNNER_TEMP + '/pack.json', 'utf8'))[0].files.map((f) => f.path).sort();
+            const pinned = JSON.parse(readFileSync('test/fixtures/pack-files.json', 'utf8'));
+            const extra = packed.filter((f) => !pinned.includes(f));
+            const missing = pinned.filter((f) => !packed.includes(f));
+            if (extra.length || missing.length) {
+              console.error('pack list drifted. extra: ' + JSON.stringify(extra) + ' missing: ' + JSON.stringify(missing));
+              process.exit(1);
+            }
+            console.log('pack list matches test/fixtures/pack-files.json (' + packed.length + ' files)');
+          "

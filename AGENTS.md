@@ -27,6 +27,12 @@ npm run qa:muse                              # needs muse on PATH; uses an isola
 muse plugins validate plugin --json          # valid:true, diagnostics []
 ```
 
+`.github/workflows/ci.yml` runs the host-free gates (tests, `check:version`, `check:digests`, `scan:legacy-tokens`, the pack
+list against `test/fixtures/pack-files.json`) on every push and pull request to `main`, on Node 22 and 24, with no `muse`
+on the runner. The tests that would need the host use `fake-muse.mjs`; the engine render tests skip with a reason when
+their runtime cache is cold. `npm run qa:muse` and `muse plugins validate` stay on a maintainer's machine. The suite also passes inside a herdr
+pane; to rehearse CI, run it with `HERDR_ENV` unset, a temp HOME and `muse` off PATH.
+
 ## Host facts (probed on Muse Code 1.4.10, re-checked on 1.4.11; re-probe on a new build)
 
 On 1.4.11 (2026-10-20) these held unchanged: approvals survived the launcher update, hook events and their
