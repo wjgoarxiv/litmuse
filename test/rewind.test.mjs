@@ -358,7 +358,7 @@ test('--here keeps to this folder, herdr is asked only under HERDR_ENV=1, and th
   const calls = [];
   const exec = (file, args) => {
     calls.push([file, ...args].join(' '));
-    if (file === 'herdr') return 'pane-1 claude working\n';
+    if (file === 'herdr') return `${JSON.stringify({ result: { agents: [{ pane_id: 'pane-1', agent: 'claude', agent_status: 'working', workspace_id: 'w9', cwd: '/elsewhere' }] } })}\n`;
     if (args[0] === 'worktree') return `worktree ${repo}\n\nworktree ${other}\n`;
     throw new Error('no log');
   };
@@ -432,7 +432,8 @@ test('the brief reads opener then headline: one card per session, a marked timel
   assert.match(text, /^▶ plans\/one\.md \[▉░░\] 1\/3 now: second$/mu, 'now marker');
   assert.match(text, /^  ○ later: third$/mu, 'later marker');
   assert.match(text, /^┌ RECOMMENDED NEXT STEP /mu, 'next step in a box');
-  assert.match(text, /Say `go` to continue\./u);
+  assert.match(text, /│ Wait for 1 lane to finish\s+│/u, 'the other active session is a lane, so the plan waits');
+  assert.doesNotMatch(text, /Say `go` to continue\./u);
   assert.ok(!/[?]/.test(text), 'no placeholder glyph anywhere in the brief');
 });
 

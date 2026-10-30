@@ -3,7 +3,7 @@
 //   1. this session's paused spine frame          -> resume-frame   (`lit continue`)
 //   2. a start-work paused at a boundary           -> approve-boundary (shown only, never automatic)
 //   3. an active start-work of this session        -> continue-work
-//   4. a single open plan with no work running     -> start-plan     (`go` runs it)
+//   4. a single open plan, no work running and no other lane at work -> start-plan (`go` runs it)
 //   5. otherwise                                  -> none
 import { closeSync, lstatSync, mkdirSync, openSync, renameSync, unlinkSync, writeSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
@@ -21,7 +21,8 @@ export const chooseNextStep = (data, sessionId) => {
   if (own) return { kind: 'continue-work', target: { workId: own.workId, plan: own.plan }, say: 'go' };
   const running = data.startWork.some((work) => ['active', 'paused'].includes(work.status));
   const open = data.roadmap.plans.filter((plan) => plan.local && plan.progress.total !== null && plan.progress.done < plan.progress.total);
-  if (!running && open.length === 1) {
+  // Other lanes at work hold a new plan back: `go` would start it beside them.
+  if (!running && open.length === 1 && !(data.lanes?.count > 0)) {
     return { kind: 'start-plan', target: { plan: open[0].plan }, say: 'go', command: `go ${open[0].plan}` };
   }
   return { kind: 'none', target: null };

@@ -1,7 +1,7 @@
 import { run, emitContext, readSession, writeSession, safeId, workspaceOf } from './lib/common.mjs';
 import { detectRoute } from './lib/routes.mjs';
 import { liveRoute, resumablePlan } from './lib/reentry.mjs';
-import { recordRoute } from './lib/stage.mjs';
+import { readStage, recordRoute, stageFile } from './lib/stage.mjs';
 import { MOTION_ROUTE, armMotionTurn } from './lib/motion.mjs';
 import { applyStackEvent, readStack, writeStack, READ_ONLY_DISCIPLINES } from './lib/workflow-stack.mjs';
 import { isGoPrompt, takeNextStep } from './lib/next-step.mjs';
@@ -111,6 +111,30 @@ function typedPlan(prompt) {
   return match ? match[0] : null;
 }
 
+// Why a recorded step no longer holds, or null when it does. A paused frame must still be this
+// session's paused spine; a start-work run must still be this session's live route, on the same
+// plan, with an open row left. Unreadable state reads as not holding.
+function staleReason(payload, step) {
+  try {
+    const cwd = workspaceOf(payload);
+    if (step.kind === 'resume-frame') {
+      const frames = readStack(cwd, payload.session_id)?.frames ?? [];
+      return frames.some((frame) => frame.role === 'spine' && frame.status === 'paused') ? null : 'this session holds no paused workflow';
+    }
+    if (step.kind === 'continue-work') {
+      const file = stageFile(cwd, payload.session_id);
+      const record = file ? readStage(file) : null;
+      if (!record || record.route !== 'start-work') return 'this session runs no start-work now';
+      const plan = isTypedPlan(step.target?.plan) ? step.target.plan : null;
+      if (plan && record.plan !== plan) return 'this session now runs another plan';
+      if (isTypedPlan(record.plan) && !planHasOpenRows(cwd, record.plan)) return 'its plan has no open row';
+    }
+    return null;
+  } catch {
+    return 'its state could not be read';
+  }
+}
+
 function goHint(why) {
   return [
     ...banner('LIT CONTINUES', 'lit-loop'),
@@ -133,6 +157,15 @@ run((payload) => {
       emitContext('UserPromptSubmit', [
         ...banner('LIT CONTINUES', 'start-work'),
         'The brief\u2019s next step is a start-work boundary waiting for the user\u2019s decision, and `go` approves nothing. Tell the user in one sentence to type `lit approve` to allow it or `lit deny` to refuse it; start no other work.',
+      ].join('\n'));
+      return;
+    }
+    // The record is up to 30 minutes old: the step it names must still hold before `go` acts on it.
+    const stale = staleReason(payload, step);
+    if (stale) {
+      emitContext('UserPromptSubmit', [
+        ...banner('LIT CONTINUES', 'lit-loop'),
+        `The briefed step no longer holds (${stale}), so nothing was started. Tell the user in one sentence and suggest \`lit adhd\` for a fresh brief; start no other work.`,
       ].join('\n'));
       return;
     }

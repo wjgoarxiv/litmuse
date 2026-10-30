@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+- `lit-adhd` no longer tells you to type `go` while other sessions or herdr agents are still working in this repo: it says to wait for them, or to answer the one waiting on you, and ends with "Do not type `go` until they finish." It offers `go` only for a step `go` actually runs and only for this session's own work, so an approval step or another session's run never carries it. Its handoff suggestion skips items already marked done and reads the newest handoff file. A `go` typed after the brief first checks that the step still holds, and starts nothing if it does not.
+- The hook code changed, so Muse asks you to approve the LitMuse hooks again after the update.
+
 ## 0.1.4 — 2026-10-28
 
 - The interface check now starts its headless Chrome with a stand-in keychain, so macOS no longer pops up "keychain not found" while it runs.

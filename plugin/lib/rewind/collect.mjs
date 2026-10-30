@@ -144,7 +144,12 @@ const goalsOf = (root, budget, redact) => {
   });
 };
 
-// The first item under a `## Next` or `## Next Steps` heading, list marker removed, or null.
+// An item someone already marked finished: a check mark, a ticked box, struck-through text, or the
+// words DONE / SHIPPED in capitals (a lowercase "done" inside a sentence is not a marker).
+const FINISHED_ITEM = /✅|✓|✔|^\[[xX]\]|~~.+~~|\bDONE\b|\bSHIPPED\b/u;
+
+// The first open item under a `## Next` or `## Next Steps` heading, list marker and open box
+// removed, or null. Finished items are skipped, so the brief never offers a step already done.
 const nextItemOf = (text) => {
   const lines = text.split('\n');
   const at = lines.findIndex((line) => /^#{1,3} Next(?: Steps)?\s*$/iu.test(line.trim()));
@@ -152,12 +157,14 @@ const nextItemOf = (text) => {
   for (const line of lines.slice(at + 1)) {
     if (/^#{1,6} /u.test(line)) return null;
     const item = line.replace(/^\s*(?:[-*+]|\d+[.)])\s+/u, '').trim();
-    if (item) return item;
+    if (!item || FINISHED_ITEM.test(item)) continue;
+    return item.replace(/^\[ \]\s*/u, '');
   }
   return null;
 };
 
 // Handoff headings from the first 40 lines; for this worktree's own files only, the Next item too.
+// `dedicated` marks `.litmuse/handoff/latest.md`, the file this package writes itself.
 const handoffsOf = (root, budget, redact, local) => {
   const files = (entries(root) ?? [])
     .filter((entry) => entry.isFile() && /^HANDOFF.*\.md$/u.test(entry.name))
@@ -168,7 +175,7 @@ const handoffsOf = (root, budget, redact, local) => {
     const text = readSmallFile(path, budget) ?? '';
     const headings = text.split('\n').slice(0, 40).filter((line) => /^#{1,3} /u.test(line)).map((line) => clipToWidth(redact(line), 100));
     const next = local ? nextItemOf(text) : null;
-    return { worktree: redact(root), file: basename(path), headings, local, next: next ? clipToWidth(redact(next), 100) : null };
+    return { worktree: redact(root), file: basename(path), headings, local, dedicated: path === latest, changedMs: mtimeOf(path), next: next ? clipToWidth(redact(next), 100) : null };
   });
 };
 
@@ -236,7 +243,9 @@ const runOf = (root, record, sessionId, budget, redact) => {
   };
 };
 
-const startWorkOf = (root, budget, redact, env, sessionId) => {
+// Another session's run counts while its record still names start-work, its session has not ended,
+// and it started inside the window: it holds the plan, so this session is never offered `go` on it.
+const startWorkOf = (root, budget, redact, env, sessionId, liveness, sinceMs, now) => {
   const dir = stageDirOf(env);
   const own = sessionId ? readJson(join(dir, `${String(sessionId).replace(/[^A-Za-z0-9_-]/gu, '_').slice(0, 128)}.json`), budget) : null;
   const runs = own && own.route === 'start-work' ? [runOf(root, own, sessionId, budget, redact)] : [];
@@ -245,21 +254,65 @@ const startWorkOf = (root, budget, redact, env, sessionId) => {
   for (const entry of (list ?? []).filter((item) => item.isFile() && item.name.endsWith('.json') && item.name !== 'latest.json').slice(0, STAGE_RECORDS_MAX)) {
     const record = readJson(join(dir, entry.name), budget);
     if (!record || typeof record.session !== 'string' || typeof record.cwd !== 'string' || !PLAN_NAME.test(String(record.plan))) continue;
-    if (projectKey(record.cwd) !== here) continue;
+    if (record.session === sessionId || projectKey(record.cwd) !== here) continue;
     const run = runOf(root, record, null, budget, redact);
-    if (run.status === 'complete' && !runs.some((item) => item.workId === run.workId)) runs.push(run);
+    if (runs.some((item) => item.workId === run.workId)) continue;
+    const started = Number(record.activatedAt);
+    const running = run.status === 'active' && record.route === 'start-work' && liveness.get(record.session)?.state !== 'ended'
+      && (!Number.isFinite(started) || now - started <= sinceMs);
+    if (run.status === 'complete' || running) runs.push(run);
   }
   return runs.length || own ? runs : null;
 };
 
+// `herdr agent list` prints one JSON document; anything else reads `unknown`. `agents` is the short
+// redacted listing the brief shows; `raw` stays inside the collector for counting lanes.
 const herdrOf = (env, exec, redact) => {
-  if (env.HERDR_ENV !== '1') return { status: 'unknown', agents: [] };
+  const unknown = { status: 'unknown', agents: [], raw: [] };
+  if (env.HERDR_ENV !== '1') return unknown;
   try {
-    const out = exec('herdr', ['agent', 'list'], { timeout: HERDR_TIMEOUT_MS });
-    return { status: 'ok', agents: out.split('\n').filter((line) => line.trim()).slice(0, 20).map((line) => clipToWidth(redact(line.trim()), 120)) };
+    const parsed = JSON.parse(exec('herdr', ['agent', 'list'], { timeout: HERDR_TIMEOUT_MS }));
+    const list = parsed?.result?.agents;
+    if (!Array.isArray(list)) return unknown;
+    const raw = list.filter((item) => item && typeof item === 'object').slice(0, 50);
+    const text = (value) => (typeof value === 'string' ? value : 'unknown');
+    return {
+      status: 'ok',
+      agents: raw.slice(0, 20).map((item) => clipToWidth(redact(`${text(item.pane_id)} ${text(item.agent)} ${text(item.agent_status)}`), 120)),
+      raw,
+    };
   } catch {
-    return { status: 'unknown', agents: [] };
+    return unknown;
   }
+};
+
+// Lanes: other work in this repo that `go` must not race. A live other session (active or waiting on
+// the user), and under herdr an agent that is working or blocked in this herdr workspace or inside
+// one of the read folders, own pane skipped. An agent whose session is already a lane counts once.
+const LANE_SESSION = new Set(['active', 'waiting-on-user']);
+const LANE_AGENT = new Set(['working', 'blocked']);
+const inside = (path, roots) => typeof path === 'string' && path !== '' && roots.some((root) => {
+  const at = resolve(path);
+  const base = resolve(root);
+  return at === base || at.startsWith(`${base}/`);
+});
+const lanesOf = (sessions, herdr, sessionId, roots, env) => {
+  const lanes = sessions
+    .filter((session) => session.sessionId !== sessionId && LANE_SESSION.has(session.status))
+    .map((session) => ({ id: session.sessionId, id8: session.id8, waiting: session.status === 'waiting-on-user', worktree: session.worktree }));
+  const counted = new Set(lanes.map((lane) => lane.id));
+  for (const item of herdr.raw ?? []) {
+    if (!LANE_AGENT.has(item.agent_status)) continue;
+    if (env.HERDR_PANE_ID && item.pane_id === env.HERDR_PANE_ID) continue;
+    const here = (env.HERDR_WORKSPACE_ID && item.workspace_id === env.HERDR_WORKSPACE_ID) || inside(item.cwd, roots) || inside(item.foreground_cwd, roots);
+    if (!here) continue;
+    const session = typeof item.agent_session?.value === 'string' ? item.agent_session.value : null;
+    if (session && (session === sessionId || counted.has(session))) continue;
+    if (session) counted.add(session);
+    const pane = typeof item.pane_id === 'string' ? item.pane_id.slice(0, 32) : 'unknown';
+    lanes.push({ id: session ?? pane, id8: pane, waiting: item.agent_status === 'blocked', worktree: 'unknown' });
+  }
+  return lanes;
 };
 
 const sessionStoreDir = (env) => {
@@ -313,7 +366,9 @@ export const collectRewind = ({
   });
   const handoffs = roots.flatMap((root) => handoffsOf(root, budget, redact, isLocal(root)));
   const workflows = collectEach((root) => stacksOf(root, budget, redact));
-  const startWorkRuns = collectEach((root) => startWorkOf(root, budget, redact, env, sessionId));
+  // The hooks' liveness records: Stop marks a session idle, SessionEnd marks it ended.
+  const liveness = new Map(readLiveness(env).map((item) => [item.session, item]));
+  const startWorkRuns = collectEach((root) => startWorkOf(root, budget, redact, env, sessionId, liveness, sinceMs, now));
   const startWork = startWorkRuns && startWorkRuns.filter((run, index) => startWorkRuns.findIndex((item) => item.workId === run.workId) === index);
   const commits = collectEach((root) => commitsOf(root, sinceMs, now, exec, redact));
   const herdr = herdrOf(env, exec, redact);
@@ -328,9 +383,6 @@ export const collectRewind = ({
     if (here && session.cwd && resolve(session.cwd) !== start) continue;
     sessions.push(session);
   }
-
-  // The hooks' liveness records: Stop marks a session idle, SessionEnd marks it ended.
-  const liveness = new Map(readLiveness(env).map((item) => [item.session, item]));
 
   // A session waits on the user when it asked something, or holds a paused frame or a boundary.
   // Another session that is otherwise active reads `done` when its start-work run completed after its
@@ -371,6 +423,7 @@ export const collectRewind = ({
       .map(({ hash, subject }) => ({ hash, subject }));
   }
   sessions.sort((a, b) => statusRank[a.status] - statusRank[b.status] || (b.lastMs ?? 0) - (a.lastMs ?? 0));
+  const lanes = lanesOf(sessions, herdr, sessionId, roots, env);
 
   // Plans changed inside the window are listed, this worktree's included, finished ones too (they
   // count as done): this worktree's first, then the most recently changed, up to a short cap; a plan
@@ -415,7 +468,12 @@ export const collectRewind = ({
     startWork: startWork ?? [],
     handoffs,
     commits: (commits ?? []).slice(0, 20).map(({ atMs: _atMs, ...commit }) => commit),
-    herdr,
+    herdr: { status: herdr.status, agents: herdr.agents },
+    lanes: {
+      count: lanes.length,
+      waiting: lanes.filter((lane) => lane.waiting).length,
+      items: lanes.slice(0, 10).map(({ id8, waiting, worktree }) => ({ id8: redact(String(id8)), waiting, worktree })),
+    },
   };
   const next = chooseNextStep(data, sessionId);
   data.next = next;
@@ -478,7 +536,8 @@ const toolsLine = (tools) => {
 };
 
 const sessionNext = (session, data) => {
-  const frame = data.workflows.find((item) => item.id8 === session.id8 && item.status === 'paused' && data.next.say);
+  // Only this session's own paused frame is what its `go` / `lit continue` resumes.
+  const frame = session.self && data.next.kind === 'resume-frame' && data.workflows.find((item) => item.self && item.status === 'paused');
   if (frame) return `say "${data.next.say}" to resume the paused ${frame.skill}`;
   if (session.status === 'waiting-on-user') return session.waitingReason === 'start-work boundary' ? 'answer the boundary: `lit approve` or `lit deny`' : 'answer its question';
   if (session.status === 'done' && session.finishedPlan) return `start-work finished ${session.finishedPlan}`;
@@ -630,12 +689,13 @@ const suggestion = (data) => {
   if (waiting) return { text: `Answer ${waiting.id8} in ${place(waiting)}`, say: null };
   const paused = (data.workflows ?? []).find((frame) => frame.status === 'paused');
   const owner = paused ? sessions.find((session) => session.id8 === paused.id8) : null;
-  if (paused) return { text: `Resume ${paused.skill} at ${paused.stage} in ${paused.id8} (${owner ? place(owner) : 'unknown'})`, say: 'lit continue' };
+  if (paused) return { text: `Resume ${paused.skill} at ${paused.stage} in ${paused.id8} (${owner ? place(owner) : 'unknown'})`, say: paused.self ? 'lit continue' : null };
   // A plan in the worktree of a live session comes first, then this worktree's, then the newest.
   const liveTrees = new Set(sessions.filter((session) => session.status !== 'ended').map((session) => session.worktree));
   const open = (data.roadmap?.plans ?? []).filter((plan) => plan.current);
   const plan = open.find((item) => liveTrees.has(item.worktree)) ?? open.find((item) => item.local) ?? open[0];
-  if (plan) return { text: `Next in ${plan.local ? plan.plan : `${basename(String(plan.worktree))}/${plan.plan}`}: ${clipToWidth(String(plan.current), 60)}`, say: 'go' };
+  // `go` runs only the recorded step, and none was recorded here, so this item carries no word.
+  if (plan) return { text: `Next in ${plan.local ? plan.plan : `${basename(String(plan.worktree))}/${plan.plan}`}: ${clipToWidth(String(plan.current), 60)}`, say: null };
   const active = sessions.find((session) => session.status === 'active' && !session.self);
   if (active) return { text: `Check on ${active.id8} in ${place(active)} (${goal(active)})`, say: null };
   // Then the newest session that is not running: review what a done one finished, or pick up an
@@ -646,14 +706,32 @@ const suggestion = (data) => {
   return { text: 'No session or plan in this window: say what to start', say: null };
 };
 
-// With no step for `go`, this worktree's HANDOFF Next item comes before the generic suggestion; it
-// is shown only, never something `go` runs.
-const handoffNextOf = (data) => (data.handoffs ?? []).find((handoff) => handoff.local && handoff.next)?.next ?? null;
+// With no step for `go`, live lanes come first (answer the one waiting on the user, or wait for
+// them), then this worktree's HANDOFF Next item from its newest handoff file (the package's own
+// handoff wins a tie), then the generic suggestion. None of these is something `go` runs.
+const handoffNextOf = (data) => (data.handoffs ?? [])
+  .filter((handoff) => handoff.local && handoff.next)
+  .sort((a, b) => (b.changedMs ?? 0) - (a.changedMs ?? 0) || Number(Boolean(b.dedicated)) - Number(Boolean(a.dedicated)))[0]?.next ?? null;
+const lanesStep = (data) => {
+  const count = data.lanes?.count ?? 0;
+  if (count < 1) return null;
+  const waiting = (data.lanes.items ?? []).find((lane) => lane.waiting);
+  const where = waiting && waiting.worktree && waiting.worktree !== 'unknown' ? ` in ${basename(String(waiting.worktree))}` : '';
+  const others = count - 1;
+  const text = waiting
+    ? `Answer ${waiting.id8}${where}: it waits on you${others ? `; ${others} other lane${others === 1 ? '' : 's'} still at work` : ''}`
+    : `Wait for ${count} lane${count === 1 ? '' : 's'} to finish`;
+  return { text, say: null, lanes: true };
+};
 const stepOf = (data) => {
   if (data.next?.kind && data.next.kind !== 'none') return null;
+  const lanes = lanesStep(data);
+  if (lanes) return lanes;
   const handoff = handoffNextOf(data);
   return handoff ? { text: handoff, say: null } : suggestion(data);
 };
+// The steps the `go` hook executes; an approval step has its own word and `go` does nothing there.
+const GO_RUNS = new Set(['resume-frame', 'continue-work', 'start-plan']);
 const goStepText = (next) => {
   const target = next.target?.plan ?? next.target?.skill ?? '';
   return `${next.kind.replace(/-/g, ' ')}${target ? `: ${target}` : ''}${next.say ? ` (say "${next.say}")` : ''}`;
@@ -767,7 +845,7 @@ export const renderRewind = (data, width = 100, { color = false } = {}) => {
   const target = data.next.target?.plan ?? data.next.target?.skill ?? '';
   const body = step
     ? [...wrap(step.text, frame - 4), ...(step.say ? [`say "${step.say}" to continue`] : [])]
-    : wrap(`${nextKind}${target ? `: ${target}` : ''}${nextSay}. Say \`go\` to continue.`, frame - 4);
+    : wrap(`${nextKind}${target ? `: ${target}` : ''}${nextSay}.${GO_RUNS.has(data.next.kind) ? ' Say `go` to continue.' : ''}`, frame - 4);
   for (const row of body) put(`│ ${pad(row, frame - 4)} │`);
   put(`└${'─'.repeat(frame - 2)}┘`, (text) => paint('32;1', text));
   put('Nothing runs on its own here: open that session, or say what to do.');
@@ -775,6 +853,8 @@ export const renderRewind = (data, width = 100, { color = false } = {}) => {
   if (unread.length) put(`Not read: ${unread.join(', ')}.`);
   const skipped = data.roadmap.plansSkipped ?? 0;
   if (skipped > 0) put(`${skipped} ${skipped === 1 ? 'plan was' : 'plans were'} not read (read budget used up).`);
+  // While other lanes work the brief closes on the one thing not to do.
+  if (step?.lanes) put('Do not type `go` until they finish.');
   return `${out.join('\n')}\n`;
 };
 
