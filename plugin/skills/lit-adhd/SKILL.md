@@ -143,13 +143,13 @@ Sessions waiting on the user come first, then active, idle and done ones, newest
 
 ## The next step
 
-`next` is chosen by code, in this priority order, and the brief offers exactly that one:
+`next` is chosen by code, in this priority order, and the brief offers exactly that one. Other lanes at work are counted first: while any is at work, steps 1 and 3 are not offered, because the session that started the lanes must not be told to continue while they work. Only an approval stays, since that is the user's call either way.
 
-1. This session's own paused spine frame: resume it. Say `lit continue`.
+1. This session's own paused spine frame, with no lane at work: resume it. Say `lit continue`.
 2. A start-work paused at a boundary: show what it wants to reach. Say `lit approve` or `lit deny`. This is never automatic.
-3. This session's own active start-work: keep going. Say `go`.
+3. This session's own active start-work, with no lane at work: keep going. Say `go`.
 4. Exactly one open plan in this worktree, no work running and no other lane at work: start it. Say `go`, which runs `/litmuse:start-work plans/<plan>.md`.
-5. Otherwise `none`: say so. With lanes at work this is where a single open plan lands, and `go` stays silent.
+5. Otherwise `none`: say so. With lanes at work this is where steps 1, 3 and 4 land, the brief says to wait for them, and `go` stays silent. This session's own card says the same instead of showing `lit continue`.
 
 Another session's run is never "say go": `go` belongs to the session that ran the brief.
 

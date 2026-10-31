@@ -1,28 +1,32 @@
 // The one next step a lit-adhd brief offers, chosen by a fixed priority over the collected records,
 // and the small record `go` reads back:
-//   1. this session's paused spine frame          -> resume-frame   (`lit continue`)
+// Other lanes at work are counted first: while any is, nothing that resumes or starts work here is offered
+// (the session that started them must not be told to continue), and only an approval stays, since that is
+// the user's call either way.
+//   1. this session's paused spine frame, no lane at work -> resume-frame   (`lit continue`)
 //   2. a start-work paused at a boundary           -> approve-boundary (shown only, never automatic)
-//   3. an active start-work of this session        -> continue-work
-//   4. a single open plan, no work running and no other lane at work -> start-plan (`go` runs it)
+//   3. an active start-work of this session, no lane at work -> continue-work
+//   4. a single open plan, no work running and no lane at work -> start-plan (`go` runs it)
 //   5. otherwise                                  -> none
 import { closeSync, lstatSync, mkdirSync, openSync, renameSync, unlinkSync, writeSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 
 export const chooseNextStep = (data, sessionId) => {
+  const lanes = data.lanes?.count > 0;
   const ownStack = data.workflows.find((frame) => frame.sessionId === sessionId && frame.role === 'spine' && frame.status === 'paused');
-  if (sessionId && ownStack) {
+  if (sessionId && ownStack && !lanes) {
     return { kind: 'resume-frame', target: { skill: ownStack.skill, stage: ownStack.stage, progress: ownStack.progress.gauge }, say: 'lit continue' };
   }
   const paused = data.startWork.find((work) => work.status === 'paused' && work.pendingBoundary);
   if (paused) {
     return { kind: 'approve-boundary', target: { workId: paused.workId, plan: paused.plan, ...paused.pendingBoundary }, say: 'lit approve', automatic: false };
   }
+  if (lanes) return { kind: 'none', target: null };
   const own = data.startWork.find((work) => work.status === 'active' && sessionId && work.sessionId === sessionId);
   if (own) return { kind: 'continue-work', target: { workId: own.workId, plan: own.plan }, say: 'go' };
   const running = data.startWork.some((work) => ['active', 'paused'].includes(work.status));
   const open = data.roadmap.plans.filter((plan) => plan.local && plan.progress.total !== null && plan.progress.done < plan.progress.total);
-  // Other lanes at work hold a new plan back: `go` would start it beside them.
-  if (!running && open.length === 1 && !(data.lanes?.count > 0)) {
+  if (!running && open.length === 1) {
     return { kind: 'start-plan', target: { plan: open[0].plan }, say: 'go', command: `go ${open[0].plan}` };
   }
   return { kind: 'none', target: null };

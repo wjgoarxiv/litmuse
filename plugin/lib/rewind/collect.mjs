@@ -539,6 +539,8 @@ const sessionNext = (session, data) => {
   // Only this session's own paused frame is what its `go` / `lit continue` resumes.
   const frame = session.self && data.next.kind === 'resume-frame' && data.workflows.find((item) => item.self && item.status === 'paused');
   if (frame) return `say "${data.next.say}" to resume the paused ${frame.skill}`;
+  // The lanes this session started hold its own paused frame back until they finish.
+  if (session.self && data.lanes?.count > 0 && data.workflows.some((item) => item.self && item.status === 'paused')) return 'wait for the lanes at work to finish';
   if (session.status === 'waiting-on-user') return session.waitingReason === 'start-work boundary' ? 'answer the boundary: `lit approve` or `lit deny`' : 'answer its question';
   if (session.status === 'done' && session.finishedPlan) return `start-work finished ${session.finishedPlan}`;
   return null;
