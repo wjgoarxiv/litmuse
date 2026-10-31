@@ -84,7 +84,7 @@ test('session-start: steering context lists every skill and fits the stdout cap'
   const out = JSON.parse(r.stdout);
   assert.equal(out.hookSpecificOutput.hookEventName, 'SessionStart');
   const ctx = out.hookSpecificOutput.additionalContext;
-  assert.match(ctx, /LitMuse 0\.1\.4/);
+  assert.match(ctx, /LitMuse 0\.1\.5/);
   assert.match(ctx, /plugin:litmuse:/);
   assert.match(ctx, /personal/i, 'foreign personal context steering is present');
   for (const id of ['lit-loop', 'lit-plan', 'browser-drive', 'lit-humanizer']) assert.match(ctx, new RegExp(`\\b${id}\\b`));

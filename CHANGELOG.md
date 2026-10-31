@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.1.5 — 2026-10-31
 
 - `lit-adhd` counts the other sessions and herdr agents at work before it offers this session's own next step. Before, the session that had started them was still told to type `lit continue` (a paused workflow) or `go` (its own start-work run) while they worked, and its own card showed `lit continue`. Now it says to wait for them and keeps `go` silent; a pending approval is still offered, and `lit continue` typed by hand still works.
 - LitMuse can now leave a short block of ground rules in Muse's own user rules file, `~/.config/muse/AGENTS.md`, which Muse loads at the start of every session. The hooks keep carrying the full guidance; the block only says that `lit` is LitMuse's activation word, where plans and handoffs live, that nothing is pushed, published, tagged or version-bumped without a yes, and that work counts as done after its tests pass and the changed surface was checked. It is yours to decide: an interactive install asks once (a No is remembered), `--yes` adds it, an install with no terminal and no `--yes` never writes it, `--no-agent-file` skips one run, and `litmuse config agentFile off|on` removes or restores it at once. Only the marked lines are LitMuse's; your text stays byte for byte, removing the block (or `uninstall`) returns the file as it was, and a copy of your file is saved the first time. A symbolic link, a non-UTF-8 file, a damaged marker pair or a file past Muse's 32,000-byte load limit is left alone and reported. `doctor` and `status` show the state.

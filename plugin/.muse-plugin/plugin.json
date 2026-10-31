@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "name": "litmuse",
   "displayName": "LitMuse",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "description": "LitFamily workflows for Muse Code: bare lit activation, planning, evidence-bound execution, review, research, handoff and Korean prose care.",
   "compat": {
     "source": "native",
