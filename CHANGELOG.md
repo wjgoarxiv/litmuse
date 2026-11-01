@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- `lit-typographic-motion` can lay real keyed footage over a stage film. A stage declares chroma-keyed clips in `stage/clips/clips.json` (an id, a folder, a frame count and a rate), the frames are 8-bit RGBA PNGs with real transparency, and the page registers each clip once with `LitStage.clip` and calls the returned function from `render(t)`; the frame shown is a plain function of film time, so a cue is `start = cue - (N - 1) / fps` and the flash audit and determinism replay see the final pixels. A declared clip is held to its own caps (12 clips, 360 frames in one and 1500 in all, 40 MB in one and 128 MB in all, 720 px on the long side, 30 fps) and no longer trips the flipbook rule; an undeclared frame folder is still refused with exit 17. Cover mode takes no clips. The manifest and the report list each clip.
+
 ## 0.1.5 — 2026-10-31
 
 - `lit-adhd` counts the other sessions and herdr agents at work before it offers this session's own next step. Before, the session that had started them was still told to type `lit continue` (a paused workflow) or `go` (its own start-work run) while they worked, and its own card showed `lit continue`. Now it says to wait for them and keeps `go` silent; a pending approval is still offered, and `lit continue` typed by hand still works.

@@ -15,7 +15,7 @@ The page lives at `<dir>/stage/index.html`, next to the local files it uses (SVG
 CSS, WAV). Only that folder is served, under the origin `http://lit.stage`; a symlink that resolves
 outside it is a contract error.
 
-Four routes come from the renderer itself and are always available:
+These routes come from the renderer itself (the first three bullets always, the last only with declared clips):
 
 - `<link rel="stylesheet" href="/lit/fonts.css">` declares the verified faces (table below).
 - `<script src="/lit/stage-kit.js"></script>` defines the global `LitStage`.
@@ -23,6 +23,8 @@ Four routes come from the renderer itself and are always available:
   film's house style for its format: custom properties, the type-role and colour classes, `window.LitStyle`
   (tokens and pixel zones) and `window.LitTimeline` (the treatment's shots). Set copy with the classes;
   the gate checks the rendered result either way.
+- `<script src="/lit/clips.js"></script>` defines `window.LitClips` when the stage declares keyed clips
+  (Clips); without a declaration the route does not exist.
 
 The page hands the renderer its spec with `LitStage.define({ width, height, fps, duration, render })`, or
 by assigning the same object to `window.litStage`. `define` checks the spec as soon as it is called:
@@ -102,6 +104,10 @@ along an angle.
 `rgba(colour, alpha)` sets alpha. `clamp`, `lerp`, `invLerp`, `remap(x, a, b, c, d)` and
 `smoothstep(a, b, x)` cover the rest.
 
+**Clips.** `clip({ parent, id, box })` registers a declared keyed clip once and returns a `show(t, opts)`
+function to call from `render(t)` (see Clips): `const boom = clip({ parent, id: "boom", box: { x: 1200, y: 300,
+w: 520, h: 511 } }); boom(t, { start: 2.1 });`.
+
 **Registration.** `text(el, { decor })` marks an element as a text run; `text({ content, x, y, w, h })`
 registers canvas or WebGL text for the frame being drawn (see Text and the QA).
 
@@ -123,6 +129,46 @@ captured in a fallback face. The family names are exact:
 A family outside this list falls back to a system face; the text QA reports it (`TEXT-FONTS`), and fails it
 when the run carries copy. Ask only for weights the family has, since the browser would fake a bold
 otherwise, and never animate letter-spacing or width on Hangul.
+
+## Clips
+
+Real keyed footage (a reaction clip, a spinning object shot on a green screen) can join the film as a
+layer of the page. The footage is keyed outside the renderer into one 8-bit RGBA PNG per frame, the frames
+are declared, and the page picks the frame from film time. Nothing is encoded by hand: the frames are
+captured with the rest of the page, so the flash audit, the determinism replay and the text checks run on the
+final pixels as for any other film. A declared clip is held to its own caps below; every other raster keeps
+the limits under "What a page may not contain".
+
+1. Put each clip's frames in the run's stage folder as `stage/clips/<dir>/frame_0001.png`,
+   `frame_0002.png` and so on, with no gap and no other image in that folder.
+2. Declare them in `stage/clips/clips.json`:
+
+   ```json
+   { "clips": [ { "id": "boom", "dir": "01-vine-boom", "count": 122, "fps": 30 } ] }
+   ```
+
+   `id` is the name the page uses, `dir` a folder directly under `clips/`, `count` the number of frames
+   and `fps` the clip's own rate (1 to 30). A clip used twice is declared once.
+3. The page loads `<script src="/lit/clips.js"></script>` after the kit, calls
+   `LitStage.clip({ parent, id, box })` once per use, and calls the returned `show(t, opts)` inside
+   `render(t)`. `parent` is the element the clip sits in and `box` its place in pixels; the frame is fitted
+   inside it. `show` returns the clip's wrapper element, or `null` while the clip is hidden, so a page can
+   scale, fade or move the wrapper from `t` like any other layer.
+
+The frame shown is `floor((t - start) * fps) + 1`, counted from `from`. A cue is therefore plain
+arithmetic: a clip whose own sound begins at frame N and must land on a cue at `cue` seconds has
+`start = cue - (N - 1) / fps`. Options: `start` (film seconds, default 0), `from` and `to` (the frame range,
+default the whole clip), `loop` (wrap by frame index) and `hold` (keep the last frame). Before `start`, and
+past `to` without `loop` or `hold`, the clip is hidden.
+
+The scan refuses, with exit 17 and the clip named: more than 12 clips; more than 360 frames in a clip or
+1500 in all; more than 40 MB in a clip or 128 MB in all; a frame over 720 px on its long side (a clip is
+an overlay, not the film); a rate above 30 fps; frames of mixed sizes; a missing or extra frame; a frame
+that is not an 8-bit RGBA PNG, or that has no transparent pixel in the first, middle and last frame (an
+opaque video is not keyed); an animated image; and a duplicate `id`. A frame folder that is not declared,
+and any frame sequence beside a declared clip, is still a flipbook. Cover mode takes no clips. The text
+checks read DOM text only, so keep clips clear of copy and check the stills. The manifest and the report
+list each clip.
 
 ## Who owns time
 
@@ -151,7 +197,8 @@ the first differing 64×64 region. Variation comes from `LitStage.rand(seed)`.
   150 KB or carrying a `@license` banner is flagged as a likely library in the warnings.
 - Too many or animated rasters. At most 24 raster files (PNG, JPG, WebP, GIF) and 8 MB in total; ten or
   more rasters of the same pixel size are treated as a flipbook; any animated GIF, APNG or WebP is refused.
-  All are exit 17. Rasters are textures and stills inside a drawn scene.
+  All are exit 17. Rasters are textures and stills inside a drawn scene; the one frame sequence a page may
+  carry is a declared keyed clip (Clips).
 - A film made some other way. A frame loop encoded by hand, a screen recording or an image sequence pushed
   through ffmpeg is not the deliverable, whatever it looks like. Every frame goes through this renderer.
 

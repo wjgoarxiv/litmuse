@@ -8,6 +8,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { EXIT } from "../core/constants.mjs";
 import { BlockedError } from "./chrome.mjs";
+import { decodePng } from "./png.mjs";
 import { checkFont, fontLocation, fontsDir, loadFontManifest } from "./runtime.mjs";
 import { readPlate } from "./blender.mjs";
 
@@ -29,6 +30,13 @@ export const CONTENT_TYPES = Object.freeze({
 });
 export const RASTER = Object.freeze([".png", ".jpg", ".jpeg", ".webp", ".gif"]);
 export const RASTER_LIMITS = Object.freeze({ count: 24, bytes: 8 * 1024 * 1024, flipbook: 10 });
+// Keyed overlay clips (references/stage.md, Clips). A frame folder that stage/clips/clips.json declares is held
+// to these caps and not to RASTER_LIMITS: a clip is a sticker laid on the film, never the film itself, so its
+// frames are 8-bit RGBA PNGs with real transparency, at most `side` px on the long side, at most `fps` per second.
+export const CLIP_LIMITS = Object.freeze({
+  clips: 12, framesPerClip: 360, framesTotal: 1500, bytesPerClip: 40 * 1024 * 1024, bytesTotal: 128 * 1024 * 1024, side: 720, fps: 30,
+});
+export const CLIPS_DIR = "clips";
 
 // The product's verified faces as CSS families. Archivo's widths are one family at three stretches.
 const FAMILIES = [
@@ -108,7 +116,7 @@ function pngInfo(b) {
     if (type === "IDAT" || type === "IEND") break;
     o += 12 + len;
   }
-  return { width: b.readUInt32BE(16), height: b.readUInt32BE(20), animated };
+  return { width: b.readUInt32BE(16), height: b.readUInt32BE(20), animated, bitDepth: b[24], colorType: b[25] };
 }
 function jpegInfo(b) {
   if (b[0] !== 0xff || b[1] !== 0xd8) return null;
@@ -166,6 +174,98 @@ export function rasterInfo(file) {
   return null;
 }
 
+// ---- declared clips: stage/clips/clips.json and the frame folders it names ----
+const clipFail = (message) => new BlockedError(EXIT.STAGE_CONTRACT_ERROR, `STAGE_CONTRACT_ERROR: ${message}`);
+const clipFrame = (n) => `frame_${String(n).padStart(4, "0")}.png`;
+const CLIP_ID = /^[A-Za-z0-9][A-Za-z0-9_-]{0,39}$/u;
+const CLIP_DIR = /^[A-Za-z0-9][A-Za-z0-9._-]{0,79}$/u;
+
+/** The clips stage/clips/clips.json declares ([] when there is no file), checked for shape only. Exit 17 on a bad one. */
+export function declaredClips(stageDir, limits = CLIP_LIMITS) {
+  const file = path.join(stageDir, CLIPS_DIR, "clips.json");
+  if (!existsSync(file)) return [];
+  let doc;
+  try {
+    doc = JSON.parse(readFileSync(file, "utf8"));
+  } catch (error) {
+    throw clipFail(`${CLIPS_DIR}/clips.json is not valid JSON (${error.message})`);
+  }
+  if (!doc || !Array.isArray(doc.clips)) throw clipFail(`${CLIPS_DIR}/clips.json needs { "clips": [ { "id", "dir", "count", "fps" } ] }`);
+  if (doc.clips.length > limits.clips) throw clipFail(`${doc.clips.length} clips declared (at most ${limits.clips} clips)`);
+  const ids = new Set();
+  const dirs = new Set();
+  return doc.clips.map((c, n) => {
+    const at = `${CLIPS_DIR}/clips.json clip #${n + 1}`;
+    if (!c || typeof c !== "object") throw clipFail(`${at} is not an object`);
+    if (typeof c.id !== "string" || !CLIP_ID.test(c.id)) throw clipFail(`${at}: id must be a plain token of letters, digits, - and _ (got ${JSON.stringify(c.id)})`);
+    if (ids.has(c.id)) throw clipFail(`${at}: duplicate id ${c.id}`);
+    ids.add(c.id);
+    if (typeof c.dir !== "string" || !CLIP_DIR.test(c.dir) || c.dir.includes("..")) throw clipFail(`clip "${c.id}": dir must be a folder name directly under ${CLIPS_DIR}/ (got ${JSON.stringify(c.dir)})`);
+    if (dirs.has(c.dir)) throw clipFail(`clip "${c.id}": dir ${c.dir} is already declared by another clip`);
+    dirs.add(c.dir);
+    if (!Number.isInteger(c.count) || c.count < 1) throw clipFail(`clip "${c.id}": count must be a whole number of frames (got ${JSON.stringify(c.count)})`);
+    if (!Number.isInteger(c.fps) || c.fps < 1 || c.fps > limits.fps) throw clipFail(`clip "${c.id}": fps must be a whole number from 1 to ${limits.fps} (got ${JSON.stringify(c.fps)})`);
+    return { id: c.id, dir: c.dir, count: c.count, fps: c.fps };
+  });
+}
+
+/**
+ * Check every declared clip against its bytes: exactly frame_0001.png..frame_<count>.png in clips/<dir>/, each a
+ * still 8-bit RGBA PNG of one size within the overlay cap, real transparency in the first, middle and last frame,
+ * then the per-clip and total caps. Returns [{ id, dir, count, fps, width, height, bytes, frames }]; `frames`
+ * are stage-relative paths.
+ */
+export function scanClips(stageDir, { limits = CLIP_LIMITS, files = listStage(stageDir) } = {}) {
+  const decls = declaredClips(stageDir, limits);
+  let totalFrames = 0;
+  let totalBytes = 0;
+  const clips = decls.map((d) => {
+    const prefix = `${CLIPS_DIR}${path.sep}${d.dir}${path.sep}`;
+    if (d.count > limits.framesPerClip) throw clipFail(`clip "${d.id}": ${d.count} frames (at most ${limits.framesPerClip} per clip)`);
+    const have = new Map(files.filter((f) => f.rel.startsWith(prefix) && RASTER.includes(path.extname(f.rel).toLowerCase())).map((f) => [f.rel.slice(prefix.length), f]));
+    const frames = [];
+    for (let n = 1; n <= d.count; n++) {
+      const f = have.get(clipFrame(n));
+      if (!f) throw clipFail(`clip "${d.id}": ${CLIPS_DIR}/${d.dir}/${clipFrame(n)} is missing (declared ${d.count} frames, named frame_0001.png onward)`);
+      frames.push(f);
+    }
+    if (have.size !== d.count) {
+      const named = new Set(frames.map((f) => f.rel.slice(prefix.length)));
+      const stray = [...have.keys()].find((name) => !named.has(name));
+      throw clipFail(`clip "${d.id}": ${CLIPS_DIR}/${d.dir}/${stray} is not one of the ${d.count} declared frames; raise count or remove it`);
+    }
+    let size = null;
+    for (const f of frames) {
+      const info = rasterInfo(f.real);
+      if (!info) throw clipFail(`clip "${d.id}": ${f.rel} is not a readable PNG`);
+      if (info.animated) throw clipFail(`clip "${d.id}": ${f.rel} is an animated image; a clip is a folder of still frames`);
+      if (info.colorType !== 6 || info.bitDepth !== 8) throw clipFail(`clip "${d.id}": ${f.rel} must be an 8-bit RGBA PNG with an alpha channel (a keyed frame), not an opaque image`);
+      if (Math.max(info.width, info.height) > limits.side) throw clipFail(`clip "${d.id}": ${f.rel} is ${info.width}x${info.height}; a clip is an overlay of at most ${limits.side} px on the long side`);
+      if (size && (size.width !== info.width || size.height !== info.height)) throw clipFail(`clip "${d.id}": ${f.rel} is ${info.width}x${info.height} but frame_0001.png is ${size.width}x${size.height}; one size per clip`);
+      size = { width: info.width, height: info.height };
+    }
+    const bytes = frames.reduce((sum, f) => sum + f.bytes, 0);
+    if (bytes > limits.bytesPerClip) throw clipFail(`clip "${d.id}": ${(bytes / 1048576).toFixed(1)} MB (at most ${(limits.bytesPerClip / 1048576).toFixed(0)} MB per clip)`);
+    for (const f of [frames[0], frames[Math.floor((frames.length - 1) / 2)], frames[frames.length - 1]]) {
+      let pixels;
+      try {
+        ({ pixels } = decodePng(readFileSync(f.real)));
+      } catch (error) {
+        throw clipFail(`clip "${d.id}": ${f.rel} cannot be decoded (${error.message}); use a non-interlaced 8-bit RGBA PNG`);
+      }
+      let hasAlpha = false;
+      for (let i = 3; i < pixels.length && !hasAlpha; i += 4) hasAlpha = pixels[i] < 255;
+      if (!hasAlpha) throw clipFail(`clip "${d.id}": ${f.rel} has no transparent pixel; a clip is keyed, not a full-frame video`);
+    }
+    totalFrames += d.count;
+    totalBytes += bytes;
+    return { ...d, ...size, bytes, frames: frames.map((f) => f.rel) };
+  });
+  if (totalFrames > limits.framesTotal) throw clipFail(`${totalFrames} clip frames in all (at most ${limits.framesTotal})`);
+  if (totalBytes > limits.bytesTotal) throw clipFail(`${(totalBytes / 1048576).toFixed(1)} MB of clip frames in all (at most ${(limits.bytesTotal / 1048576).toFixed(0)} MB)`);
+  return clips;
+}
+
 // ---- the static pre-flight scan ----
 const TEXT = new Set([".html", ".js", ".mjs", ".css", ".svg", ".json"]);
 const NAMESPACES = /^http:\/\/www\.w3\.org\/(?:2000\/svg|1999\/xlink|1999\/xhtml|XML\/1998\/namespace|2000\/xmlns\/?)$/u;
@@ -184,9 +284,11 @@ const NETWORK_API = /\bnew\s+(WebSocket|WebTransport|RTCPeerConnection|EventSour
 
 /**
  * Scan the stage dir before launch. Throws exit 17 (contract) or 19 (network) naming the file and
- * the thing found; returns { files, rasters, warnings, plate } otherwise (plate: the Blender plate, or null).
+ * the thing found; returns { files, rasters, warnings, plate, clips } otherwise (plate: the Blender plate, or null;
+ * clips: the declared keyed clips as scanClips checked them, whose frames are not page rasters). `clips: false`
+ * (cover mode) ignores clips.json, so a declared folder is held to the raster limits there.
  */
-export function scanStage(stageDir) {
+export function scanStage(stageDir, { clips: allowClips = true } = {}) {
   if (!existsSync(path.join(stageDir, "index.html"))) throw new BlockedError(EXIT.STAGE_CONTRACT_ERROR, `STAGE_CONTRACT_ERROR: ${path.join(stageDir, "index.html")} is missing; write the stage page first (references/stage.md)`);
   const files = listStage(stageDir);
   const warnings = [];
@@ -196,6 +298,8 @@ export function scanStage(stageDir) {
   const plate = readPlate(stageDir, "plate");
   const preview = readPlate(stageDir, "plate-preview");
   const listed = new Set([plate, preview].filter(Boolean).flatMap((p) => p.frames.map((f) => path.join(p.dir, f.name))));
+  const clips = allowClips ? scanClips(stageDir, { files }) : [];
+  for (const c of clips) for (const rel of c.frames) listed.add(rel);
   for (const f of files) {
     const ext = path.extname(f.rel).toLowerCase();
     if (!CONTENT_TYPES[ext] && f.rel !== "scene.py") warnings.push(`${f.rel}: not a servable type; the page cannot load it`);
@@ -235,7 +339,24 @@ export function scanStage(stageDir) {
   for (const [size, names] of bySize) {
     if (names.length >= RASTER_LIMITS.flipbook) throw new BlockedError(EXIT.STAGE_CONTRACT_ERROR, `STAGE_CONTRACT_ERROR: ${names.length} rasters of ${size} look like a flipbook; animate the page, not a frame sequence`);
   }
-  return { files, rasters, warnings, plate };
+  return { files, rasters, warnings, plate, clips };
+}
+
+/**
+ * window.LitClips for LitStage.clip: id -> { src, count, fps, width, height }, built from clips.json and the first
+ * frame's header. null when the stage declares no clips (or one the scan would refuse).
+ */
+function clipsScript(stageDir) {
+  let table;
+  try {
+    table = Object.fromEntries(declaredClips(stageDir).map((c) => {
+      const info = rasterInfo(path.join(stageDir, CLIPS_DIR, c.dir, clipFrame(1)));
+      return [c.id, { src: `${CLIPS_DIR}/${c.dir}`, count: c.count, fps: c.fps, width: info.width, height: info.height }];
+    }));
+  } catch {
+    return null;
+  }
+  return Object.keys(table).length ? `window.LitClips = ${JSON.stringify(table)};\n` : null;
 }
 
 /**
@@ -243,6 +364,7 @@ export function scanStage(stageDir) {
  * type } | { kind: "blocked", reason } | { kind: "missing" }, and records every refusal.
  */
 export function stageRouter({ stageDir, faces, style = null }) {
+  const clipsJs = clipsScript(stageDir);
   const root = realpathSync(stageDir);
   const css = fontsCss(faces);
   const byRoute = new Map(faces.map((f) => [f.route, f.file]));
@@ -266,6 +388,7 @@ export function stageRouter({ stageDir, faces, style = null }) {
     if (pathname === "/lit/stage-kit.js") return { kind: "file", file: KIT_FILE, type: CONTENT_TYPES[".js"] };
     if (pathname === "/lit/loop-kit.js") return { kind: "file", file: LOOP_KIT_FILE, type: CONTENT_TYPES[".js"] };
     if (pathname === "/lit/fonts.css") return { kind: "body", body: css, type: CONTENT_TYPES[".css"] };
+    if (clipsJs && pathname === "/lit/clips.js") return { kind: "body", body: clipsJs, type: CONTENT_TYPES[".js"] };
     if (pathname.startsWith("/lit/three/")) {
       const rel = pathname.slice("/lit/three/".length);
       const file = path.join(THREE_DIR, rel);

@@ -677,6 +677,45 @@
   }
   const wipe = (el, p, opts) => clipRect(el, p, opts);
 
+  // A declared keyed clip (stage/clips/clips.json, served as window.LitClips by /lit/clips.js). One wrapper sits at
+  // `box` over the film and holds the clip's frame for t: frame floor((t - start) * fps) + 1, counted from `from`
+  // and kept within from..to. Nothing reads a real clock and no <video> is involved, so the frame is a pure
+  // function of film time. Before `start` and past `to` the wrapper is hidden and show returns null, unless
+  // `hold` keeps the last frame or `loop` wraps by frame index. The wrapper is what a page scales or fades.
+  function clip({ parent, id, box } = {}) {
+    const all = root.LitClips;
+    if (!all) throw new Error('LitStage.clip: load <script src="/lit/clips.js"></script> after the kit; this stage declares no clips (clips/clips.json)');
+    const c = all[id];
+    if (!c) throw new Error(`LitStage.clip: no clip "${id}" in clips/clips.json (declared: ${Object.keys(all).join(", ")})`);
+    if (!parent || !box || !(box.w > 0) || !(box.h > 0)) throw new Error("LitStage.clip: needs { parent, id, box: { x, y, w, h } }");
+    const wrap = document.createElement("div");
+    wrap.setAttribute("data-lit-clip", id);
+    Object.assign(wrap.style, { position: "absolute", left: `${box.x}px`, top: `${box.y}px`, width: `${box.w}px`, height: `${box.h}px`, display: "none", pointerEvents: "none" });
+    parent.append(wrap);
+    let shown = 0;
+    let img = null;
+    return (t, { start = 0, from = 1, to = c.count, loop = false, hold = false } = {}) => {
+      if (!(from >= 1 && to <= c.count && from <= to)) throw new Error(`LitStage.clip: from..to must lie within 1..${c.count} (got ${from}..${to})`);
+      const n = to - from + 1;
+      const k = Math.floor((t - start) * c.fps + 1e-6);
+      const i = k < 0 ? 0 : k < n ? from + k : loop ? from + (k % n) : hold ? to : 0;
+      wrap.style.display = i ? "block" : "none";
+      if (!i) return null;
+      if (i !== shown) {
+        // A new <img> per change: init.js decodes every img in the document before a frame is captured.
+        const next = document.createElement("img");
+        next.src = `${c.src}/frame_${String(i).padStart(4, "0")}.png`;
+        next.alt = "";
+        Object.assign(next.style, { display: "block", width: "100%", height: "100%", objectFit: "contain" });
+        if (img) img.replaceWith(next);
+        else wrap.append(next);
+        img = next;
+        shown = i;
+      }
+      return wrap;
+    };
+  }
+
   // ---- the page contract ----
   const FORMATS = [[1920, 1080], [1080, 1920]];
   function define(spec) {
@@ -697,5 +736,6 @@
     clipRect, clipCircle, maskLinear, wipe,
     mix, rgba,
     clamp, lerp, invLerp, remap, smoothstep,
+    clip,
   });
 })(typeof window !== "undefined" ? window : globalThis);

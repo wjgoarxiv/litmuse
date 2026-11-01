@@ -57,7 +57,7 @@ State lives in the output folder: `treatment.json`, `look.json`, `stills/`, `man
 | review only | a critique of an existing render | Open the frames, run `gate <dir>` or `cover-gate <file> --strict`, report. Write nothing. |
 | blocked | exit 10, 11, 12, 14, 15, 21 or 22 | Stop. Name the state and its fix; never route around it with another pipeline. |
 | treatment invalid | exit 16 | Fix the named field of `treatment.json` and rerun. |
-| stage contract | exit 17, 18 or 19 | Fix the element, API, raster, clock source or URL the message names, and rerun. |
+| stage contract | exit 17, 18 or 19 | Fix the element, API, raster, clip, clock source or URL the message names, and rerun. |
 | sound invalid | exit 20 | Fix the bed or the supplied track the message names. |
 
 ## Procedure
@@ -136,7 +136,7 @@ Stop at a blocked exit, at a gate failure you cannot fix within round 3, or when
 | 14 | BLOCKED_DEPS_NOT_PREWARMED | Ask the user to run `npx @litfamily/litmuse runtime install motion` in a terminal outside Muse. Never install from the session. |
 | 15 | BLOCKED_FONT_FETCH | A cached font is missing or its sha256 differs; the same pre-warm command fixes it. |
 | 16 | BLOCKED_TREATMENT_INVALID | Fix the named field. |
-| 17 | STAGE_CONTRACT_ERROR | Fix the named element, API, raster, size or missing copy line. |
+| 17 | STAGE_CONTRACT_ERROR | Fix the named element, API, raster, clip, size or missing copy line. |
 | 18 | STAGE_NONDETERMINISTIC | The page read something the clock does not drive; seed it or derive it from `t`. |
 | 19 | STAGE_NETWORK_REQUEST | Remove the named URL or connection; everything is local. |
 | 20 | SOUND_INVALID | The planned sound is missing, silent at the start or out of limits; fix it. |
