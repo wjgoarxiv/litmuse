@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.1.8 — 2026-11-04
 
 - `install --approve` no longer prints a stale waiting list computed before approving. It now says it is approving the capabilities, then reports what was approved and lists only what is really still waiting (or says none are). Without `--approve` the waiting list stays as it was.
 
