@@ -159,7 +159,7 @@ After a brief, the user's `go` (also `lit go`, `ㄱㄱ`, `고`, `진행`, as the
 
 ## Relation to lit-recap
 
-`lit recap` stays the single-session recap from this conversation and the litgoal ledger, with its fixed Korean template. lit-adhd covers many sessions and reads their transcripts. Neither replaces the other. lit-adhd is the way back in after a break: the idle status card offers it, and SessionStart suggests it once per day when paused work is on record.
+`lit recap` stays the single-session recap from this conversation and the litgoal ledger, with its fixed Korean template. lit-adhd covers many sessions and reads their transcripts. Neither replaces the other. lit-adhd is the way back in after a break: the idle status card offers it, and the first plain prompt of a session suggests it once per day when paused work is on record.
 
 ## Stack behavior
 

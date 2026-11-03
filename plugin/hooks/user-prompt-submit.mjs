@@ -1,12 +1,12 @@
-import { run, emitContext, readSession, writeSession, safeId, workspaceOf } from './lib/common.mjs';
+import { run, emitContext, readSession, writeSession, safeId, sessionPath, workspaceOf } from './lib/common.mjs';
 import { detectRoute } from './lib/routes.mjs';
 import { liveRoute, resumablePlan } from './lib/reentry.mjs';
 import { readStage, recordRoute, stageFile } from './lib/stage.mjs';
 import { MOTION_ROUTE, armMotionTurn } from './lib/motion.mjs';
-import { applyStackEvent, readStack, writeStack, READ_ONLY_DISCIPLINES } from './lib/workflow-stack.mjs';
+import { applyStackEvent, readStack, writeStack, resolveProjectStateRoot, READ_ONLY_DISCIPLINES } from './lib/workflow-stack.mjs';
 import { isGoPrompt, takeNextStep } from './lib/next-step.mjs';
-import { readFileSync } from 'node:fs';
-import { resolve } from 'node:path';
+import { readFileSync, writeFileSync, mkdirSync, readdirSync, statSync } from 'node:fs';
+import { resolve, join, dirname } from 'node:path';
 
 // The banner leads every context this hook sends: Muse shows no hook message of its own, so the model's first line is
 // the only place the user can see the route ignite, and a model that narrates first ("Loading the loop route") hides it.
@@ -135,6 +135,31 @@ function staleReason(payload, step) {
   }
 }
 
+// After a break, the idle card's way back in: on a plain prompt while no route is live and fresh workflow stacks
+// exist, suggest `lit adhd` once per day. It rides on this prompt rather than SessionStart because SessionStart
+// context is rebuilt on every resume and sits ahead of the history, so a line that comes and goes there would discard
+// the cached history; prompt context is appended to the history instead. A marker next to the route state remembers
+// the day; anything unreadable means no suggestion, never a repeated one.
+function suggestAdhdOnce(payload) {
+  try {
+    const cwd = workspaceOf(payload);
+    const dir = join(resolveProjectStateRoot(cwd), '.litmuse', 'workflow-stack');
+    const day = 24 * 60 * 60 * 1000;
+    const fresh = readdirSync(dir).some((name) => name.endsWith('.json') && Date.now() - statSync(join(dir, name)).mtimeMs <= day);
+    if (!fresh) return null;
+    const marker = sessionPath(cwd, payload.session_id).replace(/\.json$/, '.adhd-suggested');
+    const today = new Date().toISOString().slice(0, 10);
+    try {
+      if (readFileSync(marker, 'utf8').trim() === today) return null;
+    } catch { /* no marker yet */ }
+    mkdirSync(dirname(marker), { recursive: true });
+    writeFileSync(marker, `${today}\n`);
+    return 'Recent sessions left paused work in this workspace and no route is live. Suggest `lit adhd` once for the cross-session brief; if the user declines, drop it for this session.';
+  } catch {
+    return null;
+  }
+}
+
 function goHint(why) {
   return [
     ...banner('LIT CONTINUES', 'lit-loop'),
@@ -211,7 +236,10 @@ run((payload) => {
     if (previous && previous.route) {
       writeSession(payload, { ...previous, route: null, turnId: payload.turn_id ?? null, pauseRequested });
       recordRoute(payload, { route: null, kind: 'clear' });
+      return;
     }
+    const wayBackIn = suggestAdhdOnce(payload);
+    if (wayBackIn) emitContext('UserPromptSubmit', wayBackIn);
     return;
   }
   const turnId = payload.turn_id ?? null;

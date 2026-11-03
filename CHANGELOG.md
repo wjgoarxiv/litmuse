@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+- Muse keeps the cached conversation across turns more often. The once-a-day suggestion to run `lit adhd` used to sit in the session-start text, which Muse rebuilds on every resume and places before the whole conversation; the line appeared on one resume and vanished on the next, so the cached history behind it was thrown away twice. The suggestion now rides on the first plain prompt instead, once per day as before and never while a route is live, and the session-start text stays the same for the whole session.
+- Each hook now checks the code digest of only the files it runs. Before, every hook call also read the motion engine and the humanizer detector; now only Stop and PostToolUse do. A hook call is about a millisecond faster; most of its time is Muse starting Node, which LitMuse cannot change.
+- The hook code changed, so Muse asks you to approve the LitMuse hooks again after the update.
+
 ## 0.1.6 — 2026-11-01
 
 - `lit-typographic-motion` can lay real keyed footage over a stage film. A stage declares chroma-keyed clips in `stage/clips/clips.json` (an id, a folder, a frame count and a rate), the frames are 8-bit RGBA PNGs with real transparency, and the page registers each clip once with `LitStage.clip` and calls the returned function from `render(t)`; the frame shown is a plain function of film time, so a cue is `start = cue - (N - 1) / fps` and the flash audit and determinism replay see the final pixels. A declared clip is held to its own caps (12 clips, 360 frames in one and 1500 in all, 40 MB in one and 128 MB in all, 720 px on the long side, 30 fps) and no longer trips the flipbook rule; an undeclared frame folder is still refused with exit 17. Cover mode takes no clips. The manifest and the report list each clip.

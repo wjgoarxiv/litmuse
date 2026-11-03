@@ -66,6 +66,12 @@ order, the 33 active tool names, `plugins validate`, and the hook refusal path. 
   (`~/.local/share/muse/plugins/cache/local/litmuse/<hash>/package/`), undeclared `lib/` and every skill resource
   included, and `plugins validate` accepts them. Skills therefore reach their own files as `<skill-dir>/...` and the
   shared engine code as `<skill-dir>/../../lib/...`.
+- Hook cost (probed on 1.4.14, 2026-11-03): plugin hooks take only `{id, event, command, timeoutMs?, statusMessage?}`, so there
+  is no tool matcher and every PreToolUse/PostToolUse spawns. Inside Muse an empty `/usr/bin/true` hook takes ~35 ms and an
+  empty Node hook ~72 ms; LitMuse's hooks run at that Node floor plus a few ms. SessionStart `additionalContext` becomes a
+  `dynamic_turn` context block (order 900000) that is rebuilt on every resume and sits before the history, so it must be
+  byte-stable within a session; UserPromptSubmit context is appended to the history instead. Stop's refusal text also
+  lands in the context lane until the next turn.
 - There is no LSP, diagnostics or browser tool. The `lsp` skill drives checker CLIs through `bash`; browser work drives
   the Chrome already on the machine.
 - `muse schema generate-ts --out <dir> --experimental` (offline) shows the goal block `{objective, status,
@@ -80,7 +86,7 @@ order, the 33 active tool names, `plugins validate`, and the hook refusal path. 
 
 ## Rules for changes
 
-- After any change under `plugin/hooks/`, `plugin/context/` or a skill file listed in `DIGEST_EXTRAS` (`plugin/hooks/lib/digest.mjs`; today the lit-humanizer `scripts/core.mjs` and `rules.json`, and the lit-typographic-motion done-check `engine/node/done.mjs` with every engine module it imports), run `npm run sync:digests` (the hook commands carry a code digest; `test/hooks.test.mjs` fails on drift).
+- After any change under `plugin/hooks/`, `plugin/context/` or a skill file listed in `DIGEST_EXTRAS` (`plugin/hooks/lib/digest.mjs`; today the lit-humanizer `scripts/core.mjs` and `rules.json`, and the lit-typographic-motion done-check `engine/node/done.mjs` with every engine module it imports), run `npm run sync:digests` (the hook commands carry a code digest; `test/hooks.test.mjs` fails on drift). Each extra belongs to the one hook that loads it (`EXTRAS_BY_HOOK`: humanizer → post-tool-use, motion → stop); a hook that starts loading a skill file must be added there, and a test pins where those loads live.
 
 - The installer writes only under `$XDG_DATA_HOME/litmuse` and through the `muse` CLI, plus one marked block in Muse's
   own user rules file (`lib/agent-file.mjs`: consent first, add-then-remove returns the original bytes, a backup

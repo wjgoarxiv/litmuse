@@ -91,23 +91,43 @@ test('session-start: steering context lists every skill and fits the stdout cap'
   assert.ok(Buffer.byteLength(r.stdout) < 12 * 1024, `session context is ${Buffer.byteLength(r.stdout)} B`);
 });
 
-test('session-start: fresh stacks suggest lit adhd once per day, never with a live route', () => {
+test('user-prompt-submit: fresh stacks suggest lit adhd once per day on a plain prompt, never with a live route', () => {
   const ws = workspace();
-  const once = () => {
-    const r = runHook('session-start', { hook_event_name: 'SessionStart', source: 'startup', session_id: 's-adhd', cwd: ws }, ws);
+  const once = (prompt = 'hello') => {
+    const r = runHook('user-prompt-submit', { hook_event_name: 'UserPromptSubmit', prompt, session_id: 's-adhd', cwd: ws }, ws);
     assert.equal(r.code, 0);
-    return JSON.parse(r.stdout).hookSpecificOutput.additionalContext;
+    return r.stdout ? JSON.parse(r.stdout).hookSpecificOutput.additionalContext : '';
   };
   assert.ok(!once().includes('lit adhd'), 'no stacks, no suggestion');
   mkdirSync(join(ws, '.litmuse', 'workflow-stack'), { recursive: true });
   writeFileSync(join(ws, '.litmuse', 'workflow-stack', 's.json'), '{"version":1,"frames":[]}');
-  assert.match(once(), /Suggest `lit adhd` once/, 'first start suggests it');
-  assert.ok(!once().includes('Suggest `lit adhd` once'), 'second start stays silent');
+  assert.match(once(), /Suggest `lit adhd` once/, 'the first plain prompt suggests it');
+  assert.ok(!once().includes('Suggest `lit adhd` once'), 'the next prompt stays silent');
   const state = sessionPath(ws, 's-adhd', HOOK_ENV);
   mkdirSync(dirname(state), { recursive: true });
   writeFileSync(state, JSON.stringify({ version: 1, session: 's-adhd', route: 'lit-loop', updated: new Date().toISOString() }));
   writeFileSync(state.replace(/\.json$/, '.adhd-suggested'), '2000-01-01\n');
   assert.ok(!once().includes('Suggest `lit adhd` once'), 'a live route is never interrupted');
+  assert.doesNotMatch(once('lit plan a thing'), /Suggest `lit adhd` once/, 'a lit prompt gets its activation, not the suggestion');
+});
+
+// SessionStart context is rebuilt on every resume and sits ahead of the history in the model input, so any byte that
+// changes between two starts of one session discards the cached history behind it.
+test('session-start: the same session gets byte-identical context on startup and every resume', () => {
+  const ws = workspace();
+  mkdirSync(join(ws, '.litmuse', 'workflow-stack'), { recursive: true });
+  writeFileSync(join(ws, '.litmuse', 'workflow-stack', 's.json'), '{"version":1,"frames":[]}');
+  const ctx = (source) => {
+    const r = runHook('session-start', { hook_event_name: 'SessionStart', source, session_id: 's-stable', cwd: ws }, ws);
+    assert.equal(r.code, 0);
+    return JSON.parse(r.stdout).hookSpecificOutput.additionalContext;
+  };
+  const first = ctx('startup');
+  assert.equal(ctx('resume'), first);
+  runHook('user-prompt-submit', { hook_event_name: 'UserPromptSubmit', prompt: 'lit plan a thing', session_id: 's-stable', cwd: ws }, ws);
+  assert.equal(ctx('resume'), first, 'a live route does not change the start context');
+  runHook('user-prompt-submit', { hook_event_name: 'UserPromptSubmit', prompt: 'hello', session_id: 's-stable', cwd: ws }, ws);
+  assert.equal(ctx('resume'), first, 'clearing the route does not change it either');
 });
 
 test('session-start: a cached newer version adds one update line', () => {
@@ -475,4 +495,24 @@ test('the hook digest covers the files hooks load from skill folders', async () 
     assert.ok(DIGEST_EXTRAS.includes(rel), rel);
     assert.ok(existsSync(join(HOOKS, '..', rel)), rel);
   }
+});
+
+// Each hook hashes only the skill files it loads. That is sound only while the loads stay where EXTRAS_BY_HOOK says:
+// the humanizer import in post-tool-use.mjs, and the motion done-check (evaluateMotionStop) in stop.mjs.
+test('the per-hook digest scope matches where hooks load skill files', async () => {
+  const { DIGEST_EXTRAS, EXTRAS_BY_HOOK } = await import('../plugin/hooks/lib/digest.mjs');
+  assert.deepEqual(Object.values(EXTRAS_BY_HOOK).flat().sort(), [...DIGEST_EXTRAS].sort(), 'every extra belongs to a hook');
+  const hooks = readdirSync(HOOKS).filter((f) => f.endsWith('.mjs'));
+  for (const f of hooks) {
+    const src = readFileSync(join(HOOKS, f), 'utf8');
+    assert.equal(/'skills', 'lit-humanizer'/.test(src), f === 'post-tool-use.mjs', `${f}: humanizer load`);
+    assert.equal(/evaluateMotionStop\(/.test(src), f === 'stop.mjs', `${f}: motion done-check`);
+  }
+  for (const f of readdirSync(join(HOOKS, 'lib')).filter((n) => n.endsWith('.mjs') && n !== 'motion.mjs')) {
+    const src = readFileSync(join(HOOKS, 'lib', f), 'utf8');
+    assert.doesNotMatch(src, /evaluateMotionStop\(|'skills', 'lit-humanizer'|import\(/, `lib/${f} loads no skill file`);
+  }
+  const lib = readFileSync(join(HOOKS, 'lib', 'motion.mjs'), 'utf8');
+  assert.equal((lib.match(/import\(/g) ?? []).length, 1, 'motion.mjs has one dynamic import');
+  assert.match(lib, /async function evaluateMotionStop[\s\S]*await import\(pathToFileURL\(DONE_MODULE\)/, 'and it is the done-check inside evaluateMotionStop');
 });
