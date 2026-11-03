@@ -256,6 +256,26 @@ test('the plan line says "up to" before anything was inspected', async () => {
   assert.match(out.text(), /up to 21 capabilities/);
 });
 
+// Fix 2026-11-03: --approve printed a stale waiting list computed before approving.
+test('--yes --approve reports what was approved instead of leaving a stale waiting list', async () => {
+  const { env } = sandbox();
+  const out = collect();
+  const code = await install({ env, flags: { yes: true, approve: true }, interactive: false, print: out.print });
+  assert.equal(code, 0);
+  const text = out.text();
+  assert.doesNotMatch(text, /are waiting:/);
+  assert.match(text, /Approved 21 LitMuse capabilities/);
+  assert.match(text, /No capabilities are still waiting/i);
+});
+
+test('--yes without --approve still lists the waiting capabilities', async () => {
+  const { env } = sandbox();
+  const out = collect();
+  const code = await install({ env, flags: { yes: true }, interactive: false, print: out.print });
+  assert.equal(code, 0);
+  assert.match(out.text(), /21 are waiting:/);
+});
+
 // Review L2: Muse resets the 11 agent approvals on update; one question covers them.
 test('after an update the installer asks once for the 11 reset agent approvals', async () => {
   const { env } = sandbox();

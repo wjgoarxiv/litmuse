@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- `install --approve` no longer prints a stale waiting list computed before approving. It now says it is approving the capabilities, then reports what was approved and lists only what is really still waiting (or says none are). Without `--approve` the waiting list stays as it was.
+
 ## 0.1.7 — 2026-11-03
 
 - Muse keeps the cached conversation across turns more often. The once-a-day suggestion to run `lit adhd` used to sit in the session-start text, which Muse rebuilds on every resume and places before the whole conversation; the line appeared on one resume and vanished on the next, so the cached history behind it was thrown away twice. The suggestion now rides on the first plain prompt instead, once per day as before and never while a route is live, and the session-start text stays the same for the whole session.
