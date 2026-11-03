@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.1.7 — 2026-11-03
 
 - Muse keeps the cached conversation across turns more often. The once-a-day suggestion to run `lit adhd` used to sit in the session-start text, which Muse rebuilds on every resume and places before the whole conversation; the line appeared on one resume and vanished on the next, so the cached history behind it was thrown away twice. The suggestion now rides on the first plain prompt instead, once per day as before and never while a route is live, and the session-start text stays the same for the whole session.
 - Each hook now checks the code digest of only the files it runs. Before, every hook call also read the motion engine and the humanizer detector; now only Stop and PostToolUse do. A hook call is about a millisecond faster; most of its time is Muse starting Node, which LitMuse cannot change.
