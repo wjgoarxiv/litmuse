@@ -2,7 +2,7 @@
 
 QA codes (`qa.mjs --codes` lists all): TITLEBLOCK.FIELDS, LEGEND.COVERAGE, TAG.ORDER,
 LINE.NUMBER, LINE.WEIGHT, LINE.ARROW_IN_SYMBOL, LINE.BEND_ON_LINE, LEADER.SPACING,
-LABEL.CLEARANCE, EXPORT.DPI, EXPORT.PDF_SIZE.
+LABEL.CLEARANCE, SYMBOL.CONNECTED, LINE.THROUGH_SYMBOL, EXPORT.DPI, EXPORT.PDF_SIZE.
 
 Fixes: TITLEBLOCK gains the missing fields in the build. LEGEND rebuilds from the drawn set
 through `createLegendSheet`. TAG reorders letters per `references/pid-symbols.md`.
@@ -11,7 +11,11 @@ Arrows slide to open pipe. Hop arcs shrink to 2 mm or less. Leaders respread per
 `references/pid-drafting.md`. Labels move clear of lines and art. LABEL.CLEARANCE also
 flattens arcs and curves (vent hoods, actuator domes, hop arcs) and checks every circle: a label
 across a bubble or pump outline fails (`sits on a circle`), while a bubble's own letters, wholly
-inside it, pass.
+inside it, pass. Against lines and outlines a label needs 0.3 mm of air: a line number touching a
+vessel wall or a signal line fails. SYMBOL.CONNECTED fails a vent whose leg meets no nozzle, vessel or
+pipe; start the vent on the nozzle's top edge (for `tank(tag, x, y)` that is `vent(x, y - 46)`).
+LINE.THROUGH_SYMBOL fails a line that cuts through a pump casing or an instrument bubble; a line may
+end on the outline, and filled dots (junctions, globe seats) belong to the line.
 
 Render loop: build, QA, render PNG, read the PNG, sweep dense sheets in a 3x2 tile, fix in
 the build, rebuild. Rebuilds stay byte-identical for unchanged inputs.

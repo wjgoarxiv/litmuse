@@ -200,6 +200,7 @@ test('LABEL.CLEARANCE: a label on an instrument bubble, pump circle or arc fails
     const sheet = createSheet({ plant: 'T', unit: 'U', sheetNo: '01-001', rev: 'A' });
     sheet.instrument('PI-101', 100, 100);
     sheet.pump('P-101', 160, 100);
+    sheet.tank('TK-101', 220, 146);
     sheet.vent(220, 100);
     sheet.legend();
     return sheet.toSVG();
@@ -211,6 +212,55 @@ test('LABEL.CLEARANCE: a label on an instrument bubble, pump circle or arc fails
     const qa = runQA(svg);
     assert.ok(qa.fails.some((f) => f.code === 'LABEL.CLEARANCE' && /NOTE/.test(f.msg)), `${what}: ${JSON.stringify(qa.fails)}`);
   }
+});
+
+test('SYMBOL.CONNECTED: a vent must sit on a nozzle or a pipe, never float', () => {
+  const sheetWith = (ventY) => {
+    const sheet = createSheet({ plant: 'T', unit: 'U', sheetNo: '01-001', rev: 'A' });
+    sheet.tank('TK-101', 140, 126); // roof nozzle top edge at y = 80
+    sheet.vent(140, ventY);
+    sheet.legend();
+    return sheet.toSVG();
+  };
+  assert.deepEqual(runQA(sheetWith(80)).fails, [], 'a vent on the roof nozzle passes');
+  const floating = runQA(sheetWith(72));
+  assert.ok(floating.fails.some((f) => f.code === 'SYMBOL.CONNECTED' && /vent/.test(f.msg)), JSON.stringify(floating.fails));
+});
+
+test('LABEL.CLEARANCE: a label touching an equipment wall or a signal line fails', () => {
+  const base = () => {
+    const sheet = createSheet({ plant: 'T', unit: 'U', sheetNo: '01-001', rev: 'A' });
+    sheet.tank('TK-101', 140, 126); // left wall at x = 118
+    sheet.vent(140, 80);
+    sheet.legend();
+    return sheet.toSVG();
+  };
+  assert.deepEqual(runQA(base()).fails, [], 'the clean sheet passes');
+  // 'LINE' at 7 pt is about 16 mm wide; ending at x = 118.2 it touches the wall.
+  const label = `<text x="102.2" y="108" font-size="7" font-family="Arial, sans-serif" fill="#111" text-anchor="start">LINE</text>`;
+  const qa = runQA(base().replace('</svg>', `${label}\n</svg>`));
+  assert.ok(qa.fails.some((f) => f.code === 'LABEL.CLEARANCE' && /LINE/.test(f.msg)), JSON.stringify(qa.fails));
+});
+
+test('LINE.THROUGH_SYMBOL: a pipe may end on a pump or bubble but never cut through one', () => {
+  const sheetWith = (x) => {
+    const sheet = createSheet({ plant: 'T', unit: 'U', sheetNo: '01-001', rev: 'A' });
+    sheet.pump('P-101', 188, 200, 'right');
+    sheet.pipe([[188, 182], [188, 190]], { cls: 'process' });
+    sheet.pipe([[x, 232], [x, 172]], { cls: 'process' });
+    sheet.legend();
+    return sheet.toSVG();
+  };
+  assert.deepEqual(runQA(sheetWith(160)).fails, [], 'a pipe beside the pump passes');
+  const through = runQA(sheetWith(182));
+  assert.ok(through.fails.some((f) => f.code === 'LINE.THROUGH_SYMBOL'), JSON.stringify(through.fails));
+});
+
+test('a tank tag can sit beside the shell, clear of what hangs below it', () => {
+  const sheet = createSheet({ plant: 'T', unit: 'U', sheetNo: '01-001', rev: 'A' });
+  sheet.tank('TK-101', 143, 126, 'right');
+  const svg = sheet.toSVG();
+  assert.match(svg, /<text x="169" y="128"[^>]*>TK-101<\/text>/);
 });
 
 test('RED: a legend missing a drawn symbol fails LEGEND.COVERAGE', () => {

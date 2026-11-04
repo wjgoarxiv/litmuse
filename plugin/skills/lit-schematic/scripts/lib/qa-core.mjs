@@ -21,7 +21,7 @@ function kv(s) {
 export const CODES = [
   'TITLEBLOCK.FIELDS', 'LEGEND.COVERAGE', 'TAG.ORDER', 'LINE.NUMBER',
   'LINE.WEIGHT', 'LINE.ARROW_IN_SYMBOL', 'LINE.BEND_ON_LINE', 'LEADER.SPACING',
-  'LABEL.CLEARANCE',
+  'LABEL.CLEARANCE', 'SYMBOL.CONNECTED', 'LINE.THROUGH_SYMBOL',
 ];
 
 // ---- LABEL.CLEARANCE geometry: no label sits on another label or a line ----
@@ -86,6 +86,22 @@ function textBoxes(svg) {
 
 function shrink(box) {
   return { x0: box.x0 + INSET, x1: box.x1 - INSET, y0: box.y0 + INSET, y1: box.y1 - INSET, label: box.label };
+}
+
+const AIR = 0.3; // a label keeps this much space from lines and outlines
+
+// Undo the label-to-label inset and add AIR all round.
+function air(box) {
+  const d = INSET + AIR;
+  return { x0: box.x0 - d, x1: box.x1 + d, y0: box.y0 - d, y1: box.y1 + d, label: box.label };
+}
+
+function pointSegDist(px, py, [x1, y1, x2, y2]) {
+  const dx = x2 - x1;
+  const dy = y2 - y1;
+  const len = dx * dx + dy * dy;
+  const t = len ? Math.max(0, Math.min(1, ((px - x1) * dx + (py - y1) * dy) / len)) : 0;
+  return Math.hypot(px - (x1 + t * dx), py - (y1 + t * dy));
 }
 
 function overlaps(a, b) {
@@ -210,7 +226,8 @@ function circles(svg) {
   const out = [];
   for (const m of svg.matchAll(/<circle\b([^>]*)\/>/g)) {
     const get = (name) => Number((m[1].match(new RegExp(`\\b${name}="([\\d.]+)"`)) ?? [])[1]);
-    const c = { cx: get('cx'), cy: get('cy'), r: get('r') };
+    const fill = (m[1].match(/\bfill="([^"]+)"/) ?? [])[1] ?? 'none';
+    const c = { cx: get('cx'), cy: get('cy'), r: get('r'), filled: fill !== 'none' && fill !== '#fff' && fill !== '#ffffff' };
     if (Number.isFinite(c.cx + c.cy + c.r) && c.r > 0) out.push(c);
   }
   return out;
@@ -301,10 +318,28 @@ export function runQA(svg) {
       }
     }
   }
+  const runs = lineSegments(svg);
+  // A vent is a pipe end: its leg must start on a nozzle, a vessel or a pipe.
+  for (const c of comments(svg, 'symbol')) {
+    const v = kv(c);
+    if (v.kind !== 'vent' || !v.at) continue;
+    const [vx, vy] = v.at.split(',').map(Number);
+    const own = ([x1, y1, x2, y2]) => x1 === vx && y1 === vy && x2 === vx && y2 < vy;
+    const touches = runs.some((s) => !own(s) && pointSegDist(vx, vy, s) <= 0.3);
+    if (!touches) fails.push({ code: 'SYMBOL.CONNECTED', msg: `vent at ${vx},${vy} floats: its leg meets no nozzle, vessel or pipe` });
+  }
+  // A line may end on a pump casing or an instrument bubble but never cut
+  // through one. Filled dots (junctions, globe seats) are part of the line.
+  for (const c of circles(svg).filter((c) => c.r >= 2 && !c.filled)) {
+    const outside = (x, y) => Math.hypot(x - c.cx, y - c.cy) > c.r + 0.5;
+    const hit = runs.find((s) => outside(s[0], s[1]) && outside(s[2], s[3]) && pointSegDist(c.cx, c.cy, s) < c.r - 0.5);
+    if (hit) fails.push({ code: 'LINE.THROUGH_SYMBOL', msg: `a line from ${hit[0]},${hit[1]} to ${hit[2]},${hit[3]} cuts through the circle at ${c.cx},${c.cy}` });
+  }
   if (!fails.some((f) => f.code === 'LABEL.CLEARANCE')) {
-    const runs = lineSegments(svg);
     const rings = circles(svg);
-    for (const box of labels) {
+    // Against lines and circles a label needs air: touching a wall or a signal
+    // line reads as a collision, so the box grows instead of shrinking here.
+    for (const box of labels.map(air)) {
       const hit = runs.find(([x1, y1, x2, y2]) => segHitsBox(x1, y1, x2, y2, box));
       if (hit) fails.push({ code: 'LABEL.CLEARANCE', msg: `“${box.label}” sits on a line` });
       else if (rings.some((c) => circleHitsBox(c, box))) fails.push({ code: 'LABEL.CLEARANCE', msg: `“${box.label}” sits on a circle` });

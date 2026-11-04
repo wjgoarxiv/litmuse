@@ -20,7 +20,7 @@ P&ID sheet methods that place parts (coordinates in sheet mm):
 - `psv(tag, x, y, set, { outlet = 'right', inlet })`: angle body, spring opposite the inlet,
   tag opposite the outlet; inlet and outlet pipes connect 10 from the center.
 - `instrument(tag, x, y, { dcs })`: the bubble holds the tag (letters over number); no side tag.
-- `pump(tag, x, y, side)`, `tank`, `orifice`, `offpage(label, x, y, dir, w)`, `drain`, `vent`,
+- `pump(tag, x, y, side)`, `tank(tag, x, y, side)` (side `below` or `right`; its roof nozzle top is `y - 46`), `orifice`, `offpage(label, x, y, dir, w)`, `drain`, `vent`,
   `signal(points, kind)`, `hop`, `callout`, `notes`, `legend()`, `toSVG()`.
 
 `createFigure(opts)` returns a journal figure with column width (`85`, `120`, `178`).

@@ -97,8 +97,8 @@ export function createSheet(opts = {}) {
     const rows = 'ABCDEF';
     for (let i = 0; i < 6; i += 1) {
       const y = FRAME + ((SHEET_H - FRAME * 2) * (i + 0.5)) / 6;
-      out.push(text(FRAME - 2, y + 2, rows[i], { size: 6, anchor: 'middle' }));
-      out.push(text(SHEET_W - FRAME + 2, y + 2, rows[i], { size: 6, anchor: 'middle' }));
+      out.push(text(FRAME - 2.6, y + 2, rows[i], { size: 6, anchor: 'middle' }));
+      out.push(text(SHEET_W - FRAME + 2.6, y + 2, rows[i], { size: 6, anchor: 'middle' }));
     }
     out.push(el('line', { x1: FRAME, y1: BAND_BOTTOM, x2: SHEET_W - FRAME, y2: BAND_BOTTOM, stroke: INK, 'stroke-width': WEIGHTS.utility }));
     out.push(el('line', { x1: FRAME, y1: FIELD_TOP, x2: SHEET_W - FRAME, y2: FIELD_TOP, stroke: INK, 'stroke-width': WEIGHTS.utility }));
@@ -138,8 +138,8 @@ export function createSheet(opts = {}) {
   const thumb = (kind, x, y) => {
     const s = [];
     if (kind === 'tank') {
-      s.push(el('rect', { x: x - 6, y: y - 6, width: 12, height: 12, fill: '#fff', stroke: INK, 'stroke-width': WEIGHTS.utility }));
-      s.push(el('path', { d: `M ${x - 6} ${y - 6} L ${x + 6} ${y - 6} L ${x} ${y - 10} Z`, fill: 'none', stroke: INK, 'stroke-width': WEIGHTS.utility }));
+      s.push(el('rect', { x: x - 5, y: y - 4, width: 10, height: 9, fill: '#fff', stroke: INK, 'stroke-width': WEIGHTS.utility }));
+      s.push(el('path', { d: `M ${x - 5} ${y - 4} L ${x + 5} ${y - 4} L ${x} ${y - 6} Z`, fill: 'none', stroke: INK, 'stroke-width': WEIGHTS.utility }));
     } else if (kind === 'pump') {
       s.push(el('circle', { cx: x, cy: y, r: 6, fill: '#fff', stroke: INK, 'stroke-width': WEIGHTS.utility }));
       s.push(el('path', { d: `M ${x - 3} ${y - 3} L ${x - 3} ${y + 3} L ${x + 3} ${y} Z`, fill: INK }));
@@ -180,16 +180,18 @@ export function createSheet(opts = {}) {
     out.push(text(LEGEND_X, FIELD_TOP + 8, 'LEGEND', { size: 8 }));
     let y = FIELD_TOP + 22;
     // Two columns of 64: the widest thumbnail (relief zigzag, off-page hexagon)
-    // ends 12 past its origin, so labels start at +15 and the longest name still
-    // clears the next column's thumbnails.
+    // ends 12 past its origin; thumbnails sit 6 in from the panel rule so a pump
+    // circle clears it, labels start at +18, and the longest name still
+    // clears the next column's thumbnails. Rows sit 13 apart so the tallest
+    // thumbnails (pump circle, tank roof) never touch the row above or below.
     for (const [index, kind] of [...kinds].sort().entries()) {
       const col = index < Math.ceil([...kinds].length / 2) ? 0 : 1;
-      const yy = y + (index % Math.ceil([...kinds].length / 2)) * 11;
+      const yy = y + (index % Math.ceil([...kinds].length / 2)) * 13;
       const xx = LEGEND_X + col * 64;
-      out.push(thumb(kind, xx + 3, yy - 2));
-      out.push(text(xx + 15, yy, kindName(kind), { size: 6 }));
+      out.push(thumb(kind, xx + 6, yy - 2));
+      out.push(text(xx + 18, yy, kindName(kind), { size: 6 }));
     }
-    y += Math.ceil([...kinds].length / 2) * 11 + 6;
+    y += Math.ceil([...kinds].length / 2) * 13 + 6;
     const lineSample = (yy, weight, dash, name) => {
       out.push(el('line', { x1: LEGEND_X, y1: yy - 2, x2: LEGEND_X + 14, y2: yy - 2, stroke: INK, 'stroke-width': weight, ...(dash ? { 'stroke-dasharray': dash } : {}) }));
       out.push(text(LEGEND_X + 18, yy, name, { size: 6 }));
@@ -241,14 +243,17 @@ export function createSheet(opts = {}) {
       shapes.push(text(x, y + 14, label ?? id, { size: 7 }));
       return id;
     },
-    tank(tag, x, y) {
+    tank(tag, x, y, side = 'below') {
       kinds.add('tank');
       marks.push(comment(`symbol kind=tank id=${tag}`));
       shapes.push(el('path', { d: `M ${x - 22} ${y - 26} L ${x + 22} ${y - 26} L ${x} ${y - 40} Z`, fill: '#fff', stroke: INK, 'stroke-width': WEIGHTS.process }));
       shapes.push(el('rect', { x: x - 22, y: y - 26, width: 44, height: 52, fill: '#fff', stroke: INK, 'stroke-width': WEIGHTS.process }));
       shapes.push(el('rect', { x: x - 3, y: y - 46, width: 6, height: 6, fill: '#fff', stroke: INK, 'stroke-width': WEIGHTS.utility }));
       shapes.push(el('rect', { x: x - 3, y: y + 26, width: 6, height: 6, fill: '#fff', stroke: INK, 'stroke-width': WEIGHTS.utility }));
-      shapes.push(text(x + 10, y + 40, tag, { size: 7 }));
+      // 'right' puts the tag beside the shell at mid-height, clear of the bottom
+      // nozzle and of anything that hangs below the tank.
+      if (side === 'right') shapes.push(text(x + 26, y + 2, tag, { size: 7 }));
+      else shapes.push(text(x + 10, y + 40, tag, { size: 7 }));
       return tag;
     },
     pump(tag, x, y, side = 'below') {
@@ -374,7 +379,7 @@ export function createSheet(opts = {}) {
     },
     vent(x, y) {
       kinds.add('vent');
-      marks.push(comment('symbol kind=vent id=ATM'));
+      marks.push(comment(`symbol kind=vent id=ATM at=${x},${y}`));
       shapes.push(el('path', { d: `M ${x} ${y} L ${x} ${y - 8} A 5 5 0 0 1 ${x + 10} ${y - 8} L ${x + 10} ${y - 2}`, fill: 'none', stroke: INK, 'stroke-width': WEIGHTS.utility }));
       // The label sits left of the vent pipe so it never touches the arc.
       shapes.push(text(x - 5, y - 1, 'ATM', { size: 6, anchor: 'end' }));
