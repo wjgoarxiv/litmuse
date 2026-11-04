@@ -8,7 +8,10 @@ Fixes: TITLEBLOCK gains the missing fields in the build. LEGEND rebuilds from th
 through `createLegendSheet`. TAG reorders letters per `references/pid-symbols.md`.
 LINE.NUMBER parses through the line grammar. LINE.WEIGHT remaps roles to 0.7/0.5/0.35/0.18.
 Arrows slide to open pipe. Hop arcs shrink to 2 mm or less. Leaders respread per
-`references/pid-drafting.md`. Labels move clear of lines and art.
+`references/pid-drafting.md`. Labels move clear of lines and art. LABEL.CLEARANCE also
+flattens arcs and curves (vent hoods, actuator domes, hop arcs) and checks every circle: a label
+across a bubble or pump outline fails (`sits on a circle`), while a bubble's own letters, wholly
+inside it, pass.
 
 Render loop: build, QA, render PNG, read the PNG, sweep dense sheets in a 3x2 tile, fix in
 the build, rebuild. Rebuilds stay byte-identical for unchanged inputs.

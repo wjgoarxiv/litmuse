@@ -10,8 +10,12 @@ process piping. A line that cannot route throws with the reason; move a symbol o
 waypoints, and route around symbols.
 
 Inline items (valves, filters, flow elements, reducers) sit on the line through `sheet.inline`.
-Branches leave through `line.tap` at straight runs. Asked-for flow arrows slide along open
-pipe to clear spans; a span shorter than 30 mm takes a warn flag.
+On a vertical pipe, draw valves with `orient: 'v'` and strainers with `'v'`: their tag moves
+beside the pipe (left by default, `'right'` to pass the actuator side) instead of sitting on it.
+A vertical line number reads bottom-to-top, 8 mm right of its line, with the same air as a
+horizontal number. Branches leave through `line.tap` at straight runs. Asked-for flow arrows
+slide along open pipe to clear spans and point the way the flow runs (`right`, `left`, `up`,
+`down`); a span shorter than 30 mm takes a warn flag.
 
 Line hops: arcs of radius 2 mm or less mark crossings; larger arcs read as bends and fail the
 bend check. Leaders keep 1.2 mm at print size between leaders and between leaders and dots,

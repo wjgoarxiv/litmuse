@@ -152,7 +152,8 @@ export function createSheet(opts = {}) {
     } else if (kind.startsWith('filter')) {
       s.push(el('path', { d: `M ${x} ${y - 6} L ${x + 6} ${y} L ${x} ${y + 6} L ${x - 6} ${y} Z`, fill: '#fff', stroke: INK, 'stroke-width': WEIGHTS.utility }));
     } else if (kind === 'psv') {
-      s.push(el('path', { d: `M ${x - 4} ${y + 6} L ${x - 4} ${y - 2} L ${x - 1} ${y} L ${x + 2} ${y - 4} L ${x + 5} ${y} L ${x + 5} ${y - 6} L ${x + 9} ${y - 2}`, fill: 'none', stroke: INK, 'stroke-width': WEIGHTS.utility }));
+      s.push(el('path', { d: `M ${x} ${y + 1} L ${x - 2.5} ${y + 6} L ${x + 2.5} ${y + 6} Z M ${x} ${y + 1} L ${x + 5} ${y - 1.5} L ${x + 5} ${y + 3.5} Z`, fill: '#fff', stroke: INK, 'stroke-width': WEIGHTS.utility }));
+      s.push(el('path', { d: `M ${x} ${y + 1} L ${x} ${y - 1} L ${x + 2} ${y - 2} L ${x - 2} ${y - 3.5} L ${x + 2} ${y - 5} L ${x} ${y - 6}`, fill: 'none', stroke: INK, 'stroke-width': WEIGHTS.utility }));
     } else if (kind === 'orifice') {
       s.push(el('line', { x1: x - 4, y1: y - 4, x2: x + 4, y2: y - 4, stroke: INK, 'stroke-width': WEIGHTS.process }));
       s.push(el('line', { x1: x - 2, y1: y - 5, x2: x - 2, y2: y + 5, stroke: INK, 'stroke-width': WEIGHTS.process }));
@@ -223,8 +224,10 @@ export function createSheet(opts = {}) {
     const x = best.x1 + (best.x2 - best.x1) * at;
     const y = best.y1 + (best.y2 - best.y1) * at;
     const vertical = best.x1 === best.x2;
+    // Rotated -90, the glyph tops face the pipe: a baseline 8 out leaves about
+    // 3.7 mm of air, the same as a horizontal number riding 4 above its line.
     return vertical
-      ? el('text', { x: x + 5, y, 'font-size': 6, 'font-family': 'Arial, sans-serif', fill: INK, transform: `rotate(-90 ${x + 5} ${y})`, 'data-clear': 'true' }, number)
+      ? el('text', { x: x + 8, y, 'font-size': 6, 'font-family': 'Arial, sans-serif', fill: INK, transform: `rotate(-90 ${x + 8} ${y})`, 'data-clear': 'true' }, number)
       : text(x, y - 4, number, { size: 6, anchor: 'middle' });
   };
 
@@ -262,21 +265,57 @@ export function createSheet(opts = {}) {
       else shapes.push(text(x, y + 26, tag, { size: 7, anchor: 'middle' }));
       return tag;
     },
-    strainer(id, x, y) {
+    strainer(id, x, y, orient = 'h', tagSide = 'left') {
       kinds.add('filter.strainer');
       marks.push(comment(`symbol kind=filter.strainer id=${id}`));
       shapes.push(el('path', { d: `M ${x} ${y - 7} L ${x + 7} ${y} L ${x} ${y + 7} L ${x - 7} ${y} Z`, fill: '#fff', stroke: INK, 'stroke-width': WEIGHTS.process }));
-      shapes.push(text(x, y + 18, id, { size: 7, anchor: 'middle' }));
+      // On a vertical pipe a tag below the diamond would sit on the pipe itself.
+      if (orient === 'v') shapes.push(text(tagSide === 'right' ? x + 10 : x - 10, y + 2.5, id, { size: 7, anchor: tagSide === 'right' ? 'start' : 'end' }));
+      else shapes.push(text(x, y + 18, id, { size: 7, anchor: 'middle' }));
       return id;
     },
-    psv(tag, x, y, set) {
+    // Angle body: an inlet triangle and an outlet triangle meet at (x, y), each
+    // with a 3-unit stem, so pipes connect 10 from the center: inlet below
+    // (x, y + 10) and outlet right (x + 10, y) by default. The spring rises
+    // opposite the inlet; the tag and set pressure sit opposite the outlet.
+    psv(tag, x, y, set, opts2 = {}) {
+      const DIRS = { right: [1, 0], left: [-1, 0], up: [0, -1], down: [0, 1] };
+      const outlet = opts2.outlet ?? 'right';
+      const inlet = opts2.inlet ?? (outlet === 'left' || outlet === 'right' ? 'down' : 'left');
+      const o = DIRS[outlet];
+      const n = DIRS[inlet];
+      if (!o || !n || o[0] * n[0] + o[1] * n[1] !== 0) {
+        throw new Error(`psv ${tag}: inlet ${inlet} and outlet ${outlet} must be at right angles`);
+      }
       kinds.add('psv');
-      marks.push(comment(`symbol kind=psv id=${tag}`));
-      shapes.push(el('line', { x1: x, y1: y + 10, x2: x, y2: y - 4, stroke: INK, 'stroke-width': WEIGHTS.process }));
-      shapes.push(el('path', { d: `M ${x} ${y - 4} L ${x + 3} ${y - 1} L ${x - 3} ${y + 2} L ${x + 3} ${y + 5} L ${x - 3} ${y + 8}`, fill: 'none', stroke: INK, 'stroke-width': WEIGHTS.utility }));
-      shapes.push(el('path', { d: `M ${x} ${y - 4} L ${x + 12} ${y - 4} L ${x + 12} ${y + 2} L ${x} ${y + 2}`, fill: 'none', stroke: INK, 'stroke-width': WEIGHTS.process }));
-      shapes.push(text(x + 14, y - 2, tag, { size: 6 }));
-      if (set) shapes.push(text(x + 14, y + 6, set, { size: 6 }));
+      marks.push(comment(`symbol kind=psv id=${tag} inlet=${inlet} outlet=${outlet}`));
+      const at = (v, d, w = [0, 0], e = 0) => [x + v[0] * d + w[0] * e, y + v[1] * d + w[1] * e].map((c) => Math.round(c * 100) / 100 + 0);
+      const P = (pt) => `${pt[0]} ${pt[1]}`;
+      const sp = [-n[0], -n[1]];
+      shapes.push(el('path', {
+        d: `M ${x} ${y} L ${P(at(n, 7, o, 3.5))} L ${P(at(n, 7, o, -3.5))} Z M ${x} ${y} L ${P(at(o, 7, n, 3.5))} L ${P(at(o, 7, n, -3.5))} Z`,
+        fill: '#fff', stroke: INK, 'stroke-width': WEIGHTS.process,
+      }));
+      for (const v of [n, o]) {
+        const [x1, y1] = at(v, 7);
+        const [x2, y2] = at(v, 10);
+        shapes.push(el('line', { x1, y1, x2, y2, stroke: INK, 'stroke-width': WEIGHTS.process }));
+      }
+      const zig = [at(sp, 3), at(sp, 4.5, o, 2.5), at(sp, 6.5, o, -2.5), at(sp, 8.5, o, 2.5), at(sp, 10.5, o, -2.5), at(sp, 12)];
+      shapes.push(el('line', { x1: x, y1: y, x2: zig[0][0], y2: zig[0][1], stroke: INK, 'stroke-width': WEIGHTS.utility }));
+      shapes.push(el('path', { d: `M ${zig.map(P).join(' L ')}`, fill: 'none', stroke: INK, 'stroke-width': WEIGHTS.utility }));
+      const t = [-o[0], -o[1]];
+      if (t[0]) {
+        const anchor = t[0] < 0 ? 'end' : 'start';
+        shapes.push(text(x + t[0] * 6, y - 4, tag, { size: 6, anchor }));
+        if (set) shapes.push(text(x + t[0] * 6, y + 3, set, { size: 6, anchor }));
+      } else if (t[1] > 0) {
+        shapes.push(text(x, y + 10, tag, { size: 6, anchor: 'middle' }));
+        if (set) shapes.push(text(x, y + 17, set, { size: 6, anchor: 'middle' }));
+      } else {
+        shapes.push(text(x, y - 13, tag, { size: 6, anchor: 'middle' }));
+        if (set) shapes.push(text(x, y - 6, set, { size: 6, anchor: 'middle' }));
+      }
       return tag;
     },
     orifice(id, x, y) {
@@ -307,12 +346,8 @@ export function createSheet(opts = {}) {
       }
       shapes.push(text(x, y - 1, letters, { size: 6, anchor: 'middle' }));
       shapes.push(text(x, y + 7, number, { size: 6, anchor: 'middle' }));
-      // A signal leaving the bubble at mid-height would strike a right-side tag,
-      // and a side tag can hit the next symbol; below or left keep it clear.
-      const place = opts2.tag ?? 'right';
-      if (place === 'below') shapes.push(text(x, y + r + 9, tag, { size: 6, anchor: 'middle' }));
-      else if (place === 'left') shapes.push(text(x - r - 3, y + 2, tag, { size: 6, anchor: 'end' }));
-      else shapes.push(text(x + r + 3, y + 2, tag, { size: 6 }));
+      // The bubble already reads as the tag (letters over number), so no second
+      // tag is printed beside it. The old `tag` placement option is accepted and ignored.
       return tag;
     },
     offpage(label, x, y, dir = 'out', w = 22) {
@@ -377,7 +412,7 @@ export function createSheet(opts = {}) {
       const [x2, y2] = pts[pts.length - 1];
       return api.add(kind, id, x1 + (x2 - x1) * at, y1 + (y2 - y1) * at, id);
     },
-    valve(body, actuator, id, x, y, fail = 'FC', orient = 'h') {
+    valve(body, actuator, id, x, y, fail = 'FC', orient = 'h', tagSide = 'left') {
       kinds.add(`valve.${body}.${actuator}`);
       marks.push(comment(`symbol kind=valve.${body}.${actuator} id=${id} fail=${fail}`));
       const v = orient === 'v';
@@ -408,12 +443,23 @@ export function createSheet(opts = {}) {
         }
       }
       if (body !== 'check' || fail !== 'FC') shapes.push(text(x + 8, y - 6, fail, { size: 6 }));
-      shapes.push(text(v ? x : x - 6, y + (v ? 16 : 14), id, { size: 7, anchor: 'middle' }));
+      // On a vertical pipe a tag below the body would sit on the pipe, so it goes
+      // beside it: left by default, or right past the actuator (and fail letters).
+      if (v && tagSide === 'right') shapes.push(text(x + (body === 'check' ? 7 : 15), y + 2.5, id, { size: 7, anchor: 'start' }));
+      else if (v) shapes.push(text(x - 7, y + 2.5, id, { size: 7, anchor: 'end' }));
+      else shapes.push(text(x - 6, y + 14, id, { size: 7, anchor: 'middle' }));
       return id;
     },
-    arrow(x, y, clear = true) {
-      marks.push(comment(`arrow at=${x},${y} clear=${clear ? 'true' : 'false'}`));
-      shapes.push(el('path', { d: `M ${x - 4} ${y - 2} L ${x} ${y} L ${x - 4} ${y + 2}`, fill: 'none', stroke: INK, 'stroke-width': WEIGHTS.process }));
+    // An open chevron with its tip at (x, y), pointing the way the flow runs.
+    arrow(x, y, clear = true, dir = 'right') {
+      const wings = {
+        right: [[-4, -2], [-4, 2]], left: [[4, -2], [4, 2]],
+        up: [[-2, 4], [2, 4]], down: [[-2, -4], [2, -4]],
+      }[dir];
+      if (!wings) throw new Error(`arrow direction ${dir} is not right, left, up or down`);
+      marks.push(comment(`arrow at=${x},${y} clear=${clear ? 'true' : 'false'} dir=${dir}`));
+      const [[ax, ay], [bx, by]] = wings;
+      shapes.push(el('path', { d: `M ${x + ax} ${y + ay} L ${x} ${y} L ${x + bx} ${y + by}`, fill: 'none', stroke: INK, 'stroke-width': WEIGHTS.process }));
     },
     hop(x, y, r = 1.5) {
       marks.push(comment(`hop r=${r}`));

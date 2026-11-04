@@ -92,9 +92,52 @@ function overlaps(a, b) {
   return a.x0 < b.x1 && b.x0 < a.x1 && a.y0 < b.y1 && b.y0 < a.y1;
 }
 
-// Line, polyline and path segments as centerlines. Curves contribute only
-// their endpoints (rects and circles are checked by their edges, not needed
-// here): clearance is about labels struck by straight runs.
+// Circular arc (the kit draws rx = ry, no rotation) as short chords, from the
+// SVG endpoint parameterisation (SVG 1.1 F.6.5).
+function arcChords(x1, y1, r, large, sweep, x2, y2) {
+  const hx = (x1 - x2) / 2;
+  const hy = (y1 - y2) / 2;
+  const d2 = hx * hx + hy * hy;
+  if (!d2 || !r) return [[x1, y1, x2, y2]];
+  const rr = Math.max(Math.abs(r), Math.sqrt(d2));
+  const k = (large !== sweep ? 1 : -1) * Math.sqrt(Math.max(0, (rr * rr - d2) / d2));
+  const cx = k * hy + (x1 + x2) / 2;
+  const cy = -k * hx + (y1 + y2) / 2;
+  const a1 = Math.atan2(y1 - cy, x1 - cx);
+  let da = Math.atan2(y2 - cy, x2 - cx) - a1;
+  if (sweep && da < 0) da += 2 * Math.PI;
+  if (!sweep && da > 0) da -= 2 * Math.PI;
+  const out = [];
+  let [px, py] = [x1, y1];
+  for (let s = 1; s <= 12; s++) {
+    const a = a1 + (da * s) / 12;
+    const [nx, ny] = s === 12 ? [x2, y2] : [cx + rr * Math.cos(a), cy + rr * Math.sin(a)];
+    out.push([px, py, nx, ny]);
+    [px, py] = [nx, ny];
+  }
+  return out;
+}
+
+// Bezier (quadratic or cubic) as short chords.
+function bezierChords(pts) {
+  const out = [];
+  const at = (t) => {
+    let p = pts;
+    while (p.length > 1) p = p.slice(1).map((q, i) => [p[i][0] + (q[0] - p[i][0]) * t, p[i][1] + (q[1] - p[i][1]) * t]);
+    return p[0];
+  };
+  let prev = pts[0];
+  for (let s = 1; s <= 12; s++) {
+    const next = at(s / 12);
+    out.push([prev[0], prev[1], next[0], next[1]]);
+    prev = next;
+  }
+  return out;
+}
+
+// Line, polyline and path segments as centerlines; arcs and Bezier curves are
+// flattened into short chords so a label on a vent hood or an actuator dome is
+// caught too. Rects are checked by their edges; circles by circleHitsBox.
 function lineSegments(svg) {
   const segs = [];
   const push = (x1, y1, x2, y2) => {
@@ -138,11 +181,17 @@ function lineSegments(svg) {
         push(cx, cy, sx, sy);
         [cx, cy] = [sx, sy];
       } else if (/[ACSTQ]/i.test(cmd)) {
-        // Curves and arcs: only the endpoint matters for clearance.
         const count = /A/i.test(cmd) ? 7 : /C/i.test(cmd) ? 6 : 4;
         const nums = [];
         for (let k = 0; k < count && i < toks.length; k++) nums.push(Number(toks[i++]));
-        if (nums.length >= 2) [cx, cy] = nums.slice(-2);
+        if (nums.length < count) break;
+        let chords = [];
+        if (cmd === 'A') chords = arcChords(cx, cy, nums[0], nums[3] !== 0, nums[4] !== 0, nums[5], nums[6]);
+        else if (cmd === 'C') chords = bezierChords([[cx, cy], [nums[0], nums[1]], [nums[2], nums[3]], [nums[4], nums[5]]]);
+        else if (cmd === 'Q') chords = bezierChords([[cx, cy], [nums[0], nums[1]], [nums[2], nums[3]]]);
+        else chords = [[cx, cy, ...nums.slice(-2)]]; // S and T: the kit never emits them; keep the chord
+        for (const [a, b, c, d] of chords) push(a, b, c, d);
+        [cx, cy] = nums.slice(-2);
       }
     }
   }
@@ -154,6 +203,28 @@ function lineSegments(svg) {
     push(x, y + h, x, y);
   }
   return segs;
+}
+
+// Every <circle>: bubbles, pump casings, motor and seat dots.
+function circles(svg) {
+  const out = [];
+  for (const m of svg.matchAll(/<circle\b([^>]*)\/>/g)) {
+    const get = (name) => Number((m[1].match(new RegExp(`\\b${name}="([\\d.]+)"`)) ?? [])[1]);
+    const c = { cx: get('cx'), cy: get('cy'), r: get('r') };
+    if (Number.isFinite(c.cx + c.cy + c.r) && c.r > 0) out.push(c);
+  }
+  return out;
+}
+
+// A label strikes a circle when the circle's disc reaches into the label box
+// but the box is not wholly inside the circle: a bubble's own letters sit
+// inside and pass; a tag across the outline, or a dot inside a word, fails.
+function circleHitsBox({ cx, cy, r }, box) {
+  const nx = Math.min(Math.max(cx, box.x0), box.x1);
+  const ny = Math.min(Math.max(cy, box.y0), box.y1);
+  if (Math.hypot(nx - cx, ny - cy) >= r) return false;
+  const far = Math.hypot(Math.max(Math.abs(box.x0 - cx), Math.abs(box.x1 - cx)), Math.max(Math.abs(box.y0 - cy), Math.abs(box.y1 - cy)));
+  return far > r;
 }
 
 function segHitsBox(x1, y1, x2, y2, box) {
@@ -232,9 +303,11 @@ export function runQA(svg) {
   }
   if (!fails.some((f) => f.code === 'LABEL.CLEARANCE')) {
     const runs = lineSegments(svg);
+    const rings = circles(svg);
     for (const box of labels) {
       const hit = runs.find(([x1, y1, x2, y2]) => segHitsBox(x1, y1, x2, y2, box));
       if (hit) fails.push({ code: 'LABEL.CLEARANCE', msg: `“${box.label}” sits on a line` });
+      else if (rings.some((c) => circleHitsBox(c, box))) fails.push({ code: 'LABEL.CLEARANCE', msg: `“${box.label}” sits on a circle` });
     }
   }
   return { pass: fails.length === 0, fails };
