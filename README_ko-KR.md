@@ -11,7 +11,7 @@
 <a href="https://github.com/wjgoarxiv/litmuse/stargazers"><img src="https://img.shields.io/github/stars/wjgoarxiv/litmuse?style=flat" alt="GitHub stars" /></a>
 </p>
 
-<p align="center"><a href="#설치">설치</a> &nbsp; <a href="#빠른-시작">빠른 시작</a> &nbsp; <a href="#상태-카드">상태 카드</a> &nbsp; <a href="#자동-핸드오프">핸드오프</a> &nbsp; <a href="#안전과-제거">안전</a> &nbsp; <a href="./README.md">English</a></p>
+<p align="center"><a href="#muse-앱에서도">Muse 앱</a> &nbsp; <a href="#설치">설치</a> &nbsp; <a href="#빠른-시작">빠른 시작</a> &nbsp; <a href="#상태-카드">상태 카드</a> &nbsp; <a href="#자동-핸드오프">핸드오프</a> &nbsp; <a href="#안전과-제거">안전</a> &nbsp; <a href="./README.md">English</a></p>
 
 ## 세션은 이렇게 돌아갑니다
 
@@ -43,6 +43,14 @@ Muse Code는 시작이 빠릅니다. 터미널에 한 줄 적으면 바로 일�
 LitMuse는 세션마다 따라갈 순서를 줍니다. 프롬프트를 `lit`으로 시작하면 플러그인의 프롬프트 훅이 어떤 LitMuse 스킬을 먼저 불러올지 Muse에 알려 줍니다. 큰 변경은 먼저 `plans/`에 계획으로 적습니다. 작업은 그 계획에 맞춰 테스트와 실제 화면 확인으로 검증하고, 확인하지 못한 부분은 미확인으로 표시합니다. 끝내기 전에는 `.litmuse/handoff/`에 무엇을 만들었고 어떻게 확인했고 무엇이 남았는지 기록합니다.
 
 세션을 돌리고 모델을 고르는 것은 여전히 Muse입니다. LitMuse는 일하는 방식을 더하고, 그 방식은 직접 읽을 수 있는 평범한 파일로 남습니다.
+
+## Muse 앱에서도
+
+Meta의 Muse 제품은 두 가지입니다. 이 README가 다루는 Muse Code는 터미널에서 쓰는 에이전트이고, Muse 앱은 채팅 창과 사이드챗, 노트, 할 일을 갖춘 데스크톱 에이전트입니다. LitFamily는 Muse 앱 안에서도 돌아갑니다. lit 스킬이 똑같이 불려 오고, 답은 터미널에서 보던 점화 표시로 시작합니다.
+
+아래 화면은 Muse 앱에서 새로 연 사이드챗 하나입니다. 터미널에서 쓰는 작은 오픈소스 메모 도구의 이름 후보를 `/lit-brainstorm`에 물었습니다. 답은 `🔥 LIT IGNITED · lit-brainstorm 🔥`로 시작하고, 점수를 매기기 전에 가중치 기준부터 정합니다. 이미 쓰이는 이름(`jot`, `memo`, `mnemo`, `scratch`, `margin`)을 먼저 걸러 낸 뒤 상위 10개 점수표를 보여 줍니다.
+
+<p align="center"><img src="./docs/assets/muse-app/lit-brainstorm.webp" width="420" alt="Muse 데스크톱 앱의 사이드챗 하나. 제목은 터미널 메모 도구 이름 추천. 사용자 프롬프트는 /lit-brainstorm 뒤에 작은 오픈소스 터미널 메모 도구의 이름 후보와 점수를 묻는 한국어 요청. 답은 🔥 LIT IGNITED · lit-brainstorm 🔥로 시작해, 후보 32개를 뽑고 이미 쓰이는 이름을 먼저 걸렀다고 말하고, 100점 환산 가중치 기준과 탈락한 jot, memo, mnemo, scratch, margin을 적은 뒤, termemo 87%, jotlet 80%, memlet 80%가 앞선 상위 10개 점수표를 보여 준다." /></p>
 
 ## 설치
 

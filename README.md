@@ -11,7 +11,7 @@
 <a href="https://github.com/wjgoarxiv/litmuse/stargazers"><img src="https://img.shields.io/github/stars/wjgoarxiv/litmuse?style=flat" alt="GitHub stars" /></a>
 </p>
 
-<p align="center"><a href="#install">Install</a> &nbsp; <a href="#quick-start">Quick start</a> &nbsp; <a href="#the-status-card">Status card</a> &nbsp; <a href="#automatic-handoff">Handoff</a> &nbsp; <a href="#safety-and-uninstall">Safety</a> &nbsp; <a href="./README_ko-KR.md">한국어</a></p>
+<p align="center"><a href="#in-the-muse-app-too">Muse app</a> &nbsp; <a href="#install">Install</a> &nbsp; <a href="#quick-start">Quick start</a> &nbsp; <a href="#the-status-card">Status card</a> &nbsp; <a href="#automatic-handoff">Handoff</a> &nbsp; <a href="#safety-and-uninstall">Safety</a> &nbsp; <a href="./README_ko-KR.md">한국어</a></p>
 
 ## What a session looks like
 
@@ -43,6 +43,14 @@ Muse Code starts fast: you type a line in the terminal and it gets to work. The 
 LitMuse gives each session a routine. Start a prompt with `lit` and the plugin's prompt hook tells Muse which LitMuse skill to load before it touches anything. A bigger change gets a written plan in `plans/` first. The work is checked against that plan with tests and a look at the real surface, and anything nobody could check is marked as unverified. Before you stop, a handoff in `.litmuse/handoff/` records what was built, how it was checked and what is left.
 
 Muse still runs the session and picks the model. LitMuse adds the way of working, and it lives in plain files you can read.
+
+## In the Muse app too
+
+Meta ships two Muse products. Muse Code is the terminal agent this README is about. The Muse app is the desktop agent with a chat window, side chats, notes and tasks. LitFamily also works inside the Muse app: its lit skills load there the same way, and a reply opens with the same ignition mark you see in the terminal.
+
+The capture below is one new side chat in the Muse app. The prompt asks `/lit-brainstorm` for names for a small open-source note tool you use from the terminal. The answer opens with `🔥 LIT IGNITED · lit-brainstorm 🔥`, sets weighted criteria before scoring, first drops the names that are already taken (`jot`, `memo`, `mnemo`, `scratch`, `margin`), and then shows a scored table of the top ten.
+
+<p align="center"><img src="./docs/assets/muse-app/lit-brainstorm.webp" width="420" alt="One side chat in the Muse desktop app titled 터미널 메모 도구 이름 추천. The user prompt reads /lit-brainstorm followed by a Korean request for name ideas and scores for a small open-source terminal note tool. The reply starts with 🔥 LIT IGNITED · lit-brainstorm 🔥, says 32 candidates were drawn and taken names were removed first, lists weighted criteria on a 100-point scale, names jot, memo, mnemo, scratch and margin as dropped, and shows a top-10 score table led by termemo 87%, jotlet 80% and memlet 80%." /></p>
 
 ## Install
 
