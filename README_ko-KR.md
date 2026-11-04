@@ -15,7 +15,7 @@
 
 ## 세션은 이렇게 돌아갑니다
 
-<p align="center"><img src="./docs/assets/readme/demo.webp" width="960" alt="이 Mac에서 실행한 실제 명령 세 개의 터미널 캡처. muse --version은 Muse Code 1.4.11을 출력합니다. litmuse status --card는 lit-plan 경로가 활성 상태이며 계획이 0/2이고 다음 행을 가리킵니다. litmuse models는 호스트 카탈로그의 muse-spark 모델을 보여 줍니다." /></p>
+<p align="center"><img src="./docs/assets/readme/demo.webp" width="960" alt="테스트 프로젝트에서 실행한 실제 명령 세 개의 터미널 카드. muse --version은 Muse Code 1.4.14를 출력합니다. litmuse status --card는 lit-plan 경로가 30초째 활성이고 plans/todo-app.md 계획이 0/2이며 다음 행이 1. Add the shout flag임을 보여 줍니다. litmuse models는 muse-spark-1.3(기본)과 muse-spark-1.2, 각 모델의 effort 단계를 보여 줍니다." /></p>
 
 세 줄로 줄이면 계획 세션은 이렇게 흘러갑니다.
 
@@ -109,15 +109,15 @@ Muse의 `/hud`는 켜고 끄는 고정 항목 목록이라서 플러그인 글�
 
 쉴 때 카드는 활성 경로가 없다고 알립니다.
 
-<p align="center"><img src="./docs/assets/card/idle.webp" width="960" alt="활성 경로가 없는 상태의 상태 카드." /></p>
+<p align="center"><img src="./docs/assets/card/idle.webp" width="960" alt="실행 중인 경로가 없을 때의 litmuse status --card 터미널 카드. 이 워크스페이스에 활성 경로가 없고, plans/todo-app.md 계획은 0/2, 다음 행은 1. Add the shout flag입니다." /></p>
 
 계획이 돌 때 카드는 경로와 계획 파일, 다음 행을 보여 줍니다.
 
-<p align="center"><img src="./docs/assets/card/working.webp" width="960" alt="lit-plan 경로가 활성 상태인 카드. 계획 파일의 0/2행과 다음으로 풀 행을 가리킵니다." /></p>
+<p align="center"><img src="./docs/assets/card/working.webp" width="960" alt="lit-plan이 실행 중일 때의 litmuse status --card 터미널 카드. lit-plan이 30초째 활성이고 lit-plan 스레드 하나가 실행 중이며, plans/todo-app.md 계획은 0/2, 다음 행은 1. Add the shout flag입니다." /></p>
 
 행에 체크하면 개수와 다음 행 표시가 바뀝니다.
 
-<p align="center"><img src="./docs/assets/card/after.webp" width="960" alt="첫 행을 체크한 뒤의 같은 카드. 1/2이며 두 번째 행을 다음으로 가리킵니다." /></p>
+<p align="center"><img src="./docs/assets/card/after.webp" width="960" alt="1번 행을 체크한 뒤의 같은 카드. plans/todo-app.md 계획이 1/2가 되고 다음 행은 2. Write the tests입니다." /></p>
 
 카드는 프로젝트 밖에 있는 `~/.local/state/litmuse/` 아래 훅 기록을 읽습니다.
 
@@ -127,17 +127,17 @@ Muse의 `/hud`는 켜고 끄는 고정 항목 목록이라서 플러그인 글�
 
 훅은 기록 한 줄로 답합니다.
 
-<p align="center"><img src="./docs/assets/handoff/saved.webp" width="960" alt="PreCompact 훅의 출력 한 줄. .litmuse/handoff/latest.md를 저장했다고 기록합니다." /></p>
+<p align="center"><img src="./docs/assets/handoff/saved.webp" width="960" alt="muse plugins hook test로 PreCompact 훅을 실행한 터미널 카드. 상태 completed, 종료 코드 0, 시스템 메시지 LitMuse saved .litmuse/handoff/latest.md." /></p>
 
 스냅샷에는 실행 계기, 세션, 경로, 열린 행이 있는 계획, 최근 기록 줄이 들어갑니다.
 
-<p align="center"><img src="./docs/assets/handoff/latest.webp" width="960" alt="인계 스냅샷. 실행 계기와 세션, lit-plan 경로, 0개 체크와 2개 열린 행의 계획, 최근 기록 줄을 보여 줍니다." /></p>
+<p align="center"><img src="./docs/assets/handoff/latest.webp" width="960" alt="cat .litmuse/handoff/latest.md 터미널 카드. LitMuse 압축 스냅샷으로 trigger manual, 세션 readme-demo-01, lit-plan 경로, 0개 체크와 2개 열린 행의 plans/todo-app.md 계획, 다음 열린 행, read_file과 write_file의 최근 기록 두 줄을 보여 줍니다." /></p>
 
 ## 만들 수 있는 것
 
 품질 패리티 라운드에서 Mac에서 직접 렌더한 결과물 4종입니다. 파일을 열어 눈으로 읽고, 어색한 곳은 고쳐 다시 렌더했습니다.
 
-<p align="center"><img src="./docs/assets/parity/lit-adhd-brief.png" width="960" alt="실제 터미널의 lit-adhd 브리프. 무지개 헤드라인, 목표와 작업 시간이 적힌 활성 세션 카드 하나, 도구, 완료된 커밋, 박스형 권장 다음 단계." /></p>
+<p align="center"><img src="./docs/assets/parity/lit-adhd-brief.png" width="960" alt="litmuse rewind로 출력한 lit-adhd 브리프의 터미널 카드. 세션 2개와 대기 0개를 알리는 무지개 헤드라인, todo-app에서 끝난 두 세션의 표, plans/todo-app.md의 1/2 로드맵 게이지, 계획 시작을 권하는 박스형 다음 단계." /></p>
 
 `lit-adhd`는 실행 중 세션을 브리핑합니다. 상태 뱃지가 달린 세션 카드와 종료 표, 박스형 권장 다음 단계 — 터미널 색상 그대로, 내부 필드 이름은 새지 않습니다.
 
@@ -145,7 +145,7 @@ Muse의 `/hud`는 켜고 끄는 고정 항목 목록이라서 플러그인 글�
 
 `lit-pptx`는 자료로 실제 덱을 엮습니다. 이 덱은 포팅 웨이브별 테스트 스위트 증가를 그립니다.
 
-<p align="center"><img src="./docs/assets/parity/lit-schematic-pid.png" width="960" alt="lit-schematic P&ID. 탱크 TK-101, 상용·예비 도징 펌프, 릴리프 밸브 스필백, 계장 버블, 라인 번호, 심벌 범례, EX-PID-001 타이틀 블록을 갖춘 차아염소산나트륨 도징 스키드." /></p>
+<p align="center"><img src="./docs/assets/parity/lit-schematic-pid.png" width="960" alt="예시 값으로 그린 작업 예제임을 밝힌 lit-schematic 차아염소산나트륨 도징 스키드 P&ID. LT-101·LIA-101이 달린 탱크 TK-101, 차단 밸브 HV-101과 스트레이너 STR-101, 체크 밸브가 달린 상용·예비 펌프 P-101A·P-101B, 8 barg에서 탱크로 되돌리는 PSV-101, 토출 측 PI-101과 FIT-101, 라인 번호, 범례, EX-PID-001 rev B 타이틀 블록." /></p>
 
 `lit-schematic`은 QA를 통과한 P&ID를 그립니다. 실제 심벌과 범례, 라인 번호, 타이틀 블록을 갖춘 도징 스키드이며, 모든 라벨이 읽힐 때까지 일곱 번 고쳐 그렸습니다.
 

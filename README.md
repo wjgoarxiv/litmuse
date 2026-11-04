@@ -15,7 +15,7 @@
 
 ## What a session looks like
 
-<p align="center"><img src="./docs/assets/readme/demo.webp" width="960" alt="Terminal capture of three real commands on this Mac. muse --version prints Muse Code 1.4.11. litmuse status --card shows the lit-plan route active with plan 0 of 2 and the next open row. litmuse models lists the muse-spark models from the host catalog." /></p>
+<p align="center"><img src="./docs/assets/readme/demo.webp" width="960" alt="Terminal card of three real commands in a test project. muse --version prints Muse Code 1.4.14. litmuse status --card shows the lit-plan route active for 30s with plan 0/2 in plans/todo-app.md and next row 1, Add the shout flag. litmuse models lists muse-spark-1.3 (default) and muse-spark-1.2 with their effort levels." /></p>
 
 Stripped to three lines, a planning session goes like this:
 
@@ -109,15 +109,15 @@ Read the card from top to bottom. The first line names the workflow and how long
 
 At rest the card reports no active route:
 
-<p align="center"><img src="./docs/assets/card/idle.webp" width="960" alt="The status card with no active route in this workspace." /></p>
+<p align="center"><img src="./docs/assets/card/idle.webp" width="960" alt="Terminal card of litmuse status --card with no route running: LIT, no active route in this workspace, plan 0/2 in plans/todo-app.md, next row 1, Add the shout flag." /></p>
 
 While a plan runs, the card names the route, the plan file, and the next open row:
 
-<p align="center"><img src="./docs/assets/card/working.webp" width="960" alt="The status card while the lit-plan route is active, naming the plan file with 0 of 2 rows ticked and the next open row." /></p>
+<p align="center"><img src="./docs/assets/card/working.webp" width="960" alt="Terminal card of litmuse status --card while lit-plan runs: LIT, lit-plan, active 30s, one lit-plan thread running, plan 0/2 in plans/todo-app.md, next row 1, Add the shout flag." /></p>
 
 Ticking a row moves the count and the next-row pointer:
 
-<p align="center"><img src="./docs/assets/card/after.webp" width="960" alt="The same card after the first row is ticked: 1 of 2 with the second row named next." /></p>
+<p align="center"><img src="./docs/assets/card/after.webp" width="960" alt="The same card after row 1 is ticked: plan 1/2 in plans/todo-app.md, next row 2, Write the tests." /></p>
 
 The card reads the hook-kept state under `~/.local/state/litmuse/`, outside the project.
 
@@ -127,17 +127,17 @@ A long session fills the model's context, and when Muse compacts it, detail drop
 
 The hook answers with one recorded line:
 
-<p align="center"><img src="./docs/assets/handoff/saved.webp" width="960" alt="The PreCompact hook output line recording that it saved .litmuse/handoff/latest.md." /></p>
+<p align="center"><img src="./docs/assets/handoff/saved.webp" width="960" alt="Terminal card of muse plugins hook test running the PreCompact hook: status completed, exit code 0, system message LitMuse saved .litmuse/handoff/latest.md." /></p>
 
 The snapshot names the trigger, the session, the route, the plan with its open rows, and recent ledger lines:
 
-<p align="center"><img src="./docs/assets/handoff/latest.webp" width="960" alt="The handoff snapshot: trigger, session, the lit-plan route, the plan with 0 ticked and 2 open rows, and recent ledger lines." /></p>
+<p align="center"><img src="./docs/assets/handoff/latest.webp" width="960" alt="Terminal card of cat .litmuse/handoff/latest.md: the LitMuse compaction snapshot with trigger manual, session readme-demo-01, route lit-plan, plan plans/todo-app.md with 0 ticked and 2 open, the next open row, and two recent ledger lines for read_file and write_file." /></p>
 
 ## What you can make
 
 Four real outputs rendered on a Mac during the quality parity round, each opened, read, and fixed until it looked right:
 
-<p align="center"><img src="./docs/assets/parity/lit-adhd-brief.png" width="960" alt="The lit-adhd brief in a real terminal: rainbow headline, one active session card with goal and work time, tools, the finished commit, and a boxed recommended next step." /></p>
+<p align="center"><img src="./docs/assets/parity/lit-adhd-brief.png" width="960" alt="Terminal card of litmuse rewind, the lit-adhd brief: a rainbow headline with 2 sessions and 0 waiting on you, a table of the two ended sessions in todo-app, the roadmap gauge for plans/todo-app.md at 1/2, and a boxed recommended next step to start the plan." /></p>
 
 `lit-adhd` briefs your live sessions: session cards with status badges, an ended table, and a boxed recommended step — colour on TTY, no internal field names leaking.
 
@@ -145,7 +145,7 @@ Four real outputs rendered on a Mac during the quality parity round, each opened
 
 `lit-pptx` compiles real decks from data: this one charts the port's own test-suite growth, wave by wave.
 
-<p align="center"><img src="./docs/assets/parity/lit-schematic-pid.png" width="960" alt="A lit-schematic P&ID: a sodium hypochlorite dosing skid with tank TK-101, duty and standby dosing pumps, a relief-valve spillback, instrument bubbles, line numbers, a drawn-symbol legend, and title block EX-PID-001." /></p>
+<p align="center"><img src="./docs/assets/parity/lit-schematic-pid.png" width="960" alt="A lit-schematic P&ID of a hypochlorite dosing skid, marked as a worked example with invented values: tank TK-101 with LT-101 and LIA-101, isolation valve HV-101 and strainer STR-101, duty and standby pumps P-101A and P-101B with check valves, PSV-101 set at 8 barg relieving back to the tank, PI-101 and FIT-101 on the discharge, line numbers, a legend, and title block EX-PID-001 rev B." /></p>
 
 `lit-schematic` draws QA-checked P&IDs: a dosing skid with real symbols, a drawn legend, line numbers, and a title block — seven look rounds until every label read cleanly.
 
