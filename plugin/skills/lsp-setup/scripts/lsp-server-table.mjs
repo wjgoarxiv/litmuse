@@ -9,7 +9,7 @@ export const LANGUAGES = [
   { language: 'typescript', serverId: 'typescript', command: ['typescript-language-server', '--stdio'],
     extensions: ['.ts', '.tsx', '.js', '.jsx', '.mjs', '.cjs', '.mts', '.cts'], checker: 'tsc',
     projectFiles: ['tsconfig.json', 'jsconfig.json'],
-    installHint: 'npm install --save-dev typescript typescript-language-server (project) or npm install -g typescript-language-server typescript' },
+    installHint: 'npm install --save-dev typescript@6 typescript-language-server (project) or npm install -g typescript-language-server typescript@6' },
   { language: 'python', serverId: 'basedpyright', command: ['basedpyright-langserver', '--stdio'],
     extensions: ['.py', '.pyi'], checker: 'pyright', projectFiles: ['pyrightconfig.json', 'pyproject.toml', 'ruff.toml'],
     installHint: 'uv tool install basedpyright (or: pip install --user basedpyright)' },

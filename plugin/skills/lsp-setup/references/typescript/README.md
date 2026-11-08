@@ -8,8 +8,9 @@ Muse has no language-server tool, so the CLI checker is what produces evidence i
 
 ## Install (the user runs these)
 
-- Project-local (preferred): `npm install --save-dev typescript typescript-language-server`
-- Global: `npm install -g typescript-language-server typescript`
+- Project-local (preferred): `npm install --save-dev typescript@6 typescript-language-server`
+- Global: `npm install -g typescript-language-server typescript@6`
+- Pin `typescript@6`: TypeScript 7 ships no `lib/tsserver.js`, which `typescript-language-server` loads.
 - Only `typescript` is needed for the CLI path: `tsc` and `tsserver-query.mjs` use it, the language server wrapper is optional.
 
 Confirm afterwards:
