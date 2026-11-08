@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.10 — 2026-11-09
+
+- TypeScript language-server install hints pin `typescript@6`. TypeScript 7 ships no `lib/tsserver.js`, which `typescript-language-server` loads.
+
 ## 0.1.9 — 2026-11-06
 
 - lit-schematic QA catches three more drawing faults: a symbol that touches no line (a vent floating above a tank roof), a label pressed against a line or a circle with no air around it, and a line drawn straight through an open symbol. Tank tags can sit to the right of the tank. The legend rows have more room, and the dosing-skid example was relaid so the relief line no longer crosses pump A.
