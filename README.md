@@ -147,7 +147,7 @@ Four real outputs rendered on a Mac during the quality parity round, each opened
 
 <p align="center"><img src="./docs/assets/parity/lit-adhd-brief.png" width="960" alt="Terminal card of litmuse rewind, the lit-adhd brief: a rainbow headline with 2 sessions and 0 waiting on you, a table of the two ended sessions in todo-app, the roadmap gauge for plans/todo-app.md at 1/2, and a boxed recommended next step to start the plan." /></p>
 
-`lit-adhd` briefs your live sessions: session cards with status badges, an ended table, and a boxed recommended step — colour on TTY, no internal field names leaking.
+`lit-adhd` opens with a KPI board: the one thing to do now and the exact text to type, done / in progress / waiting on you / left counts with an overall bar, milestone rows with ten-cell bars, what you finished lately, what is still to do, and reminders such as uncommitted changes or a plan untouched for a week. `lit adhd detail` adds the per-session brief pictured above: session cards with status badges, an ended table, and a boxed recommended step — colour on TTY, no internal field names leaking.
 
 <p align="center"><img src="./docs/assets/parity/lit-pptx-deck.png" width="960" alt="A lit-pptx status deck: KPI row and a column chart of suite growth per wave." /></p>
 

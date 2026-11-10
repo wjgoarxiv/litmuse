@@ -18,6 +18,21 @@ workflow)` / `나를 기다림 (멈춘 워크플로)`.
 
 Order in the brief: waiting sessions first, then active, idle and done ones as full cards, newest first inside each group; ended sessions collapse into one short row each after the cards. A done card's next line names the plan its run finished (`start-work finished plans/a.md` / `plans/a.md start-work 완료`).
 
+## Board buckets
+
+The board shows four buckets only and never prints a status code. Each record maps into one bucket:
+
+| Record | Bucket | 한국어 | English |
+| --- | --- | --- | --- |
+| a plan row ticked, a goal criterion passed, a start-work run complete, a goal `complete` | ✅ | 끝남 | Done |
+| the first open row of a milestone that has started (some rows ticked, or a running start-work) | 🔄 | 진행 중 | In progress |
+| counted in the glance: this session or a lane `waiting-on-user` (asked something, a paused frame, a boundary), a blocked agent pane; shown as a milestone status: a plan whose start-work waits at a boundary, a goal `paused` / `blocked` (its open rows still count as left) | ⏳ | 나를 기다림 | Waiting on you |
+| every other open row; a milestone with nothing ticked | ⬜ | 남음 / 시작 전 | Left / Not started |
+
+`active`, `idle`, `done`, `ended` and `unknown` sessions do not become board items of their own. They feed
+"Do this now" through the next-step priority and the 🏃 reminder through `lanes`. They show by name
+only in the detail view.
+
 ## Sources
 
 Each entry of `sources` is `ok` or `unknown`. An `unknown` source is named once on the brief's last

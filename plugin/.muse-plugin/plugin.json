@@ -262,7 +262,7 @@
           "node",
           "hooks/user-prompt-submit.mjs",
           "--digest",
-          "ae51d52609149cdc"
+          "a6681cbef6d466ab"
         ],
         "timeoutMs": 5000,
         "statusMessage": "LitMuse route check"

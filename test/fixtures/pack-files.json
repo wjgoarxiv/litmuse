@@ -89,6 +89,7 @@
   "plugin/lib/pinned-fetch.mjs",
   "plugin/lib/plan-task-rows.mjs",
   "plugin/lib/render_pages.py",
+  "plugin/lib/rewind/board.mjs",
   "plugin/lib/rewind/collect.mjs",
   "plugin/lib/rewind/gauge.mjs",
   "plugin/lib/rewind/next-step.mjs",

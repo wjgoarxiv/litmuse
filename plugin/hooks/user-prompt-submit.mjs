@@ -82,8 +82,8 @@ function activation(hit, payload) {
     lines.push('This is a READ-ONLY route: report from what the skill reads; it starts, pauses, resumes and finishes nothing.');
   }
   if (hit.route === 'lit-adhd') {
-    lines.push('Run `litmuse rewind --json` once for the brief records, then report from that JSON alone.');
-    lines.push('Gauges follow D9 (`[▉▉▉░░] 3/5`, one cell per item up to ten, scaled above) with the remaining items under each gauge; an unknown total is never `?`: copy the `… N steps` fact line instead, never a guess.');
+    lines.push('Run `litmuse rewind --lang <ko|en>` once (`ko` for a Korean prompt) with `--session` set to this session id, and show the KPI board it prints as given: do this now, at a glance, milestones, done lately, still to do, don\'t forget. Add `--detail` only when the user asks for detail (`lit adhd 자세히`, `lit adhd detail`); the per-session list then sits under the board. `litmuse rewind --json` holds the same records and the board fields.');
+    lines.push('The collector draws every bar (`██████░░░░  6/10 (60%)`), count and reminder; never redraw, round or add to them. In the detail list, gauges follow D9 (`[▉▉▉░░] 3/5`, one cell per item up to ten, scaled above) with the remaining items under each gauge; an unknown total is never `?`: copy the `… N steps` fact line instead, never a guess.');
   }
   if (hit.trailing) {
     lines.push('Soft-confirm: `lit` came last in the prompt. If the request reads like ordinary prose, say in one line that you are starting a lit-loop and carry on; a stray English `lit` is recoverable.');

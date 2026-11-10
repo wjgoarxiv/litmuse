@@ -107,7 +107,7 @@
       "minFiles": 7
     },
     "lit-adhd": {
-      "minSkillBytes": 12000,
+      "minSkillBytes": 27000,
       "minFiles": 4
     },
     "lit-humanizer": {

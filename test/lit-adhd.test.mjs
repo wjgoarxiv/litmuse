@@ -44,6 +44,9 @@ test('every typed route activates lit-adhd with the read-only brief contract', (
       const ctx = ignite(where, prompt, `sess-fresh-${(sid += 1)}`);
       assert.match(ctx, /LIT IGNITED · lit-adhd/u, prompt);
       assert.match(ctx, /plugin:litmuse:lit-adhd/u, prompt);
+      assert.match(ctx, /litmuse rewind --lang <ko\|en>/u, `board run in context: ${prompt}`);
+      assert.match(ctx, /KPI board it prints as given/u, prompt);
+      assert.match(ctx, /`--detail` only when the user asks/u, `detail on request only: ${prompt}`);
       assert.match(ctx, /litmuse rewind --json/u, prompt);
       assert.match(ctx, /READ-ONLY/u, prompt);
       assert.match(ctx, /\[▉▉▉░░\] 3\/5/u, `gauge rule in context: ${prompt}`);
@@ -135,6 +138,12 @@ test('the skill body carries its contracts and cross-links lit-recap both ways',
   for (const rule of [/\[▉▉▉░░\] 3\/5/u, /remaining items?/iu, /never `?`/u, /… \d+ steps/u]) {
     assert.match(text, rule, 'gauge rule');
   }
+  for (const heading of ['## 🎯 지금 할 일', '## 📊 한눈에 보기', '## 🏁 마일스톤', '## ✅ 최근 끝낸 일', '## ⬜ 남은 일', '## 🔔 잊지 말 것', '## 🎯 Do this now', "## 🔔 Don't forget"]) {
+    assert.ok(text.includes(heading), `board section ${heading}`);
+  }
+  assert.match(text, /litmuse rewind --lang <ko\|en>/u, 'the board run');
+  assert.match(text, /### Detail view \(`--detail`\)/u, 'the detail list is on request');
+  assert.match(text, /Show its stdout as the reply, exactly as printed/u, 'shown as given');
   for (const ref of ['references/status-taxonomy.md', 'references/card-examples.md']) {
     assert.ok(text.includes(ref), ref);
     assert.ok(existsSync(join(SKILL, ref)), ref);
@@ -167,6 +176,13 @@ test('the collector runs from the package bin and the skill fallback runs the sa
     });
     assert.equal(fallback.status, 0, fallback.stderr);
     assert.equal(JSON.parse(fallback.stdout).next.kind, 'start-plan');
+    const board = spawnSync(process.execPath, [join(SKILL, 'scripts', 'rewind.mjs'), '--here', '--lang', 'ko'], {
+      cwd: where.ws,
+      encoding: 'utf8',
+      env: { ...process.env, LITMUSE_SESSION_STORE: join(where.ws, 'no-store'), HERDR_ENV: '' },
+    });
+    assert.equal(board.status, 0, board.stderr);
+    assert.match(board.stdout, /^## 🎯 지금 할 일\n\*\*A 시작하기\*\* — .+\n👉 입력: `go`\n/u, 'the fallback prints the board');
     const bad = spawnSync(process.execPath, [join(ROOT, 'bin', 'litmuse.mjs'), 'rewind', '--bogus'], { cwd: where.ws, encoding: 'utf8' });
     assert.equal(bad.status, 64);
   } finally {

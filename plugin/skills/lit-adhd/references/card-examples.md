@@ -1,5 +1,103 @@
 # lit-adhd brief examples
 
+## The board (default)
+
+`litmuse rewind --lang ko` and `--lang en` print these boards for one fixture repository, `todo-app`:
+three plans (Login page fully ticked five hours ago, Search box half done ten minutes ago, CSV export
+untouched for ten days), one other session that asked the user a question four minutes ago, three
+changed files and two commits not yet pushed. The reply is the board exactly as printed. Nothing is
+added, and the reply does not recount anything.
+
+What the fixture shows:
+
+- The waiting session holds the next step back (it is a lane), so "Do this now" says to answer it,
+  and `go` is not offered.
+- CSV export changed before the seven-day window, so it is not a milestone and not in the counts. It
+  appears only as the 🕰️ reminder.
+- At a glance: 5 ticked rows, 1 row in progress (Search box has started), 1 session waiting, 1 row
+  left. `Overall` is 5 over their sum, 8.
+
+```markdown
+## 🎯 지금 할 일
+**'Search page lane' 세션에 답하기** — 내 대답을 기다리고 있어요
+👉 입력: 그 세션 창에서 답하기
+
+## 📊 한눈에 보기
+| ✅ 끝남 | 🔄 진행 중 | ⏳ 나를 기다림 | ⬜ 남음 |
+|:--:|:--:|:--:|:--:|
+| 5 | 1 | 1 | 1 |
+
+전체 진행  ██████░░░░  5/8 (63%)
+
+## 🏁 마일스톤
+| 마일스톤 | 상태 | 진행 | 최근 |
+|---|---|---|---|
+| Search box | 🔄 진행 중 | █████░░░░░ 2/4 | 10분 전 |
+| Login page | ✅ 끝남 | ██████████ 3/3 | 5시간 전 |
+
+## ✅ 최근 끝낸 일
+- Debounce typing
+- Add the input
+- Show the error text
+- Wire the submit button
+- Draw the form
+
+## ⬜ 남은 일
+1. Show the results list
+2. Highlight the match
+
+## 🔔 잊지 말 것
+- ⏳ 'Search page lane' 세션이 나를 기다려요 → 그 세션 창에서 질문에 답하기
+- 💾 커밋 안 된 변경 3개 (todo-app) → 검토하고 커밋하거나 되돌리기
+- 📤 푸시 안 된 커밋 2개 (todo-app) → 확인하고 push하기
+- 🕰️ 10일째 멈춘 계획: CSV export → 이어 할지, 접을지 정하기
+```
+
+```markdown
+## 🎯 Do this now
+**Answer the 'Search page lane' session** — it is waiting for your answer
+👉 Type: reply in that session window
+
+## 📊 At a glance
+| ✅ Done | 🔄 In progress | ⏳ Waiting on you | ⬜ Left |
+|:--:|:--:|:--:|:--:|
+| 5 | 1 | 1 | 1 |
+
+Overall  ██████░░░░  5/8 (63%)
+
+## 🏁 Milestones
+| Milestone | Status | Progress | Last |
+|---|---|---|---|
+| Search box | 🔄 In progress | █████░░░░░ 2/4 | 10m ago |
+| Login page | ✅ Done | ██████████ 3/3 | 5h ago |
+
+## ✅ Done lately
+- Debounce typing
+- Add the input
+- Show the error text
+- Wire the submit button
+- Draw the form
+
+## ⬜ Still to do
+1. Show the results list
+2. Highlight the match
+
+## 🔔 Don't forget
+- ⏳ 'Search page lane' session is waiting on you → answer its question in that session
+- 💾 3 uncommitted changes (todo-app) → review, then commit or discard
+- 📤 2 unpushed commits (todo-app) → check them, then push
+- 🕰️ plan untouched for 10 days: CSV export → decide: pick it up or drop it
+```
+
+With a single open plan and nothing else waiting, the first section reads
+`**Search box 이어서 하기** — 열린 계획이 이것 하나예요` with `👉 입력: `go``, and `go` runs start-work on it.
+With other lanes still working it reads `**다른 레인 2개가 끝날 때까지 기다리기**` with
+`👉 입력: 기다리기: 레인 2개 끝날 때까지`, and the 🏃 reminder repeats that `go` must wait.
+
+## Detail view (`--detail`)
+
+`lit adhd 자세히` / `lit adhd detail` adds the per-session brief below under the board.
+
 Both examples render the same collector JSON. Gauges, ids, titles and names are copied from it
 verbatim; only the connecting words change with the language. The JSON excerpt comes first. The
 finished schematic lane collapses into the ended table; the pptx lane has no commit yet, so its

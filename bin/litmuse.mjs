@@ -29,7 +29,7 @@ Commands
   config       agentFile on|off: the short LitFamily block in Muse's user rules file (acts at once)
   style        eli5 | asd-ste100 | off | status: the answer style LitMuse adds to every session
   runtime      status [name] | install <name|all>: the pinned engine runtimes, cached under the LitMuse data dir
-  rewind       Cross-session brief records [--json] [--here] [--since 7d] [--max 12] [--session <id>]
+  rewind       Cross-session KPI board [--lang ko|en] [--detail] [--json] [--here] [--since 7d] [--max 12] [--session <id>]
   uninstall    Remove the plugin from Muse and the staged bundle
   help         This text
 

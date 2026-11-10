@@ -2,7 +2,7 @@
 // rewind.mjs: the lit-adhd collector for a shell where the package `litmuse` is not on PATH.
 // It runs the same code as `litmuse rewind` from the plugin's own lib/, with the same flags:
 //
-//   node <skill-root>/scripts/rewind.mjs [--json] [--here] [--since 7d] [--max 12] [--session <id>] [--width N]
+//   node <skill-root>/scripts/rewind.mjs [--lang ko|en] [--detail] [--json] [--here] [--since 7d] [--max 12] [--session <id>] [--width N]
 //
 // Read-only apart from the collector's one next-step record under .litmuse/adhd/.
 

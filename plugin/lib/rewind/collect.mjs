@@ -10,6 +10,7 @@ import { basename, join, resolve } from 'node:path';
 
 import { parsePlanTaskRows } from '../plan-task-rows.mjs';
 import { PULSE_UNKNOWN, aggregateProgress, clipToWidth, displayWidth, progressOf } from './gauge.mjs';
+import { buildBoard } from './board.mjs';
 import { chooseNextStep, writeNextStep } from './next-step.mjs';
 import { makeRedactor } from './redact.mjs';
 import { findTranscripts, makeBudget, readTranscriptLines, sessionRecord } from './transcripts.mjs';
@@ -113,9 +114,11 @@ const plansIn = (root, budget, redact, local, skipped) => {
     if (!rows.length || isTemplate(rows)) return [];
     const open = rows.filter((row) => !row.checked);
     const done = rows.length - open.length;
+    const heading = /^# +(.+?)\s*#*\s*$/mu.exec(text)?.[1];
     return [{
       worktree: redact(root),
       plan: `plans/${entry.name}`,
+      title: heading ? clipToWidth(redact(heading), 60) : null,
       local,
       changedMs: mtimeOf(path),
       rows: rows.map((row) => ({ checked: row.checked, title: clipToWidth(redact(row.text), NAME_MAX) })),
@@ -137,6 +140,7 @@ const goalsOf = (root, budget, redact) => {
     return [{
       worktree: redact(root),
       file: entry.name,
+      changedMs: mtimeOf(join(dir, entry.name)),
       status: typeof goal.status === 'string' ? goal.status : 'unknown',
       objective: clipToWidth(redact(String(goal.objective ?? 'unknown').split('\n')[0]), 120),
       progress: progressOf(passed.length, goal.criteria.length, remaining),
@@ -191,6 +195,26 @@ const commitsOf = (root, sinceMs, now, exec, redact) => {
   } catch {
     return null;
   }
+};
+
+// Work not yet saved anywhere else: changed files (`git status --porcelain`, without taking the index
+// lock) and commits ahead of the upstream. Either reads null when git cannot answer; nothing is guessed.
+const PORCELAIN_ROW = /^[ MADRCUT?!]{2} \S/u;
+const worktreeStateOf = (root, exec, redact) => {
+  const run = (args) => {
+    try {
+      return exec('git', args, { cwd: root, timeout: GIT_TIMEOUT_MS });
+    } catch {
+      return null;
+    }
+  };
+  const status = run(['--no-optional-locks', 'status', '--porcelain']);
+  const ahead = run(['rev-list', '--count', '@{upstream}..HEAD']);
+  return {
+    worktree: redact(root),
+    uncommitted: typeof status === 'string' ? status.split('\n').filter((row) => PORCELAIN_ROW.test(row)).length : null,
+    unpushed: typeof ahead === 'string' && /^\d+\s*$/u.test(ahead) ? Number(ahead.trim()) : null,
+  };
 };
 
 const stacksOf = (root, budget, redact) => {
@@ -340,6 +364,7 @@ export const collectRewind = ({
   now = Date.now(),
   exec = defaultExec,
   record = true,
+  lang = 'en',
 } = {}) => {
   const home = env.HOME || homedir();
   const redact = makeRedactor({ env, home });
@@ -478,6 +503,21 @@ export const collectRewind = ({
   const next = chooseNextStep(data, sessionId);
   data.next = next;
   data.opener = openerOf(data, sessionId, redact(start));
+  data.board = buildBoard({
+    now,
+    plans: data.roadmap.plans,
+    allPlans: plans ?? [],
+    goals: data.roadmap.litgoal,
+    startWork: data.startWork,
+    ownRun: data.startWork.find((work) => work.status === 'active' && Boolean(sessionId) && work.sessionId === sessionId) ?? null,
+    sessions: data.sessions,
+    lanes: data.lanes,
+    next,
+    step: stepOf(data),
+    handoffNext: handoffNextOf(data),
+    worktreeState: roots.map((root) => worktreeStateOf(root, exec, redact)),
+    unread: budget.exhausted || skippedPlans.count > 0,
+  }, lang);
   data.nextRecorded = false;
   if (record && sessionId) {
     try {
@@ -688,24 +728,24 @@ const suggestion = (data) => {
   const place = (session) => (session.worktree && session.worktree !== 'unknown' ? basename(String(session.worktree)) : 'unknown');
   const goal = (session) => clipToWidth(String(session.title && session.title !== 'unknown' ? session.title : session.asked?.[0] ?? 'unknown'), 50);
   const waiting = sessions.find((session) => session.status === 'waiting-on-user' && !session.self);
-  if (waiting) return { text: `Answer ${waiting.id8} in ${place(waiting)}`, say: null };
+  if (waiting) return { text: `Answer ${waiting.id8} in ${place(waiting)}`, say: null, kind: 'waiting-session', id8: waiting.id8 };
   const paused = (data.workflows ?? []).find((frame) => frame.status === 'paused');
   const owner = paused ? sessions.find((session) => session.id8 === paused.id8) : null;
-  if (paused) return { text: `Resume ${paused.skill} at ${paused.stage} in ${paused.id8} (${owner ? place(owner) : 'unknown'})`, say: paused.self ? 'lit continue' : null };
+  if (paused) return { text: `Resume ${paused.skill} at ${paused.stage} in ${paused.id8} (${owner ? place(owner) : 'unknown'})`, say: paused.self ? 'lit continue' : null, kind: 'paused-frame', skill: paused.skill, stage: paused.stage };
   // A plan in the worktree of a live session comes first, then this worktree's, then the newest.
   const liveTrees = new Set(sessions.filter((session) => session.status !== 'ended').map((session) => session.worktree));
   const open = (data.roadmap?.plans ?? []).filter((plan) => plan.current);
   const plan = open.find((item) => liveTrees.has(item.worktree)) ?? open.find((item) => item.local) ?? open[0];
   // `go` runs only the recorded step, and none was recorded here, so this item carries no word.
-  if (plan) return { text: `Next in ${plan.local ? plan.plan : `${basename(String(plan.worktree))}/${plan.plan}`}: ${clipToWidth(String(plan.current), 60)}`, say: null };
+  if (plan) return { text: `Next in ${plan.local ? plan.plan : `${basename(String(plan.worktree))}/${plan.plan}`}: ${clipToWidth(String(plan.current), 60)}`, say: null, kind: 'open-plan', plan: plan.plan, local: plan.local, worktree: plan.worktree, current: plan.current };
   const active = sessions.find((session) => session.status === 'active' && !session.self);
-  if (active) return { text: `Check on ${active.id8} in ${place(active)} (${goal(active)})`, say: null };
+  if (active) return { text: `Check on ${active.id8} in ${place(active)} (${goal(active)})`, say: null, kind: 'active-session', id8: active.id8 };
   // Then the newest session that is not running: review what a done one finished, or pick up an
   // idle or ended one. A finished step is never offered again as the thing to do.
   const settled = sessions.find((session) => ['done', 'idle', 'ended'].includes(session.status) && !session.self);
-  if (settled?.status === 'done') return { text: `Review what ${settled.id8} finished in ${place(settled)}: ${settled.finishedPlan ?? goal(settled)}`, say: null };
-  if (settled) return { text: `Pick up ${settled.id8} in ${place(settled)}: ${goal(settled)}`, say: null };
-  return { text: 'No session or plan in this window: say what to start', say: null };
+  if (settled?.status === 'done') return { text: `Review what ${settled.id8} finished in ${place(settled)}: ${settled.finishedPlan ?? goal(settled)}`, say: null, kind: 'review-done', id8: settled.id8, worktree: settled.worktree };
+  if (settled) return { text: `Pick up ${settled.id8} in ${place(settled)}: ${goal(settled)}`, say: null, kind: 'pick-up', id8: settled.id8 };
+  return { text: 'No session or plan in this window: say what to start', say: null, kind: 'nothing' };
 };
 
 // With no step for `go`, live lanes come first (answer the one waiting on the user, or wait for
@@ -723,14 +763,16 @@ const lanesStep = (data) => {
   const text = waiting
     ? `Answer ${waiting.id8}${where}: it waits on you${others ? `; ${others} other lane${others === 1 ? '' : 's'} still at work` : ''}`
     : `Wait for ${count} lane${count === 1 ? '' : 's'} to finish`;
-  return { text, say: null, lanes: true };
+  return waiting
+    ? { text, say: null, lanes: true, kind: 'lane-waiting', id8: waiting.id8, worktree: waiting.worktree, others }
+    : { text, say: null, lanes: true, kind: 'lanes-working', count };
 };
 const stepOf = (data) => {
   if (data.next?.kind && data.next.kind !== 'none') return null;
   const lanes = lanesStep(data);
   if (lanes) return lanes;
   const handoff = handoffNextOf(data);
-  return handoff ? { text: handoff, say: null } : suggestion(data);
+  return handoff ? { text: handoff, say: null, kind: 'handoff' } : suggestion(data);
 };
 // The steps the `go` hook executes; an approval step has its own word and `go` does nothing there.
 const GO_RUNS = new Set(['resume-frame', 'continue-work', 'start-plan']);
@@ -860,12 +902,17 @@ export const renderRewind = (data, width = 100, { color = false } = {}) => {
   return `${out.join('\n')}\n`;
 };
 
-/** `litmuse rewind [--json] [--here] [--since 7d] [--max 12] [--session <id>] [--width N]`. */
-export const runRewindCli = (args, cwd = process.cwd(), { env = process.env, stdout = process.stdout, stderr = process.stderr } = {}) => {
-  const options = { cwd, env, here: false, since: DEFAULT_SINCE, max: DEFAULT_MAX, sessionId: null };
+/**
+ * `litmuse rewind [--lang ko|en] [--detail] [--json] [--here] [--since 7d] [--max 12] [--session <id>] [--width N]`.
+ * Prints the KPI board; `--detail` adds the per-session brief under it; `--json` prints the records
+ * with the board's fields and text in `board`.
+ */
+export const runRewindCli = (args, cwd = process.cwd(), { env = process.env, stdout = process.stdout, stderr = process.stderr, exec, now } = {}) => {
+  const options = { cwd, env, here: false, since: DEFAULT_SINCE, max: DEFAULT_MAX, sessionId: null, lang: 'en', ...(exec ? { exec } : {}), ...(now ? { now } : {}) };
   let json = false;
+  let detail = false;
   let width = Number(stdout.columns) || 100;
-  const usage = 'Usage: litmuse rewind [--json] [--here] [--since 7d] [--max 12] [--session <id>] [--width N]';
+  const usage = 'Usage: litmuse rewind [--lang ko|en] [--detail] [--json] [--here] [--since 7d] [--max 12] [--session <id>] [--width N]';
   if (args.some((arg) => arg === '--help' || arg === '-h')) {
     stdout.write(`${usage}\n`);
     return 0;
@@ -873,6 +920,8 @@ export const runRewindCli = (args, cwd = process.cwd(), { env = process.env, std
   for (let index = 0; index < args.length; index += 1) {
     const arg = args[index];
     if (arg === '--json') json = true;
+    else if (arg === '--detail') detail = true;
+    else if (arg === '--lang' && ['ko', 'en'].includes(args[index + 1])) options.lang = args[++index];
     else if (arg === '--here') options.here = true;
     else if (arg === '--since' && parseSince(args[index + 1])) options.since = args[++index];
     else if (arg === '--max' && /^\d{1,2}$/u.test(args[index + 1] ?? '')) options.max = Number(args[++index]);
@@ -884,7 +933,12 @@ export const runRewindCli = (args, cwd = process.cwd(), { env = process.env, std
     }
   }
   const data = collectRewind(options);
-  // The static rainbow marks the adhd turn on a real terminal only, never in pipes.
-  stdout.write(json ? `${JSON.stringify(data, null, 2)}\n` : renderRewind(data, width, { color: stdout.isTTY === true }));
+  if (json) {
+    stdout.write(`${JSON.stringify(data, null, 2)}\n`);
+    return 0;
+  }
+  // The board is the default; the per-session brief sits under it only on request. The static
+  // rainbow marks the adhd turn on a real terminal only, never in pipes.
+  stdout.write(detail ? `${data.board.text}\n${renderRewind(data, width, { color: stdout.isTTY === true })}` : data.board.text);
   return 0;
 };

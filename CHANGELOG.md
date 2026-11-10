@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+- `lit adhd` now opens with a KPI board instead of the per-session brief. The board shows, in your language: the one thing to do now and the exact text to type (`go`, `lit continue`, `lit approve`, a `lit start` command, or what to wait for), a done / in progress / waiting on you / left count with an overall bar, up to four milestone rows with ten-cell bars, the last five things finished, the next seven still to do, and up to five reminders such as a session waiting on you, uncommitted changes or unpushed commits, lanes still working, or a plan untouched for a week. The collector computes and prints the board itself (`litmuse rewind --lang ko|en`), so the numbers never come from the model. The old per-session brief stays one word away: `lit adhd 자세히` / `lit adhd detail` (`--detail`).
+- The prompt hook text changed, so Muse asks you to approve the LitMuse prompt hook again after the update.
+
 ## 0.1.10 — 2026-11-09
 
 - TypeScript language-server install hints pin `typescript@6`. TypeScript 7 ships no `lib/tsserver.js`, which `typescript-language-server` loads.
