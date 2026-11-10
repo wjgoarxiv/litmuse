@@ -29,6 +29,7 @@
     "qa:muse-live": "node scripts/qa-muse-live.mjs",
     "sync:digests": "node scripts/sync-hook-digests.mjs",
     "check:digests": "node scripts/sync-hook-digests.mjs --check",
+    "sync:lock": "node scripts/sync-skills-lock.mjs",
     "qa:cover-recipes": "node scripts/qa-cover-recipes.mjs"
   },
   "files": [

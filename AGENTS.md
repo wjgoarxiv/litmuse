@@ -22,13 +22,13 @@ any family feature in Muse's own plugin idiom.
 npm test
 npm run check:version
 npm run scan:legacy-tokens
-npm pack --dry-run --json --ignore-scripts   # read [0].files; test/fixtures/pack-files.json pins it
+npm pack --dry-run --json --ignore-scripts   # read [0].files; skills.lock.json pins it (npm run sync:lock)
 npm run qa:muse                              # needs muse on PATH; uses an isolated HOME and the echo provider
 muse plugins validate plugin --json          # valid:true, diagnostics []
 ```
 
 `.github/workflows/ci.yml` runs the host-free gates (tests, `check:version`, `check:digests`, `scan:legacy-tokens`, the pack
-list against `test/fixtures/pack-files.json`) on every push and pull request to `main`, on Node 22 and 24, with no `muse`
+list against `skills.lock.json`) on every push and pull request to `main`, on Node 22 and 24, with no `muse`
 on the runner. The tests that would need the host use `fake-muse.mjs`; the engine render tests skip with a reason when
 their runtime cache is cold. `npm run qa:muse` and `muse plugins validate` stay on a maintainer's machine. The suite also passes inside a herdr
 pane; to rehearse CI, run it with `HERDR_ENV` unset, a temp HOME and `muse` off PATH.
@@ -97,10 +97,16 @@ order, the 33 active tool names, `plugins validate`, and the hook refusal path. 
 - `lit` re-entry lives in `plugin/hooks/user-prompt-submit.mjs` with `lib/reentry.mjs` and the intent flags from `detectRoute`; `test/reentry.test.mjs` pins it. A continue note stays under 600 bytes and never repeats the skill re-read line; unreadable state falls back to the full activation.
 - Add a skill on all four surfaces at once: manifest, `plugin/hooks/lib/routes.mjs`, the skill folder, and the
   description budget. `test/bundle.test.mjs` fails on an orphan.
-- Every skill keeps sibling depth: its SKILL.md size and file count are pinned in `test/fixtures/skill-depth.json`,
-  and `test/depth.test.mjs` also checks reference closure (every relative path a skill document names exists) and that
-  no file in `plugin/` names a sibling product or host outside verbatim third-party legal files. Raise a pin
-  deliberately when a skill grows; never lower one to pass.
+- `skills.lock.json` is the one pin file. `npm run sync:lock` writes its generated half (each skill's SKILL.md and
+  whole-folder sha256, bytes and file count, and the `npm pack` file list); run it after any change to a skill or to
+  what ships, and `test/skills-lock.test.mjs` fails while it is stale. Its `policy` (family floor, runtimes, closure and
+  host-name exemptions) and `budgets` (per skill: SKILL.md min/max bytes, min/max files, max total bytes) are
+  hand-owned: sync keeps them and refuses to write while any skill is outside its budget, a skill has no budget, or a
+  budget has no skill. `--accept-new <id>` seeds a new skill's budget (its current size as the floor, 1.5x as the
+  ceiling) and `--drop <id>` removes an orphan one; both are repeatable and print each id. Only git-tracked files are
+  measured, so `git add` a new skill before syncing. Raise a budget deliberately when a skill grows;
+  never lower one to pass. `test/depth.test.mjs` checks reference closure (every relative path a skill document names
+  exists) and that no file in `plugin/` names a sibling product or host outside verbatim third-party legal files.
 - lit-typographic-motion's done gate is hook-side: PostToolUse records `motion.mjs` runs and image `read_file` paths in
   `<session state>.motion.json` while the route is active, and Stop runs the skill's `engine/node/done.mjs` on the last
   output folder (at most two holds, then a not-done notice). `test/motion-hooks.test.mjs` drives it through the real hooks.

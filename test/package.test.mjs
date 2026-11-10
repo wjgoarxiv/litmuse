@@ -9,7 +9,7 @@ test('npm pack payload matches the pinned allow-list', () => {
   const r = spawnSync('npm', ['pack', '--dry-run', '--json', '--ignore-scripts'], { cwd: ROOT, encoding: 'utf8' });
   assert.equal(r.status, 0, r.stderr);
   const files = JSON.parse(r.stdout)[0].files.map((f) => f.path).sort();
-  const pinned = JSON.parse(readFileSync(join(ROOT, 'test', 'fixtures', 'pack-files.json'), 'utf8'));
+  const pinned = JSON.parse(readFileSync(join(ROOT, 'skills.lock.json'), 'utf8')).pack;
   assert.deepEqual(files, pinned);
   for (const f of files) {
     assert.doesNotMatch(f, /^(test|scripts|\.litmuse|\.litclaude|evidence|plans)\//, f);
@@ -18,7 +18,7 @@ test('npm pack payload matches the pinned allow-list', () => {
 });
 
 test('READMEs: both languages, the packed motion cover with its reduced-motion still, hud preset linked', () => {
-  const pinned = JSON.parse(readFileSync(join(ROOT, 'test', 'fixtures', 'pack-files.json'), 'utf8'));
+  const pinned = JSON.parse(readFileSync(join(ROOT, 'skills.lock.json'), 'utf8')).pack;
   for (const f of ['README.md', 'README_ko-KR.md']) {
     const text = readFileSync(join(ROOT, f), 'utf8');
     assert.doesNotMatch(text, /TODO\(cover\)/, `${f}: cover slot still open`);
@@ -45,7 +45,7 @@ test('.gitignore keeps local state out of the repo', () => {
 
 // A packed file that git ignores would be missing from a fresh clone (the handoff template once hit `HANDOFF.md`).
 test('no file in the pack is ignored by git', () => {
-  const pinned = JSON.parse(readFileSync(join(ROOT, 'test', 'fixtures', 'pack-files.json'), 'utf8'));
+  const pinned = JSON.parse(readFileSync(join(ROOT, 'skills.lock.json'), 'utf8')).pack;
   const r = spawnSync('git', ['check-ignore', '--no-index', '--stdin'], { cwd: ROOT, input: pinned.join('\n'), encoding: 'utf8' });
   assert.equal(r.stdout.trim(), '', `ignored by git: ${r.stdout.trim()}`);
 });

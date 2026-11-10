@@ -8,7 +8,9 @@ import { runtimeModules, callRuntime } from '../lib/runtime.mjs';
 
 const SKILLS = join(PLUGIN_DIR, 'skills');
 const skillIds = readdirSync(SKILLS).filter((d) => statSync(join(SKILLS, d)).isDirectory()).sort();
-const DEPTH = JSON.parse(readFileSync(new URL('./fixtures/skill-depth.json', import.meta.url), 'utf8'));
+// Closure, vocabulary and runtime lists live in the hand-owned policy of skills.lock.json; sizes and file counts are
+// budgeted there too and checked by test/skills-lock.test.mjs.
+const DEPTH = JSON.parse(readFileSync(new URL('../skills.lock.json', import.meta.url), 'utf8')).policy;
 
 function walk(dir, acc = []) {
   for (const n of readdirSync(dir).sort()) {
@@ -25,18 +27,6 @@ const isText = (f) => TEXT.has(extname(f).toLowerCase()) && statSync(f).size < 4
 const LEGAL = /(^|\/)(LICENSE|NOTICE|ATTRIBUTION|THIRD[-_]PARTY|PROVENANCE|SOURCE-MANIFEST)[^/]*$|\/legal\//i;
 const SIBLING = [/lit-?claude/i, /lit-?hermes/i, /lit-?codex/i, /lit-?opencode/i, /lit-?grok/i, /CLAUDE_PLUGIN_ROOT/, /\.claude-plugin/, /\/litclaude:/, /\bSkill\(/, /\bTodoWrite\b/, /lazy-?codex/i];
 const HOSTS = [/Claude Code/, /\bCodex\b/, /\bOpenCode\b/, /\bGrok\b/, /\bHermes\b/];
-
-test('every skill keeps its pinned depth: SKILL.md bytes and resource files', () => {
-  assert.deepEqual(Object.keys(DEPTH.skills).sort(), skillIds, 'depth fixture lists every shipped skill');
-  for (const id of skillIds) {
-    const want = DEPTH.skills[id];
-    const md = statSync(join(SKILLS, id, 'SKILL.md')).size;
-    const files = walk(join(SKILLS, id)).length;
-    assert.ok(md >= want.minSkillBytes, `${id}: SKILL.md ${md} B < pinned ${want.minSkillBytes} B`);
-    assert.ok(files >= want.minFiles, `${id}: ${files} files < pinned ${want.minFiles}`);
-    assert.ok(md >= DEPTH.familyFloorBytes, `${id}: SKILL.md ${md} B is below the family floor ${DEPTH.familyFloorBytes} B`);
-  }
-});
 
 const REF = /(?:^|[\s`'"(\[])((?:\.\.\/\.\.\/lib|references|scripts|templates|assets|specs|schemas|examples|fonts|data|modes|engine|bench|rules|vendor)\/[A-Za-z0-9_./-]*[A-Za-z0-9_])/g;
 

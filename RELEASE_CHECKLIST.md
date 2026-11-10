@@ -17,7 +17,7 @@ Every publish, tag or push needs the maintainer's explicit approval. Work throug
 - [ ] `npm run scan:legacy-tokens`
 - [ ] Before any publish: run the umbrella decode-aware leak scan over every tracked and untracked file, `zsh ../plans/tools/leak-scan.sh $(git ls-files --cached --others --exclude-standard)` from the repo root (every tracked file as a target), and require rc 0. The legacy ancestor token is guarded there only; no form of it may be added to this repo.
 - [ ] `npm run check:digests` — every hook's declared command carries the current code digest
-- [ ] `npm pack --dry-run --json --ignore-scripts` — `[0].files` equals `test/fixtures/pack-files.json`
+- [ ] `npm pack --dry-run --json --ignore-scripts` — `[0].files` equals the `pack` list in `skills.lock.json`; `npm run sync:lock` leaves it unchanged
 - [ ] `muse plugins validate plugin --json` — `valid: true`, no diagnostics
 - [ ] `npm run qa:muse` — isolated HOME, real `muse`, echo provider
 - [ ] Live: `muse exec --json --trust-workspace "lit plan a tiny todo app" < /dev/null` in a throwaway workspace, plus one
