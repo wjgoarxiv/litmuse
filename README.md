@@ -185,7 +185,7 @@ The skills call programs already on your machine: Python 3.10 to 3.14 for autore
 
 ### Moved skills
 
-LitMuse used to carry its own copies of the deck, document, figure, interface and film skills, and they made up most of the package. They now live in wjgoarxiv-skills, the one repository that keeps the LitFamily skills which moved out of the products, so you add only the ones you use. LitMuse keeps a same-name stub for each: the id, its `lit` routes and its catalog entry stay, and the stub either hands over to your installed copy or tells you how to install it. It never builds a stand-in.
+LitMuse used to carry its own copies of the deck, document, figure, interface and film skills, and they made up most of the package. They now live in [wjgoarxiv-skills](https://github.com/wjgoarxiv/wjgoarxiv-skills), the one repository that keeps the LitFamily skills which moved out of the products, so you add only the ones you use. LitMuse keeps a same-name stub for each: the id, its `lit` routes and its catalog entry stay, and the stub either hands over to your installed copy or tells you how to install it. It never builds a stand-in.
 
 | Family | Skills |
 | --- | --- |

@@ -27,8 +27,8 @@ muse skills install <path to your wjgoarxiv-skills clone>/variants/litmuse/lit-p
 
 `muse skills install` copies that folder into Muse's user skills (`$XDG_CONFIG_HOME/muse/skills/lit-pptx/`, else
 `~/.config/muse/skills/lit-pptx/`). The next session lists it in the catalog as `lit-pptx`, scope `user`, next to
-this stub. `muse skills uninstall lit-pptx` takes it out again. The repository has no public address yet, so a local
-clone is the only source today; the install line stays the same once it is published.
+this stub. `muse skills uninstall lit-pptx` takes it out again. The repository is public at
+https://github.com/wjgoarxiv/wjgoarxiv-skills; clone it once and point the install line at that clone.
 
 The Muse edition is this skill rewritten to stand alone in Muse. It carries its own helpers, fonts and lockfiles, works with Muse's own tools, and needs no LitMuse hook, agent or approval. A step that needs the pinned office runtime (pptxgenjs, sharp, python-pptx and the rest of its lock) sets it up on first use from the installed folder into a per-user cache; when the sandbox blocks that install, the copy stops with `BLOCKED:` and gives the user the one command to run in a terminal.
 

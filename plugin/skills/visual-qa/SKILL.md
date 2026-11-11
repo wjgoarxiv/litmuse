@@ -27,8 +27,8 @@ muse skills install <path to your wjgoarxiv-skills clone>/variants/litmuse/visua
 
 `muse skills install` copies that folder into Muse's user skills (`$XDG_CONFIG_HOME/muse/skills/visual-qa/`, else
 `~/.config/muse/skills/visual-qa/`). The next session lists it in the catalog as `visual-qa`, scope `user`, next to
-this stub. `muse skills uninstall visual-qa` takes it out again. The repository has no public address yet, so a local
-clone is the only source today; the install line stays the same once it is published.
+this stub. `muse skills uninstall visual-qa` takes it out again. The repository is public at
+https://github.com/wjgoarxiv/wjgoarxiv-skills; clone it once and point the install line at that clone.
 
 The Muse edition is this skill rewritten to stand alone in Muse. It carries its own helpers, fonts and lockfiles, works with Muse's own tools, and needs no LitMuse hook, agent or approval.
 
