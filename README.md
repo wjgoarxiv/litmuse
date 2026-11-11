@@ -195,13 +195,13 @@ LitMuse used to carry its own copies of the deck, document, figure, interface an
 | `design` | frontend-ui-ux, visual-qa |
 | `video-covers` | lit-typographic-motion, readme-studio |
 
-Each skill installs on its own into Muse's user skills:
+Each skill installs on its own into Muse's user skills, from the Muse edition that wjgoarxiv-skills keeps for it:
 
 ```bash
-muse skills install <path to your wjgoarxiv-skills clone>/plugins/<family>/skills/<skill> --scope user
+muse skills install <path to your wjgoarxiv-skills clone>/variants/litmuse/<skill> --scope user
 ```
 
-`lit-scientific-visualization` is the exception: install the source folder `plugins/figures/vendor/scientific-visualization`, which answers as `scientific-visualization`. The next session lists the copy as a user skill; `lit` routes then load it by its own id, and `doctor` reports it as the wjgoarxiv-skills copy rather than an overlap. `muse skills uninstall <skill>` takes it out again. The copies were written for the LitFamily host they moved from, so some of their steps (the office runtime of `decks` and `documents`, the mark helper of `readme-studio`) sit outside the skill folder and are not carried by a one-skill install yet; each stub says which.
+A Muse edition is the skill rewritten to stand alone in Muse: it carries its own helpers, fonts and lockfiles, uses Muse's tools, and sets up any engine it needs (the office runtime, the diagram renderer, matplotlib, the motion engine) on first use from the installed folder, so it needs no LitMuse hook, approval or runtime command. The next session lists the copy as a user skill under the same id; `lit` routes then load it, and `doctor` reports it as `INFO moved` rather than an overlap. The copy lives in `$CONFIG_DIR/skills/<skill>/`, which LitMuse's installer, its updates and its uninstaller never write or remove, so upgrading LitMuse keeps it; run the install line again with `--force` to take a newer edition, and `muse skills uninstall <skill>` to take it out.
 
 **4 commands**: `/lit <route> <task>`, `/lit-korean <file or text>`, `/lit-status`, `/lit-hud`.
 

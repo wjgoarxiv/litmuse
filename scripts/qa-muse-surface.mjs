@@ -66,8 +66,9 @@ try {
 check('ledger records the lit-plan route through SessionEnd', /"event":"SessionEnd","route":"lit-plan"/.test(ledger), ledger.trim().split('\n').length + ' ledger lines');
 
 // A moved skill in a second workspace: with only the stub, the activation names the stub and the one-skill install
-// line; after `muse skills install` of the wjgoarxiv-skills copy (`--extras <clone>`), the next run hands over to that
-// user skill and the catalog lists it.
+// line; after `muse skills install` of the Muse edition from a wjgoarxiv-skills clone (`--extras <clone>`, folder
+// variants/litmuse/lit-docx), the next run hands over to that user skill, the catalog lists it, and a LitMuse reinstall
+// (the upgrade path) leaves the copy alone.
 const extrasAt = process.argv.indexOf('--extras');
 const extras = extrasAt > 0 ? process.argv[extrasAt + 1] : null;
 const seen = new Set(logs);
@@ -82,9 +83,9 @@ const stubRun = run('muse', ['exec', '--provider', 'echo', '--json', '--trust-wo
 check('muse exec on a moved route (echo provider)', stubRun.status === 0, `exit ${stubRun.status}`);
 const stubText = newLogText();
 writeFileSync(join(home, 'moved-step1.txt'), stubText);
-check('stub only: the activation loads plugin:litmuse:lit-docx and gives the install line', /read_skill id `plugin:litmuse:lit-docx`/.test(stubText) && /muse skills install <path to your wjgoarxiv-skills clone>\/plugins\/documents\/skills\/lit-docx --scope user/.test(stubText));
+check('stub only: the activation loads plugin:litmuse:lit-docx and gives the install line', /read_skill id `plugin:litmuse:lit-docx`/.test(stubText) && /muse skills install <path to your wjgoarxiv-skills clone>\/variants\/litmuse\/lit-docx --scope user/.test(stubText));
 if (extras) {
-  const add = run('muse', ['skills', 'install', join(extras, 'plugins', 'documents', 'skills', 'lit-docx'), '--scope', 'user', '--json']);
+  const add = run('muse', ['skills', 'install', join(extras, 'variants', 'litmuse', 'lit-docx'), '--scope', 'user', '--json']);
   check('muse skills install of the wjgoarxiv-skills copy', add.status === 0, add.status === 0 ? '' : add.stderr.trim().split('\n').pop());
   const listed = run('muse', ['skills', 'list', '--source', 'user', '--json']);
   check('the copy is a user skill that is on', /"id": "lit-docx"[\s\S]*?"activation": "on"/.test(listed.stdout));
@@ -93,6 +94,9 @@ if (extras) {
   writeFileSync(join(home, 'moved-step2.txt'), handText);
   check('installed: the activation hands over to read_skill id `lit-docx`', handRun.status === 0 && /read_skill id `lit-docx`/.test(handText) && !/muse skills install <path/.test(handText));
   check('installed: the catalog lists the user lit-docx next to the stub', /skill id=\\"lit-docx\\" scope=\\"user\\"/.test(handText));
+  const reinst = run(process.execPath, [join(root, 'bin', 'litmuse.mjs'), 'install', '--yes', '--approve']);
+  const after = run('muse', ['skills', 'list', '--source', 'user', '--json']);
+  check('a LitMuse reinstall (the upgrade path) keeps the user copy', reinst.status === 0 && /"id": "lit-docx"[\s\S]*?"activation": "on"/.test(after.stdout));
   run('muse', ['skills', 'uninstall', 'lit-docx', '--json']);
 } else {
   console.log('SKIP the installed half of the moved-skill check — pass --extras <path to a wjgoarxiv-skills clone>');

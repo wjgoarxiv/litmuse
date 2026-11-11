@@ -16,12 +16,13 @@ it does one of two things: hand over to the installed copy, or say how to instal
 
 - Repository: wjgoarxiv-skills
 - Family: `decks`
-- Folder: `plugins/decks/skills/lit-pptx/`
+- Shared body: `plugins/decks/skills/lit-pptx/`
+- Muse edition (the folder to install): `variants/litmuse/lit-pptx/`
 
 ## Install it in Muse (this one skill)
 
 ```bash
-muse skills install <path to your wjgoarxiv-skills clone>/plugins/decks/skills/lit-pptx --scope user
+muse skills install <path to your wjgoarxiv-skills clone>/variants/litmuse/lit-pptx --scope user
 ```
 
 `muse skills install` copies that folder into Muse's user skills (`$XDG_CONFIG_HOME/muse/skills/lit-pptx/`, else
@@ -29,7 +30,9 @@ muse skills install <path to your wjgoarxiv-skills clone>/plugins/decks/skills/l
 this stub. `muse skills uninstall lit-pptx` takes it out again. The repository has no public address yet, so a local
 clone is the only source today; the install line stays the same once it is published.
 
-The copy in `decks` was written for the LitFamily host it moved from. It reaches the family's shared office runtime one level above `skills/` (`plugins/decks/lib/`), and a one-skill install copies only the skill folder, so its compile and QA steps stop on a missing file in Muse until a Muse edition is published in that repository. Say so if the user asks for a finished deck.
+The Muse edition is this skill rewritten to stand alone in Muse. It carries its own helpers, fonts and lockfiles, works with Muse's own tools, and needs no LitMuse hook, agent or approval. A step that needs the pinned office runtime (pptxgenjs, sharp, python-pptx and the rest of its lock) sets it up on first use from the installed folder into a per-user cache; when the sandbox blocks that install, the copy stops with `BLOCKED:` and gives the user the one command to run in a terminal.
+
+The copy and this stub do not collide. The stub is the plugin skill `plugin:litmuse:lit-pptx`, which the LitMuse installer owns. The copy is the user skill `lit-pptx` in `$CONFIG_DIR/skills/lit-pptx/`, a folder the LitMuse installer and uninstaller never write or remove, so `npx @litfamily/litmuse install`, a plugin update and `muse plugins update` all leave it alone, and `doctor` reports it as `INFO moved` rather than an overlap. To take a newer edition from the clone, run the install line again with `--force`.
 
 ## What to do when this stub loads
 

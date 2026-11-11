@@ -16,12 +16,13 @@ it does one of two things: hand over to the installed copy, or say how to instal
 
 - Repository: wjgoarxiv-skills
 - Family: `documents`
-- Folder: `plugins/documents/skills/lit-docx/`
+- Shared body: `plugins/documents/skills/lit-docx/`
+- Muse edition (the folder to install): `variants/litmuse/lit-docx/`
 
 ## Install it in Muse (this one skill)
 
 ```bash
-muse skills install <path to your wjgoarxiv-skills clone>/plugins/documents/skills/lit-docx --scope user
+muse skills install <path to your wjgoarxiv-skills clone>/variants/litmuse/lit-docx --scope user
 ```
 
 `muse skills install` copies that folder into Muse's user skills (`$XDG_CONFIG_HOME/muse/skills/lit-docx/`, else
@@ -29,7 +30,9 @@ muse skills install <path to your wjgoarxiv-skills clone>/plugins/documents/skil
 this stub. `muse skills uninstall lit-docx` takes it out again. The repository has no public address yet, so a local
 clone is the only source today; the install line stays the same once it is published.
 
-The copy in `documents` was written for the LitFamily host it moved from. It reaches the family's shared office runtime one level above `skills/` (`plugins/documents/lib/`), and a one-skill install copies only the skill folder, so its build and QA steps stop on a missing file in Muse until a Muse edition is published in that repository. Say so if the user asks for a finished document.
+The Muse edition is this skill rewritten to stand alone in Muse. It carries its own helpers, fonts and lockfiles, works with Muse's own tools, and needs no LitMuse hook, agent or approval. A step that needs the pinned office runtime (python-docx, PyMuPDF and the rest of its lock) sets it up on first use from the installed folder into a per-user cache; when the sandbox blocks that install, the copy stops with `BLOCKED:` and gives the user the one command to run in a terminal.
+
+The copy and this stub do not collide. The stub is the plugin skill `plugin:litmuse:lit-docx`, which the LitMuse installer owns. The copy is the user skill `lit-docx` in `$CONFIG_DIR/skills/lit-docx/`, a folder the LitMuse installer and uninstaller never write or remove, so `npx @litfamily/litmuse install`, a plugin update and `muse plugins update` all leave it alone, and `doctor` reports it as `INFO moved` rather than an overlap. To take a newer edition from the clone, run the install line again with `--force`.
 
 ## What to do when this stub loads
 

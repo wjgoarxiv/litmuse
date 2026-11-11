@@ -16,12 +16,13 @@ it does one of two things: hand over to the installed copy, or say how to instal
 
 - Repository: wjgoarxiv-skills
 - Family: `design`
-- Folder: `plugins/design/skills/frontend-ui-ux/`
+- Shared body: `plugins/design/skills/frontend-ui-ux/`
+- Muse edition (the folder to install): `variants/litmuse/frontend-ui-ux/`
 
 ## Install it in Muse (this one skill)
 
 ```bash
-muse skills install <path to your wjgoarxiv-skills clone>/plugins/design/skills/frontend-ui-ux --scope user
+muse skills install <path to your wjgoarxiv-skills clone>/variants/litmuse/frontend-ui-ux --scope user
 ```
 
 `muse skills install` copies that folder into Muse's user skills (`$XDG_CONFIG_HOME/muse/skills/frontend-ui-ux/`, else
@@ -29,7 +30,9 @@ muse skills install <path to your wjgoarxiv-skills clone>/plugins/design/skills/
 this stub. `muse skills uninstall frontend-ui-ux` takes it out again. The repository has no public address yet, so a local
 clone is the only source today; the install line stays the same once it is published.
 
-The copy in `design` was written for the LitFamily host it moved from; its probe and browser steps may name that host's tools. Follow its steps with Muse's own tools (Muse has no browser tool; drive the Chrome on the machine through `bash`) and report any step that cannot run here.
+The Muse edition is this skill rewritten to stand alone in Muse. It carries its own helpers, fonts and lockfiles, works with Muse's own tools, and needs no LitMuse hook, agent or approval.
+
+The copy and this stub do not collide. The stub is the plugin skill `plugin:litmuse:frontend-ui-ux`, which the LitMuse installer owns. The copy is the user skill `frontend-ui-ux` in `$CONFIG_DIR/skills/frontend-ui-ux/`, a folder the LitMuse installer and uninstaller never write or remove, so `npx @litfamily/litmuse install`, a plugin update and `muse plugins update` all leave it alone, and `doctor` reports it as `INFO moved` rather than an overlap. To take a newer edition from the clone, run the install line again with `--force`.
 
 ## What to do when this stub loads
 

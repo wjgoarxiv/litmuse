@@ -3,15 +3,14 @@ import { homedir } from 'node:os';
 import { join } from 'node:path';
 
 // Skills whose bodies moved to wjgoarxiv-skills. LitMuse keeps a same-name stub for each, so the route, the catalog
-// entry and the doctor row stay. `folder` is what `muse skills install` copies; `installs` is the id that copy answers
-// to in Muse's user skills. The figures plot adapter reaches its canonical source two folders up, which a one-skill
-// install does not carry, so in Muse the source folder itself is the skill to install.
+// entry and the doctor row stay. `family` is where the shared body lives; `folder` is the self-contained Muse edition
+// that `muse skills install` copies; `installs` is the id that copy answers to in Muse's user skills.
 export const MOVED = {
   'lit-pptx': { family: 'decks' },
   'lit-docx': { family: 'documents' },
   'lit-diagram-drawer': { family: 'figures' },
   'lit-schematic': { family: 'figures' },
-  'lit-scientific-visualization': { family: 'figures', folder: 'plugins/figures/vendor/scientific-visualization', installs: 'scientific-visualization' },
+  'lit-scientific-visualization': { family: 'figures' },
   'frontend-ui-ux': { family: 'design' },
   'visual-qa': { family: 'design' },
   'lit-typographic-motion': { family: 'video-covers' },
@@ -21,7 +20,7 @@ export const MOVED = {
 export function movedSkill(id) {
   const m = MOVED[id];
   if (!m) return null;
-  return { id, family: m.family, folder: m.folder ?? `plugins/${m.family}/skills/${id}`, installs: m.installs ?? id };
+  return { id, family: m.family, folder: `variants/litmuse/${id}`, installs: id };
 }
 
 export const installLine = (m) => `muse skills install <path to your wjgoarxiv-skills clone>/${m.folder} --scope user`;

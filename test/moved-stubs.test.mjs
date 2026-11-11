@@ -14,24 +14,26 @@ import { DIGEST_EXTRAS, EXTRAS_BY_HOOK } from '../plugin/hooks/lib/digest.mjs';
 import { readManifest, PLUGIN_DIR } from '../lib/bundle.mjs';
 import { expectedSkillIds, doctor } from '../lib/doctor.mjs';
 import { install } from '../lib/install.mjs';
+import { uninstall } from '../lib/uninstall.mjs';
 import { readLock } from '../scripts/sync-skills-lock.mjs';
 
 const SKILLS = join(PLUGIN_DIR, 'skills');
 const HOOKS = join(PLUGIN_DIR, 'hooks');
 const PLACEHOLDER = '<path to your wjgoarxiv-skills clone>';
 
-// id → [family, folder inside wjgoarxiv-skills that the one-skill install copies, id the installed copy answers to]
+// id → [family, folder inside wjgoarxiv-skills that the one-skill install copies, id the installed copy answers to].
+// The folder is the self-contained Muse edition (variants/litmuse/<id>), not the shared body under plugins/<family>/,
+// which reaches family helpers outside the skill folder that a one-skill install does not carry.
 const MOVED = {
-  'lit-pptx': ['decks', 'plugins/decks/skills/lit-pptx', 'lit-pptx'],
-  'lit-docx': ['documents', 'plugins/documents/skills/lit-docx', 'lit-docx'],
-  'lit-diagram-drawer': ['figures', 'plugins/figures/skills/lit-diagram-drawer', 'lit-diagram-drawer'],
-  'lit-schematic': ['figures', 'plugins/figures/skills/lit-schematic', 'lit-schematic'],
-  // The figures adapter reaches the canonical source two levels up; in Muse the source itself is the skill to install.
-  'lit-scientific-visualization': ['figures', 'plugins/figures/vendor/scientific-visualization', 'scientific-visualization'],
-  'frontend-ui-ux': ['design', 'plugins/design/skills/frontend-ui-ux', 'frontend-ui-ux'],
-  'visual-qa': ['design', 'plugins/design/skills/visual-qa', 'visual-qa'],
-  'lit-typographic-motion': ['video-covers', 'plugins/video-covers/skills/lit-typographic-motion', 'lit-typographic-motion'],
-  'readme-studio': ['video-covers', 'plugins/video-covers/skills/readme-studio', 'readme-studio'],
+  'lit-pptx': ['decks', 'variants/litmuse/lit-pptx', 'lit-pptx'],
+  'lit-docx': ['documents', 'variants/litmuse/lit-docx', 'lit-docx'],
+  'lit-diagram-drawer': ['figures', 'variants/litmuse/lit-diagram-drawer', 'lit-diagram-drawer'],
+  'lit-schematic': ['figures', 'variants/litmuse/lit-schematic', 'lit-schematic'],
+  'lit-scientific-visualization': ['figures', 'variants/litmuse/lit-scientific-visualization', 'lit-scientific-visualization'],
+  'frontend-ui-ux': ['design', 'variants/litmuse/frontend-ui-ux', 'frontend-ui-ux'],
+  'visual-qa': ['design', 'variants/litmuse/visual-qa', 'visual-qa'],
+  'lit-typographic-motion': ['video-covers', 'variants/litmuse/lit-typographic-motion', 'lit-typographic-motion'],
+  'readme-studio': ['video-covers', 'variants/litmuse/readme-studio', 'readme-studio'],
 };
 const installLine = (id) => `muse skills install ${PLACEHOLDER}/${MOVED[id][1]} --scope user`;
 const stubText = (id) => readFileSync(join(SKILLS, id, 'SKILL.md'), 'utf8');
@@ -53,10 +55,15 @@ for (const [id, [family, folder, installs]] of Object.entries(MOVED)) {
     assert.match(text, new RegExp(`^---\\nname: ${id}\\n`), 'frontmatter keeps the id');
     assert.match(text, /wjgoarxiv-skills/);
     assert.ok(text.includes(`\`${family}\``), `names the ${family} family`);
-    assert.ok(text.includes(`plugins/${family}/skills/${id}/`), 'names the folder the skill lives in');
+    assert.ok(text.includes(`plugins/${family}/skills/${id}/`), 'names the folder the shared body lives in');
+    assert.ok(text.includes(`\`${folder}/\``), 'names the Muse edition folder the install line copies');
+    assert.doesNotMatch(text, /vendor\/scientific-visualization|until a Muse edition is published|written for the LitFamily host/, 'no stale caveat about the shared body');
     assert.ok(text.includes(installLine(id)), 'carries the Muse one-skill install line');
     assert.ok(text.includes(`read_skill id \`${installs}\``), 'hands over to the installed copy by its own id');
     assert.ok(text.includes(`muse skills uninstall ${installs}`), 'says how to take the copy out again');
+    assert.ok(text.includes(`plugin:litmuse:${id}`) && text.includes(`$CONFIG_DIR/skills/${installs}/`), 'says the stub and the copy live in different scopes');
+    assert.match(text, /INFO moved/, 'says how doctor reports the copy');
+    assert.match(text, /install line again with `--force`/, 'says how to take a newer edition');
     assert.doesNotMatch(text, /\/Users\/[a-z]|\/home\/[a-z]|\/private\/tmp/, 'no private path');
     assert.doesNotMatch(text, /muse skills install \S*\/(?:Users|home)\//, 'install line uses the placeholder only');
   });
@@ -122,12 +129,15 @@ test('activation on a moved route: not installed gives the install line and buil
   assert.match(installed, /read_skill id `lit-docx`/, 'loads the installed copy by its own id');
   assert.ok(!installed.includes(installLine('lit-docx')), 'no install line once it is installed');
 
-  // The figures plot skill installs as the canonical source, under that source's own id.
+  // The figures plot skill installs as its Muse edition under the same id; the old source folder id no longer counts.
   const sciviz = ask('moved-3', 'lit-scientific-visualization plot the adsorption isotherm');
   assert.ok(sciviz.includes(installLine('lit-scientific-visualization')), sciviz);
   mkdirSync(join(config, 'muse', 'skills', 'scientific-visualization'), { recursive: true });
   writeFileSync(join(config, 'muse', 'skills', 'scientific-visualization', 'SKILL.md'), '---\nname: scientific-visualization\n---\n');
-  assert.match(ask('moved-4', 'lit-scientific-visualization plot the adsorption isotherm'), /read_skill id `scientific-visualization`/);
+  assert.ok(ask('moved-4', 'lit-scientific-visualization plot the adsorption isotherm').includes(installLine('lit-scientific-visualization')), 'the old source id is not the Muse edition');
+  mkdirSync(join(config, 'muse', 'skills', 'lit-scientific-visualization'), { recursive: true });
+  writeFileSync(join(config, 'muse', 'skills', 'lit-scientific-visualization', 'SKILL.md'), '---\nname: lit-scientific-visualization\n---\n');
+  assert.match(ask('moved-5', 'lit-scientific-visualization plot the adsorption isotherm'), /read_skill id `lit-scientific-visualization`/);
 });
 
 test('the session route table says which ids moved and where', () => {
@@ -164,6 +174,23 @@ test('the engine runtimes left with the families: no office runtime, no engine m
   assert.doesNotMatch(readFileSync(join(ROOT, 'bin', 'litmuse.mjs'), 'utf8'), /runtime {2,}status/);
   assert.equal(readLock().policy.runtimes, undefined, 'no runtime list left in the lock policy');
   assert.equal(JSON.parse(readFileSync(join(ROOT, 'package.json'), 'utf8')).scripts['qa:cover-recipes'], undefined);
+});
+
+test('an installed Muse edition survives LitMuse install, reinstall and uninstall byte for byte', async () => {
+  const { env } = sandbox();
+  const copies = Object.values(MOVED).map(([, , installs]) => join(env.XDG_CONFIG_HOME, 'muse', 'skills', installs));
+  for (const dir of copies) {
+    mkdirSync(join(dir, 'lib'), { recursive: true });
+    writeFileSync(join(dir, 'SKILL.md'), `---\nname: ${dir.split('/').pop()}\ndescription: "user copy"\n---\n`);
+    writeFileSync(join(dir, 'lib', 'helper.mjs'), 'export const own = 1;\n');
+  }
+  const snapshot = () => copies.map((d) => [readFileSync(join(d, 'SKILL.md'), 'utf8'), readFileSync(join(d, 'lib', 'helper.mjs'), 'utf8')]);
+  const before = snapshot();
+  await install({ env, flags: { yes: true, approve: true }, interactive: false, print: quiet });
+  await install({ env, flags: { yes: true, approve: true }, interactive: false, print: quiet });
+  assert.deepEqual(snapshot(), before, 'install and a second install (the upgrade path) leave the user copies alone');
+  await uninstall({ env, flags: { yes: true }, interactive: false, print: quiet });
+  assert.deepEqual(snapshot(), before, 'uninstall leaves the user copies alone');
 });
 
 test('doctor: no engine or office-tool rows, and an installed wjgoarxiv-skills copy is a handover, not an overlap', async () => {

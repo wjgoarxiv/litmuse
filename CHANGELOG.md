@@ -6,6 +6,7 @@
 - The office runtime, the `diagram`, `readme`, `sciviz` and `motion` engines, `litmuse runtime`, and the motion done-check in the Stop hook left with those skills. `doctor` no longer lists LibreOffice, pandoc, Poppler, xelatex, ffmpeg or libwebp. Older engine caches under `~/.local/share/litmuse/runtime/` can be deleted.
 - The hook texts changed, so Muse asks you to approve the LitMuse hooks again after the update.
 - `skills.lock.json` replaced the pinned skill-depth and pack-list fixtures.
+- The nine stubs now install the Muse edition of each skill, `muse skills install <path to your wjgoarxiv-skills clone>/variants/litmuse/<skill> --scope user`. It carries its own helpers, fonts and lockfiles and sets up its own engine on first use, so decks, documents, figures, interfaces, films and READMEs work again from a one-skill install. `lit-scientific-visualization` now installs under its own id instead of `scientific-visualization`; a copy installed under the old id is no longer picked up, so install the Muse edition and remove the old one with `muse skills uninstall scientific-visualization`. LitMuse install, update and uninstall leave these user copies alone.
 
 ## 0.1.11 — 2026-11-11
 

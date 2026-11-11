@@ -112,8 +112,11 @@ order, the 33 active tool names, `plugins validate`, and the hook refusal path. 
   `policy.movedStubs` (exempt from the family floor, held to a stub budget). `plugin/hooks/lib/moved.mjs` is the one map
   of id → family, the folder `muse skills install` copies, and the id the copy answers to; the prompt hook uses it to
   hand a moved route to an installed user-scope copy (`$XDG_CONFIG_HOME/muse/skills/<id>/`) or give the install line,
-  SessionStart lists the moved ids, and doctor reports an installed copy as `INFO moved`, not an overlap.
-  `test/moved-stubs.test.mjs` pins all of it. The motion done gate, the office runtime, every pinned engine and the
+  SessionStart lists the moved ids, and doctor reports an installed copy as `INFO moved`, not an overlap. The folder is
+  always the self-contained Muse edition `variants/litmuse/<id>` of wjgoarxiv-skills, installed under the same id; the
+  shared body under `plugins/<family>/` reaches family helpers outside its folder and is not installable alone. The
+  installer and uninstaller never write `$CONFIG_DIR/skills/`, so an upgrade keeps the copy.
+  `test/moved-stubs.test.mjs` pins all of it, including that install, reinstall and uninstall leave a copy byte for byte. The motion done gate, the office runtime, every pinned engine and the
   `litmuse runtime` command left with these families; never port a body back into a stub.
 - Bump versions only with the user's approval, in `package.json`, `plugin/.muse-plugin/plugin.json` and
   `CHANGELOG.md` together.

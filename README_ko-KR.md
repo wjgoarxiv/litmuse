@@ -195,13 +195,13 @@ LitMuse는 예전에 덱, 문서, 그림, 화면, 영상 스킬을 직접 실었
 | `design` | frontend-ui-ux, visual-qa |
 | `video-covers` | lit-typographic-motion, readme-studio |
 
-스킬은 하나씩 Muse 사용자 스킬로 설치합니다.
+스킬은 하나씩 Muse 사용자 스킬로 설치합니다. wjgoarxiv-skills가 스킬마다 따로 두는 Muse판을 설치하면 됩니다.
 
 ```bash
-muse skills install <path to your wjgoarxiv-skills clone>/plugins/<family>/skills/<skill> --scope user
+muse skills install <path to your wjgoarxiv-skills clone>/variants/litmuse/<skill> --scope user
 ```
 
-`lit-scientific-visualization`만 예외로, 원본 폴더 `plugins/figures/vendor/scientific-visualization`을 설치하며 이 사본의 id는 `scientific-visualization`입니다. 다음 세션부터 사본이 사용자 스킬로 보이고, `lit` 경로는 그 id로 사본을 불러오며, `doctor`는 겹침이 아니라 wjgoarxiv-skills 사본으로 보고합니다. 빼려면 `muse skills uninstall <skill>`을 씁니다. 사본은 원래 다른 LitFamily 호스트에 맞춰 쓰였기 때문에 일부 단계(`decks`·`documents`의 오피스 런타임, `readme-studio`의 마크 도우미)는 스킬 폴더 밖에 있어 한 스킬 설치로는 아직 따라오지 않습니다. 어떤 단계인지는 스텁마다 적혀 있습니다.
+Muse판은 Muse에서 혼자 돌아가도록 다시 쓴 스킬입니다. 쓰는 도우미와 글꼴, 잠금 파일을 폴더 안에 함께 싣고 Muse 도구로 일합니다. 엔진이 필요하면(오피스 런타임, 다이어그램 렌더러, matplotlib, 모션 엔진) 처음 쓸 때 설치된 폴더에서 직접 준비하므로 LitMuse 훅이나 승인, 런타임 명령이 필요 없습니다. 다음 세션부터 사본이 같은 id의 사용자 스킬로 보이고, `lit` 경로는 그 사본을 불러오며, `doctor`는 겹침이 아니라 `INFO moved`로 보고합니다. 사본은 `$CONFIG_DIR/skills/<skill>/`에 있고, LitMuse 설치기와 업데이트, 제거 명령은 이 폴더를 쓰거나 지우지 않으므로 LitMuse를 올려도 그대로 남습니다. 새 판을 받으려면 설치 줄에 `--force`를 붙여 다시 실행하고, 빼려면 `muse skills uninstall <skill>`을 씁니다.
 
 **명령 4개**: `/lit <경로> <작업>`, `/lit-korean <파일 또는 글>`, `/lit-status`, `/lit-hud`.
 

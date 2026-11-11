@@ -16,12 +16,13 @@ it does one of two things: hand over to the installed copy, or say how to instal
 
 - Repository: wjgoarxiv-skills
 - Family: `figures`
-- Folder: `plugins/figures/skills/lit-diagram-drawer/`
+- Shared body: `plugins/figures/skills/lit-diagram-drawer/`
+- Muse edition (the folder to install): `variants/litmuse/lit-diagram-drawer/`
 
 ## Install it in Muse (this one skill)
 
 ```bash
-muse skills install <path to your wjgoarxiv-skills clone>/plugins/figures/skills/lit-diagram-drawer --scope user
+muse skills install <path to your wjgoarxiv-skills clone>/variants/litmuse/lit-diagram-drawer --scope user
 ```
 
 `muse skills install` copies that folder into Muse's user skills (`$XDG_CONFIG_HOME/muse/skills/lit-diagram-drawer/`, else
@@ -29,7 +30,9 @@ muse skills install <path to your wjgoarxiv-skills clone>/plugins/figures/skills
 this stub. `muse skills uninstall lit-diagram-drawer` takes it out again. The repository has no public address yet, so a local
 clone is the only source today; the install line stays the same once it is published.
 
-The copy in `figures` was written for the LitFamily host it moved from; its renderer and doctor commands may name that host's tools. Follow its steps with Muse's own tools and report any step that cannot run here.
+The Muse edition is this skill rewritten to stand alone in Muse. It carries its own helpers, fonts and lockfiles, works with Muse's own tools, and needs no LitMuse hook, agent or approval. A step that needs the pinned diagram renderer sets it up on first use from the installed folder into a per-user cache; when the sandbox blocks that install, the copy stops with `BLOCKED:` and gives the user the one command to run in a terminal.
+
+The copy and this stub do not collide. The stub is the plugin skill `plugin:litmuse:lit-diagram-drawer`, which the LitMuse installer owns. The copy is the user skill `lit-diagram-drawer` in `$CONFIG_DIR/skills/lit-diagram-drawer/`, a folder the LitMuse installer and uninstaller never write or remove, so `npx @litfamily/litmuse install`, a plugin update and `muse plugins update` all leave it alone, and `doctor` reports it as `INFO moved` rather than an overlap. To take a newer edition from the clone, run the install line again with `--force`.
 
 ## What to do when this stub loads
 
