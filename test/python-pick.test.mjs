@@ -6,9 +6,6 @@ import { join } from 'node:path';
 import { ROOT } from './helpers.mjs';
 
 const host = await import(join(ROOT, 'plugin', 'lib', 'host-process.mjs'));
-const office = await import(join(ROOT, 'plugin', 'lib', 'office-runtime.mjs'));
-const motion = await import(join(ROOT, 'plugin', 'skills', 'lit-typographic-motion', 'engine', 'node', 'runtime.mjs'));
-const sciviz = await import(join(ROOT, 'plugin', 'skills', 'lit-scientific-visualization', 'scripts', 'sciviz-runtime.mjs'));
 const { runtimeFound } = await import(join(ROOT, 'lib', 'doctor.mjs'));
 
 // A PATH holding only fake interpreters that print a fixed version, so no test depends on the host's Python.
@@ -55,21 +52,11 @@ test('probePythonCommand reads the version from the PATH it is given', posix, ()
   assert.equal(host.pickPython(undefined, { env }).command, 'python3.12');
 });
 
-test('office, motion audio, sciviz and doctor share the pick: a python3.15 first on PATH is passed over', posix, () => {
+test('doctor uses the same pick: a python3.15 first on PATH is passed over', posix, () => {
   const env = fakePythons({ python3: '3.15.0', 'python3.12': '3.12.4' });
-  assert.equal(office.hostPython(env).command, 'python3.12');
-  assert.equal(motion.hostPython(env).command, 'python3.12');
-  assert.equal(sciviz.hostPython(env).command, 'python3.12');
+  assert.equal(host.pickPython(undefined, { env }).command, 'python3.12');
   assert.equal(runtimeFound({ python: true }, { env }), true);
-  assert.equal(motion.hostPython({ ...env, LITMUSE_MOTION_PYTHON: 'python3' }).ok, false, 'an override is never second-guessed');
-  assert.equal(office.hostPython({ ...env, LITMUSE_OFFICE_PYTHON: 'python3.12' }).version, '3.12.4');
   const only315 = fakePythons({ python3: '3.15.0' });
   assert.equal(runtimeFound({ python: true }, { env: only315 }), false);
-  assert.match(motion.hostPython(only315).detail, /no supported Python/);
-});
-
-test('the motion audio venv is keyed by the picked interpreter version', posix, () => {
-  const env = { ...fakePythons({ python3: '3.15.0', 'python3.12': '3.12.4' }), LITMUSE_MOTION_RUNTIME: mkdtempSync(join(tmpdir(), 'litmuse-motion-')) };
-  assert.equal(motion.audioDir(env), motion.audioDir(env, '3.12'));
-  assert.notEqual(motion.audioDir(env), motion.audioDir(env, '3.15'));
+  assert.match(host.pickPython(undefined, { env: only315 }).detail, /no supported Python/);
 });

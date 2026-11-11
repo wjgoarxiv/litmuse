@@ -44,6 +44,15 @@ test('budget checks catch a placeholder SKILL.md, a trimmed skill and a bloated 
   assert.equal(bloated.length, 3, bloated.join('\n'));
 });
 
+test('a moved stub escapes the family floor only when policy.movedStubs names it, and its own budget still holds', () => {
+  const stubBudget = { minSkillBytes: 3000, maxSkillBytes: 9000, minFiles: 1, maxFiles: 1, maxBytes: 9000 };
+  const measured = { s: { skillMd: { bytes: 3200 }, files: 1, bytes: 3200 } };
+  assert.match(budgetViolations(measured, { s: stubBudget }, { familyFloorBytes: 12000 }).join('\n'), /s: SKILL.md 3200 B < family floor 12000 B/, 'unlisted: the floor applies');
+  assert.deepEqual(budgetViolations(measured, { s: stubBudget }, { familyFloorBytes: 12000, movedStubs: ['s'] }), [], 'listed: the floor does not');
+  const grown = { s: { skillMd: { bytes: 9500 }, files: 3, bytes: 20000 } };
+  assert.equal(budgetViolations(grown, { s: stubBudget }, { familyFloorBytes: 12000, movedStubs: ['s'] }).length, 3, 'a stub that grows back into a body fails its stub budget');
+});
+
 test('sync:lock keeps hand-owned budgets and seeds or drops one only when told to', () => {
   const dir = mkdtempSync(join(tmpdir(), 'litmuse-lock-'));
   try {

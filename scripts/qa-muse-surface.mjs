@@ -65,16 +65,38 @@ try {
 } catch { /* no ledger */ }
 check('ledger records the lit-plan route through SessionEnd', /"event":"SessionEnd","route":"lit-plan"/.test(ledger), ledger.trim().split('\n').length + ' ledger lines');
 
-// The motion route in a second workspace: the activation reaches the run, and the Stop hook holds a turn that rendered
-// nothing with the skill's done gate (the echo provider cannot render, so the hold is the expected outcome).
+// A moved skill in a second workspace: with only the stub, the activation names the stub and the one-skill install
+// line; after `muse skills install` of the wjgoarxiv-skills copy (`--extras <clone>`), the next run hands over to that
+// user skill and the catalog lists it.
+const extrasAt = process.argv.indexOf('--extras');
+const extras = extrasAt > 0 ? process.argv[extrasAt + 1] : null;
 const seen = new Set(logs);
-const wsMotion = join(home, 'ws-motion');
-mkdirSync(wsMotion, { recursive: true });
-const motion = run('muse', ['exec', '--provider', 'echo', '--json', '--trust-workspace', 'lit motion a README cover loop for LOOPTEST'], { cwd: wsMotion });
-check('muse exec on the motion route (echo provider)', motion.status === 0, `exit ${motion.status}`);
-const motionText = sessionLogs(join(env.XDG_DATA_HOME, 'muse', 'sessions')).filter((f) => !seen.has(f)).map((f) => readFileSync(f, 'utf8')).join('\n');
-check('the motion activation loads plugin:litmuse:lit-typographic-motion', /read_skill id `plugin:litmuse:lit-typographic-motion`/.test(motionText));
-check('the Stop hook held the motion turn with the done gate', /LitMuse lit-typographic-motion[^"]{0,40} is not done|LitMuse lit-typographic-motion: the work is not done/.test(motionText));
+const newLogText = () => {
+  const fresh = sessionLogs(join(env.XDG_DATA_HOME, 'muse', 'sessions')).filter((f) => !seen.has(f));
+  for (const f of fresh) seen.add(f);
+  return fresh.map((f) => readFileSync(f, 'utf8')).join('\n');
+};
+const wsMoved = join(home, 'ws-moved');
+mkdirSync(wsMoved, { recursive: true });
+const stubRun = run('muse', ['exec', '--provider', 'echo', '--json', '--trust-workspace', 'lit-docx write a one-page memo about the office move'], { cwd: wsMoved });
+check('muse exec on a moved route (echo provider)', stubRun.status === 0, `exit ${stubRun.status}`);
+const stubText = newLogText();
+writeFileSync(join(home, 'moved-step1.txt'), stubText);
+check('stub only: the activation loads plugin:litmuse:lit-docx and gives the install line', /read_skill id `plugin:litmuse:lit-docx`/.test(stubText) && /muse skills install <path to your wjgoarxiv-skills clone>\/plugins\/documents\/skills\/lit-docx --scope user/.test(stubText));
+if (extras) {
+  const add = run('muse', ['skills', 'install', join(extras, 'plugins', 'documents', 'skills', 'lit-docx'), '--scope', 'user', '--json']);
+  check('muse skills install of the wjgoarxiv-skills copy', add.status === 0, add.status === 0 ? '' : add.stderr.trim().split('\n').pop());
+  const listed = run('muse', ['skills', 'list', '--source', 'user', '--json']);
+  check('the copy is a user skill that is on', /"id": "lit-docx"[\s\S]*?"activation": "on"/.test(listed.stdout));
+  const handRun = run('muse', ['exec', '--provider', 'echo', '--json', '--trust-workspace', 'lit-docx write a one-page memo about the office move'], { cwd: wsMoved });
+  const handText = newLogText();
+  writeFileSync(join(home, 'moved-step2.txt'), handText);
+  check('installed: the activation hands over to read_skill id `lit-docx`', handRun.status === 0 && /read_skill id `lit-docx`/.test(handText) && !/muse skills install <path/.test(handText));
+  check('installed: the catalog lists the user lit-docx next to the stub', /skill id=\\"lit-docx\\" scope=\\"user\\"/.test(handText));
+  run('muse', ['skills', 'uninstall', 'lit-docx', '--json']);
+} else {
+  console.log('SKIP the installed half of the moved-skill check — pass --extras <path to a wjgoarxiv-skills clone>');
+}
 
 const un = run(process.execPath, [join(root, 'bin', 'litmuse.mjs'), 'uninstall', '--yes']);
 check('uninstall', un.status === 0);

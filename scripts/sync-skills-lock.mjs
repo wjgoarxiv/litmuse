@@ -4,7 +4,9 @@
 // skill is gone are violations until named: `--accept-new <id>` seeds the first budget, `--drop <id>` removes an
 // orphan one (both repeatable). While any violation stands, nothing is written and the exit is 1.
 // Only git-tracked files are measured (the pack list's plugin/skills entries when git is unavailable).
-// Raise a budget by hand when a skill grows on purpose; never lower one to pass.
+// Raise a budget by hand when a skill grows on purpose; never lower one to pass. A skill whose body moved to
+// wjgoarxiv-skills is listed in `policy.movedStubs`: its same-name stub is exempt from the family floor only, and its
+// own budget (hand-owned like every other) holds it to stub size.
 import { createHash } from 'node:crypto';
 import { existsSync, readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
 import { dirname, join, relative } from 'node:path';
@@ -105,7 +107,8 @@ export function budgetViolations(measured, budgets, policy = {}) {
     }
     const md = m.skillMd.bytes;
     if (md < b.minSkillBytes) out.push(`${id}: SKILL.md ${md} B < budget ${b.minSkillBytes} B`);
-    if (policy.familyFloorBytes && md < policy.familyFloorBytes) out.push(`${id}: SKILL.md ${md} B < family floor ${policy.familyFloorBytes} B`);
+    const stub = (policy.movedStubs ?? []).includes(id);
+    if (policy.familyFloorBytes && md < policy.familyFloorBytes && !stub) out.push(`${id}: SKILL.md ${md} B < family floor ${policy.familyFloorBytes} B`);
     if (md > b.maxSkillBytes) out.push(`${id}: SKILL.md ${md} B > budget ${b.maxSkillBytes} B`);
     if (m.files < b.minFiles) out.push(`${id}: ${m.files} files < budget ${b.minFiles}`);
     if (m.files > b.maxFiles) out.push(`${id}: ${m.files} files > budget ${b.maxFiles}`);

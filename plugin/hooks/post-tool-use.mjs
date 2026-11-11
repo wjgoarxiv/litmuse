@@ -3,7 +3,6 @@ import { resolve, relative, isAbsolute, join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { run, activeRoute, appendLedger, emitContext, toolName, toolInput, workspaceOf, PLUGIN_ROOT } from './lib/common.mjs';
 import { extractAddedComments } from './lib/added-comments.mjs';
-import { MOTION_ROUTE, recordMotionTool } from './lib/motion.mjs';
 import { markLiveness } from './lib/stage.mjs';
 
 const FILE_TOOLS = new Set(['write_file', 'edit_file', 'apply_patch']);
@@ -100,9 +99,6 @@ async function postWrite(payload) {
       ok: true,
       inputKeys: Object.keys(input).sort(),
     });
-    if (state.route === MOTION_ROUTE) {
-      try { recordMotionTool(payload); } catch { /* fail open */ }
-    }
   }
   if (!FILE_TOOLS.has(tool)) return;
   const cwd = workspaceOf(payload);

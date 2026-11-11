@@ -2,7 +2,7 @@ import { run, emitContext, readSession, writeSession, safeId, sessionPath, works
 import { detectRoute } from './lib/routes.mjs';
 import { liveRoute, resumablePlan } from './lib/reentry.mjs';
 import { readStage, recordRoute, stageFile } from './lib/stage.mjs';
-import { MOTION_ROUTE, armMotionTurn } from './lib/motion.mjs';
+import { movedActivation } from './lib/moved.mjs';
 import { applyStackEvent, readStack, writeStack, resolveProjectStateRoot, READ_ONLY_DISCIPLINES } from './lib/workflow-stack.mjs';
 import { isGoPrompt, takeNextStep } from './lib/next-step.mjs';
 import { readFileSync, writeFileSync, mkdirSync, readdirSync, statSync } from 'node:fs';
@@ -64,10 +64,12 @@ function stackCount(frame) {
 }
 
 function activation(hit, payload) {
+  const task = hit.trailing ? 'The task is the rest of the prompt before the closing `lit`.' : `The task is the rest of the prompt after the keyword${hit.keyword ? ` "${hit.keyword}"` : ''}.`;
+  const moved = movedActivation(hit.route);
   const lines = [
     ...banner('LIT IGNITED', hit.route),
     `LitMuse activation: the prompt ${hit.trailing ? 'ends with' : 'starts with'} the lit keyword, so this turn runs the \`${hit.route}\` route.`,
-    `After that line and before any other tool, load the skill with read_skill id \`plugin:litmuse:${hit.route}\` and follow it. ${hit.trailing ? 'The task is the rest of the prompt before the closing `lit`.' : `The task is the rest of the prompt after the keyword${hit.keyword ? ` "${hit.keyword}"` : ''}.`}`,
+    moved ? `${moved} ${task}` : `After that line and before any other tool, load the skill with read_skill id \`plugin:litmuse:${hit.route}\` and follow it. ${task}`,
     safeId(payload.session_id)
       ? `Session ${payload.session_id}: hooks record tool events in .litmuse/ledger/${payload.session_id}.jsonl while the route is active; append your own note, evidence and decision lines there. Route state is kept by the hooks outside the workspace.`
       : 'Hooks record tool events in .litmuse/ledger/ while the route is active.',
@@ -251,7 +253,6 @@ run((payload) => {
     const frame = hit.resume ? stackContinue(payload) : null;
     const route = frame?.skill ?? active;
     writeSession(payload, { ...previous, route, turnId, pauseRequested });
-    if (route === MOTION_ROUTE) armMotionTurn(payload);
     recordRoute(payload, { route, keyword: hit.keyword ?? null, kind: 'continue' });
     emitContext('UserPromptSubmit', route === 'start-work'
       ? resumeNote(resumablePlan(workspaceOf(payload)), true, payload)
@@ -268,7 +269,6 @@ run((payload) => {
   }
   const named = hit.route === 'start-work' ? typedPlan(payload.prompt) : null;
   writeSession(payload, { route: hit.route, turnId, activatedAt: Date.now(), stopHeldFor: null, pauseRequested });
-  if (hit.route === MOTION_ROUTE) armMotionTurn(payload);
   stackStart(payload, hit.route, named ? { plan: named } : undefined, hit.restart);
   recordRoute(payload, { route: hit.route, keyword: hit.keyword ?? null, kind: 'ignite', plan: named, activatedAt: Date.now() });
   emitContext('UserPromptSubmit', activation(hit, payload) + (named ? `\nPlan: ${named}. The typed command is the approval: the work starts without a separate approval turn; work through its open rows in order.` : ''));

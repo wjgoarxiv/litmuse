@@ -2,7 +2,6 @@ import { existsSync, readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { run, block, activeRoute, writeSession, workspaceOf } from './lib/common.mjs';
 import { continuationHold } from './lib/continuation.mjs';
-import { MOTION_ROUTE, evaluateMotionStop } from './lib/motion.mjs';
 import { putNextStep } from './lib/next-step.mjs';
 import { markLiveness } from './lib/stage.mjs';
 
@@ -24,16 +23,11 @@ function planWrittenSince(cwd, since) {
   return best?.name ?? null;
 }
 
-// The lit-plan gate holds a turn at most once, so a model that cannot write the plan still ends. The motion gate holds
-// at most twice, then asks the reply to say the render is not done.
+// The lit-plan gate holds a turn at most once, so a model that cannot write the plan still ends.
 run((payload) => {
   markLiveness(payload, 'idle');
   const state = activeRoute(payload);
   if (!state) return;
-  if (state.route === MOTION_ROUTE) {
-    evaluateMotionStop(payload).then((r) => { if (r.action === 'block') block(r.reason); }).catch(() => {});
-    return;
-  }
   if (state.route !== 'lit-plan') {
     continuationHold(payload, state);
     return;

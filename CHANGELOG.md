@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+- The deck, document, figure, interface and film skills moved to wjgoarxiv-skills, so you install only the ones you use: `lit-pptx` (decks), `lit-docx` (documents), `lit-diagram-drawer`, `lit-schematic` and `lit-scientific-visualization` (figures), `frontend-ui-ux` and `visual-qa` (design), and `lit-typographic-motion` and `readme-studio` (video-covers). Each keeps a same-name stub: its `lit` routes, catalog entry and doctor row stay, and the stub hands over to the copy you installed with `muse skills install <path to your wjgoarxiv-skills clone>/plugins/<family>/skills/<skill> --scope user`, or gives that line and builds nothing. `doctor` reports such a copy as moved, not as an overlap.
+- The office runtime, the `diagram`, `readme`, `sciviz` and `motion` engines, `litmuse runtime`, and the motion done-check in the Stop hook left with those skills. `doctor` no longer lists LibreOffice, pandoc, Poppler, xelatex, ffmpeg or libwebp. Older engine caches under `~/.local/share/litmuse/runtime/` can be deleted.
+- The hook texts changed, so Muse asks you to approve the LitMuse hooks again after the update.
+- `skills.lock.json` replaced the pinned skill-depth and pack-list fixtures.
+
 ## 0.1.11 — 2026-11-11
 
 - `lit adhd` now opens with a KPI board instead of the per-session brief. The board shows, in your language: the one thing to do now and the exact text to type (`go`, `lit continue`, `lit approve`, a `lit start` command, or what to wait for), a done / in progress / waiting on you / left count with an overall bar, up to four milestone rows with ten-cell bars, the last five things finished, the next seven still to do, and up to five reminders such as a session waiting on you, uncommitted changes or unpushed commits, lanes still working, or a plan untouched for a week. The collector computes and prints the board itself (`litmuse rewind --lang ko|en`), so the numbers never come from the model. The old per-session brief stays one word away: `lit adhd 자세히` / `lit adhd detail` (`--detail`).

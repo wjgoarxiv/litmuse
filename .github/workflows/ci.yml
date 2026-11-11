@@ -1,7 +1,6 @@
 # Runs the gates that need no Muse host on every push and pull request to main, so a change is checked before
-# anyone runs Publish. The runner has no `muse`: the install tests drive test/fixtures/fake-muse.mjs, and the
-# engine render tests skip with a reason when their runtime cache or Chrome is not there. The checks that call
-# the real host (`npm run qa:muse`, `muse plugins validate`) stay on a maintainer's machine.
+# anyone runs Publish. The runner has no `muse`: the install tests drive test/fixtures/fake-muse.mjs. The checks
+# that call the real host (`npm run qa:muse`, `muse plugins validate`) stay on a maintainer's machine.
 name: CI
 
 on:

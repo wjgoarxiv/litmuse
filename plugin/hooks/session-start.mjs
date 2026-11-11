@@ -3,6 +3,7 @@ import { join, dirname } from 'node:path';
 import { homedir } from 'node:os';
 import { run, emitContext, PLUGIN_ROOT, pluginVersion, cachedLatest, newerThan, sessionPath, workspaceOf } from './lib/common.mjs';
 import { SKILL_ROUTES } from './lib/routes.mjs';
+import { MOVED } from './lib/moved.mjs';
 import { readFreshSnapshot } from './lib/handoff-snapshot.mjs';
 import { recordLoadedVersion } from './lib/stage.mjs';
 
@@ -60,7 +61,8 @@ run((payload) => {
   recordLoadedVersion(payload, version);
   const base = readFileSync(join(PLUGIN_ROOT, 'context', 'session.md'), 'utf8').replaceAll('{{version}}', version);
   const routes = SKILL_ROUTES.map((r) => `- ${r.id}: ${r.when}`).join('\n');
-  const parts = [base.trim(), `LitMuse routes (skill id: use when)\n${routes}`];
+  const moved = `Moved to wjgoarxiv-skills (each id loads a LitMuse stub that hands over to an installed copy or gives its one-skill install line, and builds nothing itself): ${Object.keys(MOVED).join(', ')}.`;
+  const parts = [base.trim(), `LitMuse routes (skill id: use when)\n${routes}`, moved];
   const latest = cachedLatest();
   if (latest && newerThan(latest, version)) {
     parts.push(`Update: LitMuse ${latest} is available (installed ${version}). Mention it once if the user asks about LitMuse; the update command is \`npx @litfamily/litmuse@latest install\`.`);

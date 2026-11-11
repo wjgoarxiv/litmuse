@@ -29,8 +29,7 @@ muse plugins validate plugin --json          # valid:true, diagnostics []
 
 `.github/workflows/ci.yml` runs the host-free gates (tests, `check:version`, `check:digests`, `scan:legacy-tokens`, the pack
 list against `skills.lock.json`) on every push and pull request to `main`, on Node 22 and 24, with no `muse`
-on the runner. The tests that would need the host use `fake-muse.mjs`; the engine render tests skip with a reason when
-their runtime cache is cold. `npm run qa:muse` and `muse plugins validate` stay on a maintainer's machine. The suite also passes inside a herdr
+on the runner. The tests that would need the host use `fake-muse.mjs`. `npm run qa:muse` and `muse plugins validate` stay on a maintainer's machine. The suite also passes inside a herdr
 pane; to rehearse CI, run it with `HERDR_ENV` unset, a temp HOME and `muse` off PATH.
 
 ## Host facts (probed on Muse Code 1.4.10, re-checked on 1.4.11; re-probe on a new build)
@@ -86,7 +85,7 @@ order, the 33 active tool names, `plugins validate`, and the hook refusal path. 
 
 ## Rules for changes
 
-- After any change under `plugin/hooks/`, `plugin/context/` or a skill file listed in `DIGEST_EXTRAS` (`plugin/hooks/lib/digest.mjs`; today the lit-humanizer `scripts/core.mjs` and `rules.json`, and the lit-typographic-motion done-check `engine/node/done.mjs` with every engine module it imports), run `npm run sync:digests` (the hook commands carry a code digest; `test/hooks.test.mjs` fails on drift). Each extra belongs to the one hook that loads it (`EXTRAS_BY_HOOK`: humanizer → post-tool-use, motion → stop); a hook that starts loading a skill file must be added there, and a test pins where those loads live.
+- After any change under `plugin/hooks/`, `plugin/context/` or a skill file listed in `DIGEST_EXTRAS` (`plugin/hooks/lib/digest.mjs`; today the lit-humanizer `scripts/core.mjs` and `rules.json`), run `npm run sync:digests` (the hook commands carry a code digest; `test/hooks.test.mjs` fails on drift). Each extra belongs to the one hook that loads it (`EXTRAS_BY_HOOK`: humanizer → post-tool-use); a hook that starts loading a skill file must be added there, and a test pins where those loads live.
 
 - The installer writes only under `$XDG_DATA_HOME/litmuse` and through the `muse` CLI, plus one marked block in Muse's
   own user rules file (`lib/agent-file.mjs`: consent first, add-then-remove returns the original bytes, a backup
@@ -99,7 +98,7 @@ order, the 33 active tool names, `plugins validate`, and the hook refusal path. 
   description budget. `test/bundle.test.mjs` fails on an orphan.
 - `skills.lock.json` is the one pin file. `npm run sync:lock` writes its generated half (each skill's SKILL.md and
   whole-folder sha256, bytes and file count, and the `npm pack` file list); run it after any change to a skill or to
-  what ships, and `test/skills-lock.test.mjs` fails while it is stale. Its `policy` (family floor, runtimes, closure and
+  what ships, and `test/skills-lock.test.mjs` fails while it is stale. Its `policy` (family floor, moved stubs, closure and
   host-name exemptions) and `budgets` (per skill: SKILL.md min/max bytes, min/max files, max total bytes) are
   hand-owned: sync keeps them and refuses to write while any skill is outside its budget, a skill has no budget, or a
   budget has no skill. `--accept-new <id>` seeds a new skill's budget (its current size as the floor, 1.5x as the
@@ -107,17 +106,15 @@ order, the 33 active tool names, `plugins validate`, and the hook refusal path. 
   measured, so `git add` a new skill before syncing. Raise a budget deliberately when a skill grows;
   never lower one to pass. `test/depth.test.mjs` checks reference closure (every relative path a skill document names
   exists) and that no file in `plugin/` names a sibling product or host outside verbatim third-party legal files.
-- lit-typographic-motion's done gate is hook-side: PostToolUse records `motion.mjs` runs and image `read_file` paths in
-  `<session state>.motion.json` while the route is active, and Stop runs the skill's `engine/node/done.mjs` on the last
-  output folder (at most two holds, then a not-done notice). `test/motion-hooks.test.mjs` drives it through the real hooks.
-  Its `motion` engine is pre-warm only (`status --json` carries `prewarm: true`): a render never installs, and an
-  unwarmed cache is exit 14 naming `npx @litfamily/litmuse runtime install motion`. The real-render tests
-  (`test/motion-render.test.mjs`, `test/motion-film.test.mjs`) skip without a warm cache, Chrome and libwebp; set
-  `LITMUSE_MOTION_RUNTIME` to a warm cache to run them. `npm run qa:cover-recipes -- --negatives --base <png>`
-  re-renders the recipes against their pinned rows (needs the painting for painted-light).
-- Pinned engines ship as `<name>-runtime.mjs` in `plugin/lib/` or a skill's `scripts/` and answer
-  `status|install --json` with `{name, ready, cache, missing}`; they install only into
-  `$XDG_DATA_HOME/litmuse/runtime/<name>`. `litmuse runtime` and doctor find them by that file name.
+- Five content families moved to wjgoarxiv-skills (decks: lit-pptx; documents: lit-docx; figures: lit-diagram-drawer,
+  lit-schematic, lit-scientific-visualization; design: frontend-ui-ux, visual-qa; video-covers: lit-typographic-motion,
+  readme-studio). Each id keeps a same-name stub, `SKILL.md` only, on all four surfaces, listed in the lock's
+  `policy.movedStubs` (exempt from the family floor, held to a stub budget). `plugin/hooks/lib/moved.mjs` is the one map
+  of id → family, the folder `muse skills install` copies, and the id the copy answers to; the prompt hook uses it to
+  hand a moved route to an installed user-scope copy (`$XDG_CONFIG_HOME/muse/skills/<id>/`) or give the install line,
+  SessionStart lists the moved ids, and doctor reports an installed copy as `INFO moved`, not an overlap.
+  `test/moved-stubs.test.mjs` pins all of it. The motion done gate, the office runtime, every pinned engine and the
+  `litmuse runtime` command left with these families; never port a body back into a stub.
 - Bump versions only with the user's approval, in `package.json`, `plugin/.muse-plugin/plugin.json` and
   `CHANGELOG.md` together.
 - No publish, tag or push without explicit approval. Re-check Meta's brand terms for "Muse" before the first publish.

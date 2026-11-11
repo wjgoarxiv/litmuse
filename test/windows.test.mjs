@@ -2,16 +2,12 @@
 // environment and filesystem probe as injected values; the POSIX paths run for real.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { spawnSync } from 'node:child_process';
-import { chmodSync, existsSync, mkdtempSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
+import { chmodSync, mkdtempSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { ROOT } from './helpers.mjs';
-import { EXIT } from '../plugin/skills/lit-typographic-motion/engine/core/constants.mjs';
-import { motionCli, needsRender, coverRun } from './motion-helpers.mjs';
 
 const LIB = join(ROOT, 'plugin', 'lib');
-const SKILLS = join(ROOT, 'plugin', 'skills');
 const host = await import(join(LIB, 'host-process.mjs'));
 const temp = (prefix) => mkdtempSync(join(tmpdir(), prefix));
 
@@ -124,9 +120,6 @@ test('no runtime starts npm, a .cmd file or `where` by hand; the shared helper i
   const offenders = [];
   for (const file of ALL_SOURCES.filter((f) => f.endsWith('.mjs') || f.endsWith('.js'))) {
     if (file === join(LIB, 'host-process.mjs')) continue;
-    // The Stop hook loads chrome.mjs, so its bytes are part of every hook digest and an edit would make the user approve all ten hooks
-    // again. Its `where` call is unreachable on Windows: the win32 candidates are absolute paths.
-    if (file === join(SKILLS, 'lit-typographic-motion', 'engine', 'node', 'chrome.mjs')) continue;
     readFileSync(file, 'utf8').split('\n').forEach((line, i) => {
       if (/^\s*(\/\/|\*)/u.test(line)) return;
       if (/["']np[mx]\.cmd["']/u.test(line)) offenders.push(`${rel(file)}:${i + 1}: names npm.cmd or npx.cmd`);
@@ -141,165 +134,32 @@ test('no runtime starts npm, a .cmd file or `where` by hand; the shared helper i
 test('every .cmd-capable launcher in the skill scripts goes through the helper', () => {
   const uses = (file) => readFileSync(join(ROOT, file), 'utf8');
   for (const file of [
-    'plugin/lib/office-runtime.mjs',
-    'plugin/skills/lit-typographic-motion/engine/node/runtime.mjs',
-    'plugin/skills/lit-diagram-drawer/scripts/diagram-runtime.mjs',
-    'plugin/skills/readme-studio/scripts/readme-runtime.mjs',
     'plugin/skills/lsp/scripts/tsserver-query.mjs',
+    'plugin/skills/lsp/scripts/diagnostics.mjs',
+    'plugin/skills/lsp-setup/scripts/detect-lsp.mjs',
+    'plugin/skills/lsp-setup/scripts/verify-lsp.mjs',
+    'plugin/skills/browser-drive/scripts/capability-probe.mjs',
   ]) assert.match(uses(file), /host-process\.mjs/, file);
 });
 
-function fakeNpm(exitCode, message) {
-  const bin = temp('litmuse-fakenpm-');
-  const npm = join(bin, 'npm');
-  writeFileSync(npm, `#!/bin/sh\necho "${message}" >&2\nexit ${exitCode}\n`);
-  chmodSync(npm, 0o755);
-  return bin;
-}
-
-test('office runtime: a failed npm install reports the child exit code and its stderr', () => {
-  const bin = fakeNpm(7, 'npm ERR! registry unreachable');
-  const r = spawnSync(process.execPath, [join(LIB, 'office-runtime.mjs'), 'node-modules'], {
-    encoding: 'utf8',
-    env: { ...process.env, PATH: `${bin}:${process.env.PATH}`, LITMUSE_OFFICE_RUNTIME: temp('litmuse-office-'), npm_execpath: '' },
-  });
-  assert.equal(r.status, 1, r.stdout + r.stderr);
-  assert.match(r.stderr, /OFFICE_RUNTIME_NODE_INSTALL_FAILED/);
-  assert.match(r.stderr, /exit 7: npm ERR! registry unreachable/);
-});
-
-test('office runtime: the host Python probe line is CRLF-safe and the default interpreter name follows the platform', async () => {
+test('the host Python probe line is CRLF-safe and the default interpreter name follows the platform', () => {
   const crlf = () => ({ status: 0, stdout: '3.12.4\r\n', stderr: '' });
   assert.deepEqual(host.probePythonCommand('python', { platform: 'win32', env: {}, spawnSync: crlf }), { ok: true, command: 'python', version: '3.12.4', detail: '3.12.4' });
   const tried = [];
   host.pickPython(undefined, { platform: 'win32', probe: (command) => (tried.push(command), { ok: false, command, detail: 'not found' }) });
   assert.deepEqual(tried, ['python', 'python3']);
-  const office = await import(join(LIB, 'office-runtime.mjs'));
-  assert.equal(office.hostPython({ PATH: '', LITMUSE_OFFICE_PYTHON: 'py3-missing' }).command, 'py3-missing');
-});
-
-test('motion engine: which and the ffmpeg finders honour PATHEXT and a CRLF-free path result', async () => {
-  const encode = await import(join(SKILLS, 'lit-typographic-motion', 'engine', 'node', 'encode.mjs'));
-  const ctx = { platform: 'win32', exists: (f) => f.toLowerCase() === 'c:\\ff\\ffmpeg.exe' };
-  assert.equal(encode.which('ffmpeg', { Path: 'C:\\ff' }, ctx).toLowerCase(), 'c:\\ff\\ffmpeg.exe');
-  assert.equal(encode.which('ffprobe', { Path: 'C:\\ff' }, ctx), null);
+  assert.equal(host.pickPython('py3-missing', { env: { PATH: '' } }).command, 'py3-missing');
 });
 
 test('doctor: a runtime is found by PATHEXT lookup on win32 and by the same lookup on POSIX, with no shell', async () => {
   const doctor = await import(join(ROOT, 'lib', 'doctor.mjs'));
-  const ffmpeg = doctor.RUNTIMES.find((r) => r.label === 'ffmpeg');
-  const poppler = doctor.RUNTIMES.find((r) => r.label.startsWith('Poppler'));
+  const astGrep = doctor.RUNTIMES.find((r) => r.label === 'ast-grep');
   const chrome = doctor.RUNTIMES.find((r) => r.label.startsWith('Chrome'));
   const win = (env, have) => ({ env, platform: 'win32', exists: (f) => have.some((h) => h.toLowerCase() === f.toLowerCase()) });
-  assert.equal(doctor.runtimeFound(ffmpeg, win({ Path: 'C:\\ff' }, ['C:\\ff\\ffmpeg.exe'])), true);
-  assert.equal(doctor.runtimeFound(ffmpeg, win({ Path: 'C:\\ff' }, [])), false);
-  assert.equal(doctor.runtimeFound(poppler, win({ Path: 'C:\\p' }, ['C:\\p\\pdftoppm.exe'])), false, 'needs both tools');
-  assert.equal(doctor.runtimeFound(poppler, win({ Path: 'C:\\p' }, ['C:\\p\\pdftoppm.exe', 'C:\\p\\pdftotext.exe'])), true);
+  assert.equal(doctor.runtimeFound(astGrep, win({ Path: 'C:\\ag' }, ['C:\\ag\\sg.exe'])), true);
+  assert.equal(doctor.runtimeFound(astGrep, win({ Path: 'C:\\ag' }, [])), false);
+  assert.equal(doctor.runtimeFound({ all: ['a', 'b'] }, win({ Path: 'C:\\p' }, ['C:\\p\\a.exe'])), false, 'an all-spec needs every tool');
+  assert.equal(doctor.runtimeFound({ all: ['a', 'b'] }, win({ Path: 'C:\\p' }, ['C:\\p\\a.exe', 'C:\\p\\b.exe'])), true);
   assert.equal(doctor.runtimeFound(chrome, win({ CHROME_PATH: 'C:\\anything' }, [])), true);
   assert.equal(doctor.runtimeFound(chrome, win({ Path: '' }, ['C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe'])), true);
-});
-
-// ---- Python ----------------------------------------------------------------------------------
-
-const py = (code, env = {}) => spawnSync('python3', ['-I', '-B', '-c', `import sys\nsys.path.insert(0, ${JSON.stringify(LIB)})\n${code}`], { encoding: 'utf8', env: { ...process.env, PYTHONDONTWRITEBYTECODE: '1', ...env } });
-
-test('office bootstrap on win32 returns the child exit code instead of replacing the process', () => {
-  const dir = temp('litmuse-reexec-');
-  const script = join(dir, 'exit3.py');
-  writeFileSync(script, 'import sys\nsys.exit(3)\n');
-  const r = py(`
-import office_runtime_bootstrap as b
-try:
-    b.reexec(sys.executable, ${JSON.stringify(script)}, [], {}, platform="win32")
-except SystemExit as e:
-    print("EXIT", e.code)
-`);
-  assert.equal(r.status, 0, r.stderr);
-  assert.match(r.stdout, /EXIT 3/);
-});
-
-test('office bootstrap on POSIX keeps execve with the same interpreter, script and arguments', () => {
-  const r = py(`
-import office_runtime_bootstrap as b
-seen = []
-b.reexec("/venv/bin/python", "/skill/qa.py", ["--a", "b"], {"K": "v"}, platform="darwin", execve=lambda *a: seen.append(a))
-print(seen)
-`);
-  assert.equal(r.status, 0, r.stderr);
-  assert.match(r.stdout, /\[\('\/venv\/bin\/python', \['\/venv\/bin\/python', '\/skill\/qa\.py', '--a', 'b'\], \{'K': 'v'\}\)\]/);
-});
-
-test('a helper that fails its gate exits non-zero through the bootstrap (POSIX, real process)', () => {
-  const dir = temp('litmuse-gate-');
-  writeFileSync(join(dir, 'gate.py'), `import os, sys
-sys.path.insert(0, ${JSON.stringify(LIB)})
-from office_runtime_bootstrap import reexec
-if os.environ.get("INNER") != "1":
-    reexec(sys.executable, os.path.abspath(__file__), sys.argv[1:], dict(os.environ, INNER="1"))
-sys.exit(5)
-`);
-  const r = spawnSync('python3', ['-I', '-B', join(dir, 'gate.py')], { encoding: 'utf8', env: { ...process.env, PYTHONDONTWRITEBYTECODE: '1' } });
-  assert.equal(r.status, 5, r.stdout + r.stderr);
-});
-
-test('PDF font preflight names the missing font and how to install it; unknown font lists are not guessed', () => {
-  const r = py(`
-import pdf_fonts as f
-need = {"main font": "Times New Roman", "Korean font": "Pretendard"}
-fc = lambda: {"liberation serif", "pretendard variable", "dejavu sans"}
-print(f.missing_fonts(need, {"times new roman", "noto sans"}))
-print(f.missing_fonts(need, {"times new roman", "pretendard"}))
-print(f.missing_fonts(need, None))
-print(f.parse_fc_list("Pretendard,Pretendard Black\\r\\nDejaVu Sans\\r\\n"))
-print(sorted(f.parse_reg_fonts("    Times New Roman Bold (TrueType)    REG_SZ    timesbd.ttf\\r\\n    Pretendard Regular (OpenType)    REG_SZ    P.otf\\r\\n    Junk    REG_SZ    x\\r\\n")))
-try:
-    f.require_fonts(need, installed={"noto sans"})
-except SystemExit as e:
-    print(e)
-`);
-  assert.equal(r.status, 0, r.stderr);
-  const lines = r.stdout.split('\n');
-  assert.equal(lines[0], "[('Korean font', 'Pretendard')]");
-  assert.equal(lines[1], '[]');
-  assert.equal(lines[2], '[]');
-  assert.match(lines[3], /pretendard/);
-  assert.equal(lines[4], "['pretendard regular', 'times new roman bold']");
-  const message = lines.slice(5).join('\n');
-  assert.match(message, /^BLOCKED: the PDF profile needs fonts that are not installed/);
-  assert.match(message, /Times New Roman/);
-  assert.match(message, /Pretendard/);
-  assert.match(message, /github\.com\/orioncactus\/pretendard/);
-});
-
-test('every LaTeX template loads the packages pandoc output needs (longtable for tables, \\tightlist for lists)', () => {
-  const root = join(SKILLS, 'lit-docx', 'templates', 'latex');
-  const names = readdirSync(root).filter((d) => existsSync(join(root, d, 'template.tex')));
-  assert.ok(names.length >= 5, names.join(','));
-  for (const name of names) {
-    const tex = readFileSync(join(root, name, 'template.tex'), 'utf8');
-    assert.match(tex, /\\usepackage\{longtable\}/, `${name}: longtable`);
-    assert.match(tex, /\\providecommand\{\\tightlist\}/, `${name}: tightlist`);
-  }
-});
-
-// ---- cover renderer: fail fast ---------------------------------------------------------------
-
-test('a cover page that throws while loading stops the render at once with its message, not after the 60 s ready wait', (t) => {
-  if (needsRender(t)) return;
-  const out = coverRun('good');
-  writeFileSync(join(out, 'cover', 'index.html'), `<!doctype html>
-<meta charset="utf-8">
-<body>
-<script>
-window.renderFrame = () => {};
-throw new Error("ART.lights has no entry for the hero bay 7");
-</script>
-</body>
-`);
-  const started = Date.now();
-  const r = motionCli(['cover', '--out', out, '--round', '1']);
-  const seconds = (Date.now() - started) / 1000;
-  assert.equal(r.status, EXIT.STAGE_CONTRACT_ERROR, r.stdout + r.stderr);
-  assert.match(r.stderr, /STAGE_CONTRACT_ERROR: .*ART\.lights has no entry for the hero bay 7/);
-  assert.ok(seconds < 45, `took ${seconds} s`);
 });

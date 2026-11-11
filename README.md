@@ -161,9 +161,11 @@ Four real outputs rendered on a Mac during the quality parity round, each opened
 
 `frontend-ui-ux` builds the page around them: one gallery, one plate per render, checked at phone, tablet, and desktop widths.
 
+The deck, the P&ID and the page came from skills that have since moved to wjgoarxiv-skills; [Moved skills](#moved-skills) below says how to add them back one at a time.
+
 ## What you get
 
-**39 skills**, each a dense Muse skill loaded on demand, with the references, scripts, templates and engines it needs inside its own folder. The catalog only holds their short descriptions, about 3.7 KB in total, so they keep their place even next to a large personal skill collection.
+**33 skills**, each a dense Muse skill loaded on demand, with the references and scripts it needs inside its own folder, plus nine short stubs for the skills that moved out (see [Moved skills](#moved-skills)). The catalog only holds their short descriptions, so they keep their place even next to a large personal skill collection.
 
 Every skill below ships in its own folder and loads on demand. Find the row that matches the task at hand.
 
@@ -172,21 +174,38 @@ Every skill below ships in its own folder and loads on demand. Find the row that
 | Work loop | lit-loop, litgoal, litwork | Goal pinned, failing test first, record left |
 | Plan and build | lit-plan, start-work, lit-code, debugging, refactor, lit-commit, lsp, lsp-setup | Written plan, then row-by-row build |
 | Ideas first | lit-brainstorm, deep-interview, lit-crucible | Diverge, clarify, pressure-test |
-| Review and cleanup | review-work, visual-qa, comment-checker, lit-burnoff, lit-burnoff-file | Second look, then residue stripped |
+| Review and cleanup | review-work, comment-checker, lit-burnoff, lit-burnoff-file | Second look, then residue stripped |
 | Research | litresearch, autoresearch, autoconference, wikify, lit-comprehend | Parallel searchers, traced claims |
 | Teams | lit-team | Child agents behind one packet |
 | Prose | lit-humanizer | Korean and English cleanup, facts kept |
 | Continuity | lit-recap, lit-handoff, lit-init, rules | Handoffs, recaps, orientation |
-| Interface and docs | frontend-ui-ux, readme-studio | Accessible UI, fact-checked READMEs |
-| Documents and figures | lit-docx, lit-pptx, lit-scientific-visualization, lit-diagram-drawer | Decks, styled docs, plots, diagrams |
-| Film and covers | lit-typographic-motion | Short films and cover loops, gated on decoded output |
 | Tools | structural-search, browser-drive | Syntax-shaped search, live pages |
 
-The document, diagram, README-cover and figure skills ship pinned engines (`office`, `diagram`, `readme`, `sciviz`). Each installs on first use into `~/.local/share/litmuse/runtime/<name>` and nowhere else; inside Muse's proxy-only sandbox that first install can be refused, so pre-warm them from a terminal with `npx @litfamily/litmuse runtime install all` (`runtime status` shows each one). The motion skill's engine (`motion`: its font set and type-engine package) installs from a terminal only, so `runtime install motion` (or `all`) is the way it gets there. They also call programs already on your machine: Python 3.10 to 3.14 (a newer `python3` is passed over for the newest `python3.X` in that range), LibreOffice, pandoc, Poppler, Chrome or Chromium, ffmpeg, libwebp (`img2webp`, `dwebp`), ast-grep and the language checkers the `lsp` skill drives. `doctor` lists what is missing and the command that installs it; LitMuse installs nothing globally.
+The skills call programs already on your machine: Python 3.10 to 3.14 for autoresearch (a newer `python3` is passed over for the newest `python3.X` in that range), Chrome or Chromium for browser-drive, ast-grep and the language checkers the `lsp` skill drives. `doctor` lists what is missing and the command that installs it; LitMuse installs nothing globally.
+
+### Moved skills
+
+LitMuse used to carry its own copies of the deck, document, figure, interface and film skills, and they made up most of the package. They now live in wjgoarxiv-skills, the one repository that keeps the LitFamily skills which moved out of the products, so you add only the ones you use. LitMuse keeps a same-name stub for each: the id, its `lit` routes and its catalog entry stay, and the stub either hands over to your installed copy or tells you how to install it. It never builds a stand-in.
+
+| Family | Skills |
+| --- | --- |
+| `decks` | lit-pptx |
+| `documents` | lit-docx |
+| `figures` | lit-diagram-drawer, lit-schematic, lit-scientific-visualization |
+| `design` | frontend-ui-ux, visual-qa |
+| `video-covers` | lit-typographic-motion, readme-studio |
+
+Each skill installs on its own into Muse's user skills:
+
+```bash
+muse skills install <path to your wjgoarxiv-skills clone>/plugins/<family>/skills/<skill> --scope user
+```
+
+`lit-scientific-visualization` is the exception: install the source folder `plugins/figures/vendor/scientific-visualization`, which answers as `scientific-visualization`. The next session lists the copy as a user skill; `lit` routes then load it by its own id, and `doctor` reports it as the wjgoarxiv-skills copy rather than an overlap. `muse skills uninstall <skill>` takes it out again. The copies were written for the LitFamily host they moved from, so some of their steps (the office runtime of `decks` and `documents`, the mark helper of `readme-studio`) sit outside the skill folder and are not carried by a one-skill install yet; each stub says which.
 
 **4 commands**: `/lit <route> <task>`, `/lit-korean <file or text>`, `/lit-status`, `/lit-hud`.
 
-**10 hooks**: SessionStart (LitMuse context and routes; after a compaction it re-injects the saved handoff once, and it adds the answer style you chose with `litmuse style`), UserPromptSubmit (`lit` activation; a later `lit` while its route is active continues it, `lit <other route>` switches, a bare `lit` resumes a started plan, `lit new` or `lit restart` starts over), PreToolUse (during lit-plan: writes through write_file, edit_file, apply_patch or delete_file stay inside `plans/` and `.litmuse/`, shell commands are read-only, and only read-only LitMuse agents may be spawned; on every route: guards against clustered negations and clustered hedges that a write adds to Markdown or text prose), PostToolUse (the tool ledger, plus the whole-line comments an edit added for comment-checker and an advisory lit-humanizer check on written prose; on the motion route it also notes each render and each image `read_file` opened), PostToolUseFailure (ledger), Stop (a lit-plan turn ends after its plan file exists, and a one-word `go` in the same session within 30 minutes then starts that plan with start-work; a motion turn ends when the skill's done-check passes on the last render, or after two holds with a plain not-done notice; start-work keeps going while plan rows are open and litgoal while criteria are open, each at most 3 holds in a row without progress), PreCompact (writes `.litmuse/handoff/latest.md` before Muse compacts), SubagentStart (the return format for child agents), SubagentStop and SessionEnd (ledger lines). The hooks also keep a live record of the route, plan progress and running child agents, plus each session's liveness (PostToolUse says alive, Stop idle, SessionEnd ended), which `/lit-status` and `npx @litfamily/litmuse status --card` show, because Muse's `/hud` shows fixed fields only. The card lists other sessions of the project running first, then idle, keeps a finished start-work as done for a minute, names a herdr pane session `<skill> · <pane>`, and says `restart to <version>` when a newer LitMuse was installed after the session started.
+**10 hooks**: SessionStart (LitMuse context and routes; after a compaction it re-injects the saved handoff once, and it adds the answer style you chose with `litmuse style`), UserPromptSubmit (`lit` activation; a later `lit` while its route is active continues it, `lit <other route>` switches, a bare `lit` resumes a started plan, `lit new` or `lit restart` starts over), PreToolUse (during lit-plan: writes through write_file, edit_file, apply_patch or delete_file stay inside `plans/` and `.litmuse/`, shell commands are read-only, and only read-only LitMuse agents may be spawned; on every route: guards against clustered negations and clustered hedges that a write adds to Markdown or text prose), PostToolUse (the tool ledger, plus the whole-line comments an edit added for comment-checker and an advisory lit-humanizer check on written prose), PostToolUseFailure (ledger), Stop (a lit-plan turn ends after its plan file exists, and a one-word `go` in the same session within 30 minutes then starts that plan with start-work; start-work keeps going while plan rows are open and litgoal while criteria are open, each at most 3 holds in a row without progress), PreCompact (writes `.litmuse/handoff/latest.md` before Muse compacts), SubagentStart (the return format for child agents), SubagentStop and SessionEnd (ledger lines). The hooks also keep a live record of the route, plan progress and running child agents, plus each session's liveness (PostToolUse says alive, Stop idle, SessionEnd ended), which `/lit-status` and `npx @litfamily/litmuse status --card` show, because Muse's `/hud` shows fixed fields only. The card lists other sessions of the project running first, then idle, keeps a finished start-work as done for a minute, names a herdr pane session `<skill> · <pane>`, and says `restart to <version>` when a newer LitMuse was installed after the session started.
 
 **11 agents**, spawned as `litmuse/<name>`: lit-planner, lit-executor, lit-verifier, qa-runner, quality-reviewer, librarian-researcher, and five Korean prose agents. Reviewers and the Korean agents get read and search tools only.
 
@@ -221,7 +240,7 @@ Only the lines between `<!-- litfamily:litmuse:start … -->` and `<!-- litfamil
 - It refuses to replace a bundle directory that is a symbolic link, holds someone else's files, or was edited after install.
 - It writes nothing under `~/.claude` or `~/.codex`; a test pins that.
 - Hooks fail open: if one breaks, your session continues.
-- Engine caches live under `~/.local/share/litmuse/runtime/`; `npx @litfamily/litmuse runtime status` shows what is installed. `uninstall` keeps them, so delete that folder to free the space.
+- LitMuse ships no engine runtime any more. Releases up to 0.1.11 cached them under `~/.local/share/litmuse/runtime/`; `uninstall` never removed that folder, so delete it to free the space.
 - Remove everything with `npx @litfamily/litmuse uninstall` (add `--dry-run` to preview); it takes the rules-file block out too. Plans and `.litmuse/` folders in your projects stay where they are.
 
 ## Family

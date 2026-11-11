@@ -10,7 +10,6 @@ import { packageVersion, PACKAGE_ROOT, stageState } from '../lib/bundle.mjs';
 import { paths } from '../lib/paths.mjs';
 import { installedPlugin, museVersion } from '../lib/muse.mjs';
 import { checkUpdate } from '../lib/update-check.mjs';
-import { runtime } from '../lib/runtime.mjs';
 import { agentFileState, configCommand, readAgentFileSetting } from '../lib/agent-file.mjs';
 import { buildCard, renderCard } from '../lib/stage-card.mjs';
 import { styleCommand } from '../lib/style.mjs';
@@ -28,7 +27,6 @@ Commands
   hud          Show the recommended /hud and /theme preset
   config       agentFile on|off: the short LitFamily block in Muse's user rules file (acts at once)
   style        eli5 | asd-ste100 | off | status: the answer style LitMuse adds to every session
-  runtime      status [name] | install <name|all>: the pinned engine runtimes, cached under the LitMuse data dir
   rewind       Cross-session KPI board [--lang ko|en] [--detail] [--json] [--here] [--since 7d] [--max 12] [--session <id>]
   uninstall    Remove the plugin from Muse and the staged bundle
   help         This text
@@ -102,8 +100,6 @@ async function main() {
       return doctor({ env, flags, print });
     case 'models':
       return models({ env, flags, print });
-    case 'runtime':
-      return runtime({ env, flags, args, print });
     case 'rewind':
       return runRewindCli(flags.json ? [...args, '--json'] : args, process.cwd(), { env });
     case 'hud':

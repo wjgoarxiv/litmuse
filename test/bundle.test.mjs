@@ -18,6 +18,8 @@ const FORBIDDEN = [/Claude Code/, /LitClaude/i, /\/litclaude:/, /TodoWrite/, /Sk
 const DESCRIPTION_MAX = 120;
 const DESCRIPTION_TOTAL_MAX = 30000;
 const CATALOG_CAP = 32 * 1024;
+// Skills whose bodies moved to wjgoarxiv-skills keep a short same-name stub; test/moved-stubs.test.mjs holds their shape.
+const MOVED_STUBS = new Set(JSON.parse(readFileSync(join(ROOT, 'skills.lock.json'), 'utf8')).policy.movedStubs);
 
 test('manifest: native shape, plugin id and 42 skills', () => {
   assert.equal(manifest.schemaVersion, 1);
@@ -46,6 +48,8 @@ test('skill frontmatter, sections, density and clean-room vocabulary', () => {
     const fm = parseFrontmatter(text);
     assert.equal(fm.name, id, `${id}: name`);
     assert.ok(fm.description, `${id}: description`);
+    for (const re of FORBIDDEN) assert.doesNotMatch(text, re, `${id}: ${re}`);
+    if (MOVED_STUBS.has(id)) continue;
     let at = -1;
     for (const h of REQUIRED_SECTIONS) {
       const i = text.indexOf(`\n${h}\n`);
@@ -55,7 +59,6 @@ test('skill frontmatter, sections, density and clean-room vocabulary', () => {
     const words = text.split(/\s+/).filter(Boolean).length;
     assert.ok(words >= 650, `${id}: ${words} words is below the density floor`);
     assert.ok(Buffer.byteLength(text) < 256 * 1024, `${id}: body under the host's 256 KiB limit`);
-    for (const re of FORBIDDEN) assert.doesNotMatch(text, re, `${id}: ${re}`);
   }
 });
 

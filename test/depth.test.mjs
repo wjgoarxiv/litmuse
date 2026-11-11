@@ -1,14 +1,12 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync, readdirSync, statSync, existsSync, mkdtempSync } from 'node:fs';
-import { join, dirname, relative, extname, basename } from 'node:path';
-import { tmpdir } from 'node:os';
+import { readFileSync, readdirSync, statSync, existsSync } from 'node:fs';
+import { join, dirname, relative, extname } from 'node:path';
 import { PLUGIN_DIR } from '../lib/bundle.mjs';
-import { runtimeModules, callRuntime } from '../lib/runtime.mjs';
 
 const SKILLS = join(PLUGIN_DIR, 'skills');
 const skillIds = readdirSync(SKILLS).filter((d) => statSync(join(SKILLS, d)).isDirectory()).sort();
-// Closure, vocabulary and runtime lists live in the hand-owned policy of skills.lock.json; sizes and file counts are
+// Closure and vocabulary lists live in the hand-owned policy of skills.lock.json; sizes and file counts are
 // budgeted there too and checked by test/skills-lock.test.mjs.
 const DEPTH = JSON.parse(readFileSync(new URL('../skills.lock.json', import.meta.url), 'utf8')).policy;
 
@@ -72,21 +70,6 @@ test('the legal files name no sibling product either: attribution credits upstre
     for (const re of SIBLING) if (re.test(text)) hits.push(`${rel}: ${re}`);
   }
   assert.deepEqual(hits, []);
-});
-
-test('runtime modules answer status --json inside a sandbox and cache under the LitMuse data dir', () => {
-  const home = mkdtempSync(join(tmpdir(), 'litmuse-rt-'));
-  const env = { PATH: process.env.PATH, HOME: home, XDG_DATA_HOME: join(home, 'data') };
-  const mods = runtimeModules();
-  assert.deepEqual(mods.map((m) => m.name), DEPTH.runtimes, 'shipped runtime modules');
-  for (const m of mods) {
-    const r = callRuntime(m, 'status', env);
-    assert.equal(r.error, undefined, `${m.name}: ${r.error}`);
-    assert.equal(typeof r.ready, 'boolean', `${m.name}: ready flag`);
-    assert.ok(Array.isArray(r.missing), `${m.name}: missing list`);
-    assert.ok(String(r.cache).startsWith(join(home, 'data', 'litmuse', 'runtime')), `${m.name}: cache ${r.cache}`);
-    assert.equal(basename(dirname(m.file)) === 'lib' || basename(dirname(m.file)) === 'scripts', true);
-  }
 });
 
 // M8 D2: lit-brainstorm hands off to deep-interview through one packet shape; both skills must agree on its headings.

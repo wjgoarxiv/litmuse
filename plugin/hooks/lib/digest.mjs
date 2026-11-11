@@ -8,15 +8,12 @@ const CONTEXT = join(LIB, '..', '..', 'context');
 
 const PLUGIN = join(LIB, '..', '..');
 
-// Files outside hooks/lib that a hook loads at run time: PostToolUse runs the lit-humanizer detector, and Stop runs the
-// lit-typographic-motion done-check with every engine module it imports.
-const MOTION_DONE = ['node/done.mjs', 'node/cover-assets.mjs', 'core/constants.mjs', 'node/chrome.mjs', 'node/cover-image.mjs', 'node/cover-treatment.mjs', 'node/treatment.mjs', 'node/sound.mjs', 'node/house.mjs', 'node/styles.mjs', 'node/score.mjs', 'core/presets.mjs', 'core/util.mjs', 'node/look.mjs', 'node/stills.mjs', 'node/analysis.mjs', 'core/flash.mjs', 'node/png.mjs'];
+// Files outside hooks/lib that a hook loads at run time: PostToolUse runs the lit-humanizer detector.
 const HUMANIZER = ['skills/lit-humanizer/scripts/core.mjs', 'skills/lit-humanizer/rules.json'];
-const MOTION = MOTION_DONE.map((f) => `skills/lit-typographic-motion/engine/${f}`);
-export const DIGEST_EXTRAS = [...HUMANIZER, ...MOTION];
+export const DIGEST_EXTRAS = [...HUMANIZER];
 // The hook that loads each extra. Every hook runs on every matching host event, so hashing only its own extras keeps
-// the per-call read small (the motion engine is most of the bytes) while still covering all the code that hook runs.
-export const EXTRAS_BY_HOOK = { 'post-tool-use.mjs': HUMANIZER, 'stop.mjs': MOTION };
+// the per-call read small while still covering all the code that hook runs.
+export const EXTRAS_BY_HOOK = { 'post-tool-use.mjs': HUMANIZER };
 
 const listed = (dir, ext) => readdirSync(dir).filter((f) => f.endsWith(ext)).sort().map((f) => join(dir, f));
 

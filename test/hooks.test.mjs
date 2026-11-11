@@ -498,7 +498,7 @@ test('the hook digest covers the files hooks load from skill folders', async () 
 });
 
 // Each hook hashes only the skill files it loads. That is sound only while the loads stay where EXTRAS_BY_HOOK says:
-// the humanizer import in post-tool-use.mjs, and the motion done-check (evaluateMotionStop) in stop.mjs.
+// the humanizer import in post-tool-use.mjs.
 test('the per-hook digest scope matches where hooks load skill files', async () => {
   const { DIGEST_EXTRAS, EXTRAS_BY_HOOK } = await import('../plugin/hooks/lib/digest.mjs');
   assert.deepEqual(Object.values(EXTRAS_BY_HOOK).flat().sort(), [...DIGEST_EXTRAS].sort(), 'every extra belongs to a hook');
@@ -506,13 +506,9 @@ test('the per-hook digest scope matches where hooks load skill files', async () 
   for (const f of hooks) {
     const src = readFileSync(join(HOOKS, f), 'utf8');
     assert.equal(/'skills', 'lit-humanizer'/.test(src), f === 'post-tool-use.mjs', `${f}: humanizer load`);
-    assert.equal(/evaluateMotionStop\(/.test(src), f === 'stop.mjs', `${f}: motion done-check`);
   }
-  for (const f of readdirSync(join(HOOKS, 'lib')).filter((n) => n.endsWith('.mjs') && n !== 'motion.mjs')) {
+  for (const f of readdirSync(join(HOOKS, 'lib')).filter((n) => n.endsWith('.mjs'))) {
     const src = readFileSync(join(HOOKS, 'lib', f), 'utf8');
-    assert.doesNotMatch(src, /evaluateMotionStop\(|'skills', 'lit-humanizer'|import\(/, `lib/${f} loads no skill file`);
+    assert.doesNotMatch(src, /'skills', 'lit-humanizer'|import\(/, `lib/${f} loads no skill file`);
   }
-  const lib = readFileSync(join(HOOKS, 'lib', 'motion.mjs'), 'utf8');
-  assert.equal((lib.match(/import\(/g) ?? []).length, 1, 'motion.mjs has one dynamic import');
-  assert.match(lib, /async function evaluateMotionStop[\s\S]*await import\(pathToFileURL\(DONE_MODULE\)/, 'and it is the done-check inside evaluateMotionStop');
 });

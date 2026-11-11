@@ -102,25 +102,3 @@ test('doctor expects every skill folder, including one the manifest forgot', asy
   writeFileSync(join(copy, 'skills', 'orphan-skill', 'SKILL.md'), '---\nname: orphan-skill\ndescription: "x"\n---\n');
   assert.ok(expectedSkillIds(copy).includes('plugin:litmuse:orphan-skill'));
 });
-
-// Review L5: the document skills need Poppler; doctor lists it.
-test('doctor lists Poppler among the runtimes', async () => {
-  const { env } = sandbox();
-  await install({ env, flags: { yes: true, approve: true }, interactive: false, print: quiet });
-  const out = collect();
-  await doctor({ env: { ...env, LITMUSE_SKIP_RUNTIMES: '0' }, flags: {}, print: out.print });
-  assert.match(out.text(), /runtime Poppler \(pdftoppm, pdftotext\)/);
-});
-
-// Parity port: every pinned engine runtime the bundle ships gets a doctor row with its pre-warm command.
-test('doctor lists every shipped engine runtime and how to pre-warm it', async () => {
-  const { runtimeModules } = await import('../lib/runtime.mjs');
-  const { env } = sandbox();
-  await install({ env, flags: { yes: true, approve: true }, interactive: false, print: quiet });
-  const out = collect();
-  await doctor({ env: { ...env, LITMUSE_SKIP_RUNTIMES: '0' }, flags: {}, print: out.print });
-  const mods = runtimeModules();
-  assert.ok(mods.length >= 4, 'office, diagram, readme and sciviz ship');
-  for (const m of mods) assert.match(out.text(), new RegExp(`engine ${m.name}\\b`), m.name);
-  assert.match(out.text(), /npx @litfamily\/litmuse runtime install /);
-});

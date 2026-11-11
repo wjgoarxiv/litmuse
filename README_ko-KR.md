@@ -161,9 +161,11 @@ Muse의 `/hud`는 켜고 끄는 고정 항목 목록이라서 플러그인 글�
 
 `frontend-ui-ux`는 이를 감싸는 페이지를 만듭니다. 렌더 한 종마다 플레이트 하나인 갤러리이며, 휴대전화·태블릿·데스크톱 너비에서 확인했습니다.
 
+이 덱과 P&ID, 페이지를 만든 스킬은 그 뒤 wjgoarxiv-skills로 옮겨 갔습니다. 하나씩 다시 들이는 방법은 아래 [옮겨 간 스킬](#옮겨-간-스킬)에 있습니다.
+
 ## 들어 있는 것
 
-**스킬 39개.** 필요할 때 불러오는 밀도 높은 Muse 스킬이며, 각 스킬에 필요한 참고 문서, 스크립트, 템플릿, 엔진이 그 스킬 폴더 안에 함께 들어 있습니다. 카탈로그에는 짧은 설명만 올라가며, 모두 합쳐 약 3.7 KB라서 개인 스킬이 많은 환경에서도 자리를 지킵니다.
+**스킬 33개.** 필요할 때 불러오는 밀도 높은 Muse 스킬이며, 각 스킬에 필요한 참고 문서와 스크립트가 그 스킬 폴더 안에 함께 들어 있습니다. 여기에 밖으로 옮겨 간 스킬의 짧은 스텁 아홉 개가 더해집니다([옮겨 간 스킬](#옮겨-간-스킬) 참고). 카탈로그에는 짧은 설명만 올라가므로 개인 스킬이 많은 환경에서도 자리를 지킵니다.
 
 아래 모든 스킬은 각자 폴더에 들어 있으며 필요할 때 불러옵니다. 하려는 일에 맞는 행을 찾으세요.
 
@@ -172,21 +174,38 @@ Muse의 `/hud`는 켜고 끄는 고정 항목 목록이라서 플러그인 글�
 | 작업 고리 | lit-loop, litgoal, litwork | 목표 고정, 떨어지는 테스트 먼저, 기록 남기기 |
 | 계획과 구현 | lit-plan, start-work, lit-code, debugging, refactor, lit-commit, lsp, lsp-setup | 계획서 작성, 행별 구현 |
 | 아이디어 다지기 | lit-brainstorm, deep-interview, lit-crucible | 넓히기, 묻기, 압박 테스트 |
-| 검토와 정리 | review-work, visual-qa, comment-checker, lit-burnoff, lit-burnoff-file | 다시 보기, 잔재 지우기 |
+| 검토와 정리 | review-work, comment-checker, lit-burnoff, lit-burnoff-file | 다시 보기, 잔재 지우기 |
 | 조사 | litresearch, autoresearch, autoconference, wikify, lit-comprehend | 병렬 탐색, 근거 추적 |
 | 팀 | lit-team | 하나의 패킷 뒤 자식 에이전트 |
 | 글 | lit-humanizer | 한국어와 영어 다듬기, 사실 유지 |
 | 이어 가기 | lit-recap, lit-handoff, lit-init, rules | 인계, 회고, 길잡이 |
-| 화면과 문서 | frontend-ui-ux, readme-studio | 접근 쉬운 화면, 사실 확인된 README |
-| 문서와 그림 | lit-docx, lit-pptx, lit-scientific-visualization, lit-diagram-drawer | 데크, 꾸민 문서, 그래프, 다이어그램 |
-| 영상과 표지 | lit-typographic-motion | 짧은 영상과 표지 고리, 인코딩본 검사 |
 | 도구 | structural-search, browser-drive | 코드 모양 검색, 살아 있는 페이지 |
 
-문서, 다이어그램, README 표지, 그림 스킬은 버전이 고정된 엔진(`office`, `diagram`, `readme`, `sciviz`)을 함께 씁니다. 엔진은 처음 쓸 때 `~/.local/share/litmuse/runtime/<이름>`에만 설치됩니다. Muse의 프록시 전용 샌드박스에서는 이 첫 설치가 막힐 수 있으니 터미널에서 `npx @litfamily/litmuse runtime install all`로 미리 설치해 두세요(`runtime status`로 상태를 봅니다). 모션 스킬의 엔진(`motion`: 글꼴 묶음과 타입 엔진 패키지)은 터미널에서만 설치되므로, `runtime install motion`(또는 `all`)으로 들입니다. 이 스킬들은 내 컴퓨터에 이미 있는 프로그램도 씁니다: Python 3.10~3.14(더 새로운 `python3`는 건너뛰고 이 범위에서 가장 새로운 `python3.X`를 씀), LibreOffice, pandoc, Poppler, Chrome 또는 Chromium, ffmpeg, libwebp(`img2webp`, `dwebp`), ast-grep, 그리고 `lsp` 스킬이 부르는 언어 검사 도구. 빠진 것과 설치 명령은 `doctor`가 알려 주며, LitMuse가 전역으로 무언가를 설치하는 일은 없습니다.
+스킬들은 내 컴퓨터에 이미 있는 프로그램을 씁니다: autoresearch에는 Python 3.10~3.14(더 새로운 `python3`는 건너뛰고 이 범위에서 가장 새로운 `python3.X`를 씀), browser-drive에는 Chrome 또는 Chromium, 그리고 ast-grep과 `lsp` 스킬이 부르는 언어 검사 도구. 빠진 것과 설치 명령은 `doctor`가 알려 주며, LitMuse가 전역으로 무언가를 설치하는 일은 없습니다.
+
+### 옮겨 간 스킬
+
+LitMuse는 예전에 덱, 문서, 그림, 화면, 영상 스킬을 직접 실었고, 이 스킬들이 패키지 대부분을 차지했습니다. 지금은 LitFamily 제품에서 빠져나온 스킬을 한곳에 모은 wjgoarxiv-skills에 있어서, 쓰는 것만 골라 들이면 됩니다. LitMuse는 스킬마다 같은 이름의 스텁을 남깁니다. id와 `lit` 경로, 카탈로그 항목은 그대로이고, 스텁은 설치한 사본으로 넘기거나 설치 방법을 알려 줍니다. 대신 만든 결과물을 내놓는 일은 없습니다.
+
+| 묶음 | 스킬 |
+| --- | --- |
+| `decks` | lit-pptx |
+| `documents` | lit-docx |
+| `figures` | lit-diagram-drawer, lit-schematic, lit-scientific-visualization |
+| `design` | frontend-ui-ux, visual-qa |
+| `video-covers` | lit-typographic-motion, readme-studio |
+
+스킬은 하나씩 Muse 사용자 스킬로 설치합니다.
+
+```bash
+muse skills install <path to your wjgoarxiv-skills clone>/plugins/<family>/skills/<skill> --scope user
+```
+
+`lit-scientific-visualization`만 예외로, 원본 폴더 `plugins/figures/vendor/scientific-visualization`을 설치하며 이 사본의 id는 `scientific-visualization`입니다. 다음 세션부터 사본이 사용자 스킬로 보이고, `lit` 경로는 그 id로 사본을 불러오며, `doctor`는 겹침이 아니라 wjgoarxiv-skills 사본으로 보고합니다. 빼려면 `muse skills uninstall <skill>`을 씁니다. 사본은 원래 다른 LitFamily 호스트에 맞춰 쓰였기 때문에 일부 단계(`decks`·`documents`의 오피스 런타임, `readme-studio`의 마크 도우미)는 스킬 폴더 밖에 있어 한 스킬 설치로는 아직 따라오지 않습니다. 어떤 단계인지는 스텁마다 적혀 있습니다.
 
 **명령 4개**: `/lit <경로> <작업>`, `/lit-korean <파일 또는 글>`, `/lit-status`, `/lit-hud`.
 
-**훅 10개**: SessionStart(LitMuse 컨텍스트와 경로 표. 컴팩션 뒤에는 저장해 둔 인계 메모를 한 번 다시 넣고, `litmuse style`로 고른 답변 스타일도 더함), UserPromptSubmit(맨 앞의 `lit` 활성화. 같은 경로가 이미 켜져 있으면 이어서 진행, 다른 경로면 전환, 맨 `lit`은 시작한 계획을 재개, `lit new`·`lit restart`는 새로 시작), PreToolUse(lit-plan 동안 write_file·edit_file·apply_patch·delete_file 쓰기는 `plans/`와 `.litmuse/` 안으로 제한하고 셸 명령은 읽기 전용만 허용, 자식 에이전트는 읽기 전용 LitMuse 에이전트만 허용, 모든 경로에서 쓰기가 Markdown이나 텍스트 글에 새로 더하는 부정문 몰림과 얼버무림 몰림 검사), PostToolUse(도구 기록, 편집이 새로 더한 한 줄 주석을 comment-checker에 넘기고 쓴 글에는 lit-humanizer 참고 검사. 모션 경로에서는 렌더 실행과 `read_file`로 연 이미지도 기록), PostToolUseFailure(기록), Stop(lit-plan 턴은 계획 파일이 생긴 뒤 끝나고, 같은 세션에서 30분 안에 `go` 한 단어를 입력하면 그 계획을 start-work로 시작. 모션 턴은 마지막 렌더가 스킬의 완료 검사를 통과하면 끝나고, 두 번 붙잡은 뒤에는 아직 끝나지 않았다고 분명히 말하게 함. start-work는 계획 행이, litgoal은 기준이 남아 있으면 이어 가되 진전 없이 연속 3번까지만 붙잡음), PreCompact(Muse가 컴팩션하기 전에 `.litmuse/handoff/latest.md`를 씀), SubagentStart(자식 에이전트의 보고 형식), SubagentStop·SessionEnd(기록 줄). 훅은 경로, 계획 진행, 실행 중인 자식 에이전트와 세션별 활동 상태(PostToolUse는 alive, Stop은 idle, SessionEnd는 ended)도 실시간 기록으로 남기며, Muse의 `/hud`는 고정 항목만 보여 주므로 이 기록은 `/lit-status`와 `npx @litfamily/litmuse status --card`로 봅니다. 카드는 같은 프로젝트의 다른 세션을 실행 중인 것부터 쉬는 것 순으로 보여 주고, 끝난 start-work는 1분 동안 done으로 두었다가 지우며, herdr 창 세션은 `<skill> · <pane>`으로 표시하고, 세션 시작 뒤 더 새 LitMuse가 설치되면 `restart to <버전>`을 띄웁니다.
+**훅 10개**: SessionStart(LitMuse 컨텍스트와 경로 표. 컴팩션 뒤에는 저장해 둔 인계 메모를 한 번 다시 넣고, `litmuse style`로 고른 답변 스타일도 더함), UserPromptSubmit(맨 앞의 `lit` 활성화. 같은 경로가 이미 켜져 있으면 이어서 진행, 다른 경로면 전환, 맨 `lit`은 시작한 계획을 재개, `lit new`·`lit restart`는 새로 시작), PreToolUse(lit-plan 동안 write_file·edit_file·apply_patch·delete_file 쓰기는 `plans/`와 `.litmuse/` 안으로 제한하고 셸 명령은 읽기 전용만 허용, 자식 에이전트는 읽기 전용 LitMuse 에이전트만 허용, 모든 경로에서 쓰기가 Markdown이나 텍스트 글에 새로 더하는 부정문 몰림과 얼버무림 몰림 검사), PostToolUse(도구 기록, 편집이 새로 더한 한 줄 주석을 comment-checker에 넘기고 쓴 글에는 lit-humanizer 참고 검사), PostToolUseFailure(기록), Stop(lit-plan 턴은 계획 파일이 생긴 뒤 끝나고, 같은 세션에서 30분 안에 `go` 한 단어를 입력하면 그 계획을 start-work로 시작. start-work는 계획 행이, litgoal은 기준이 남아 있으면 이어 가되 진전 없이 연속 3번까지만 붙잡음), PreCompact(Muse가 컴팩션하기 전에 `.litmuse/handoff/latest.md`를 씀), SubagentStart(자식 에이전트의 보고 형식), SubagentStop·SessionEnd(기록 줄). 훅은 경로, 계획 진행, 실행 중인 자식 에이전트와 세션별 활동 상태(PostToolUse는 alive, Stop은 idle, SessionEnd는 ended)도 실시간 기록으로 남기며, Muse의 `/hud`는 고정 항목만 보여 주므로 이 기록은 `/lit-status`와 `npx @litfamily/litmuse status --card`로 봅니다. 카드는 같은 프로젝트의 다른 세션을 실행 중인 것부터 쉬는 것 순으로 보여 주고, 끝난 start-work는 1분 동안 done으로 두었다가 지우며, herdr 창 세션은 `<skill> · <pane>`으로 표시하고, 세션 시작 뒤 더 새 LitMuse가 설치되면 `restart to <버전>`을 띄웁니다.
 
 **에이전트 11개**, `litmuse/<이름>`으로 띄웁니다: lit-planner, lit-executor, lit-verifier, qa-runner, quality-reviewer, librarian-researcher, 그리고 한국어 글 에이전트 다섯. 리뷰어와 한국어 에이전트는 읽기와 검색 도구만 씁니다.
 
@@ -221,7 +240,7 @@ Muse에는 자기만의 사용자 규칙 파일 `~/.config/muse/AGENTS.md`(`$XDG
 - 번들 폴더가 심볼릭 링크이거나, 다른 사람의 파일이 들어 있거나, 설치 후 수정되었으면 교체를 거부합니다.
 - `~/.claude`와 `~/.codex` 아래에는 아무것도 쓰지 않으며, 테스트가 이를 고정합니다.
 - 훅은 실패해도 세션을 막지 않고 그대로 통과시킵니다.
-- 엔진 캐시는 `~/.local/share/litmuse/runtime/` 아래에 있고, 설치 상태는 `npx @litfamily/litmuse runtime status`로 봅니다. `uninstall`은 캐시를 남기므로 공간을 비우려면 그 폴더를 지우세요.
+- LitMuse는 이제 엔진 런타임을 싣지 않습니다. 0.1.11까지의 릴리스는 엔진을 `~/.local/share/litmuse/runtime/`에 캐시했고 `uninstall`은 그 폴더를 지우지 않았으니, 공간을 비우려면 그 폴더를 지우세요.
 - 전부 지우려면 `npx @litfamily/litmuse uninstall`(미리 보려면 `--dry-run`). 규칙 파일의 블록도 함께 빠집니다. 프로젝트 안의 계획과 `.litmuse/` 폴더는 그대로 남습니다.
 
 ## 패밀리
