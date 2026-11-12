@@ -29,8 +29,8 @@ export function extensionsNotice({ leftovers = [] } = {}) {
     `  The nine: ${ids()}.`,
   ];
   for (const dir of leftovers) {
-    lines.push(`  An earlier LitMuse set up engines for them in ${dir}. Nothing reads that folder now, so delete it to free`);
-    lines.push('  the space if you do not install the extensions; an extension you install later sets up its own.');
+    lines.push(`  An earlier LitMuse set up engines for them in ${dir}.`);
+    lines.push('  Nothing reads that folder now (an extension you install sets up its own engines), so delete it to free the space.');
   }
   return lines;
 }
@@ -38,7 +38,7 @@ export function extensionsNotice({ leftovers = [] } = {}) {
 // The model-facing copy for the first session.
 export function firstSessionContext({ version, leftovers = [] }) {
   const left = leftovers.length
-    ? ` Also say that an earlier LitMuse set up engines for those skills in ${leftovers.map((d) => `\`${d}\``).join(' and ')}; nothing reads that folder now, so they can delete it if they do not install the extensions.`
+    ? ` Also say that an earlier LitMuse set up engines for those skills in ${leftovers.map((d) => `\`${d}\``).join(' and ')}; nothing reads that folder now (an extension they install sets up its own engines), so they can delete it to free the space.`
     : '';
   return `This is the first session after LitMuse ${version} was installed or updated. In your first reply, before anything else, tell the user once, in their language and in a few short lines: LitMuse's core is complete and works on its own; nine skills that make files (decks, documents, figures, design and video covers: ${ids()}) are now LitFamily extensions, kept on the extension shelf ${SHELF}; installing the ones they use alongside LitMuse gives the full LitFamily experience, with \`git clone ${SHELF}\` and then \`${GENERIC_LINE}\`.${left} Do not repeat it later in the session.`;
 }

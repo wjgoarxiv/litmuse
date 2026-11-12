@@ -171,3 +171,19 @@ test('doctor mentions the orphaned runtime folder when it is there, and only the
   assert.match(out.text(), /delete/i);
   assert.match(out.text(), /PASS bundle/, 'the leftover folder is not part of the bundle check');
 });
+
+// The extensions keep their engines under wjgoarxiv-skills/runtime, so the old folder is dead either way: deleting it
+// must not read as something only users who skip the extensions should do.
+test('the leftover advice holds whether or not the user installs the extensions', async () => {
+  const { env } = sandbox();
+  await install({ env, flags: { yes: true, approve: true }, interactive: false, print: quiet });
+  pretendOlderInstall(env);
+  const out = collect();
+  assert.equal(await install({ env, flags: { yes: true, approve: true }, interactive: false, print: out.print }), 0);
+  const ctx = sessionStart(env, 'ext-leftover');
+  for (const [where, text] of [['install output', out.text()], ['first-session context', ctx]]) {
+    assert.ok(text.includes(runtimeDir(env)), `${where} names the folder`);
+    assert.doesNotMatch(text, /if (you|they) do not install/i, `${where} ties the deletion to skipping the extensions`);
+    assert.match(text, /sets up its own engines/, `${where} says an extension brings its own engines`);
+  }
+});
