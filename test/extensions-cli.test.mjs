@@ -3,7 +3,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, writeFileSync, symlinkSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync, symlinkSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { ROOT, sandbox, collect, museCalls } from './helpers.mjs';
@@ -305,23 +305,45 @@ test('dry runs say what they compared with: nothing before the first fetch, the 
   assert.match(cached.text, /Compared with the cached copy; --yes fetches first, so the result may differ\./);
 });
 
-test('the same files from a new path are current; only the receipt source moves, atomically', async () => {
+test('the same files from a new path are current, and nothing writes Muse\'s lock', async () => {
   const { p, run, lock, backups } = setup();
   const a = shelf();
   await run(['install', 'visual-qa'], { from: a, yes: true });
-  const before = lock()['visual-qa'];
-  const b = shelf();
-  const dry = await run(['update', 'visual-qa'], { from: b });
-  assert.match(dry.text, /visual-qa: current/);
-  assert.equal(lock()['visual-qa'].source.path, before.source.path, 'a dry run rewrites nothing');
-  const r = await run(['update', 'visual-qa'], { from: b, yes: true });
+  const before = readFileSync(p.lock, 'utf8');
+  const r = await run(['update', 'visual-qa'], { from: shelf(), yes: true });
   assert.equal(r.code, 0, r.text);
   assert.match(r.text, /visual-qa: current/);
-  assert.doesNotMatch(r.text, /Muse recorded each install/, 'nothing was installed, so no install receipt is claimed');
-  const after = lock()['visual-qa'];
-  assert.equal(after.source.path, join(b, 'variants', 'litmuse', 'visual-qa'));
-  assert.equal(after.installed_at, before.installed_at);
-  assert.deepEqual(after.files, before.files);
+  assert.doesNotMatch(r.text, /Muse recorded each install|receipt's source/);
+  assert.equal(readFileSync(p.lock, 'utf8'), before, 'Muse\'s lock is byte-identical');
+  assert.equal(lock()['visual-qa'].source.path, join(a, 'variants', 'litmuse', 'visual-qa'));
   assert.deepEqual(backups(), []);
-  assert.deepEqual(readdirSync(join(p.skills, '.muse')), ['lock.json'], 'no temp file left');
+});
+
+test('a missing recorded source is INFO when the copy matches the current source, a finding when nothing can be compared', async () => {
+  const { env, p, run } = setup();
+  const g = (args, cwd) => spawnSync('git', args, { cwd, encoding: 'utf8' });
+  const origin = shelf('v1');
+  g(['init', '-q'], origin);
+  g(['add', '.'], origin);
+  g(['-c', 'user.name=t', '-c', 'user.email=t@t', 'commit', '-qm', 'v1'], origin);
+  const a = shelf('v1');
+  await run(['install', 'visual-qa'], { from: a, yes: true });
+  rmSync(a, { recursive: true });
+  const none = await run(['check']);
+  assert.equal(none.code, 1, 'no cache and no --from: nothing to compare, still a finding');
+  assert.match(none.text, /visual-qa: the source Muse recorded, .* no longer exists/);
+
+  env.LITMUSE_EXTENSIONS_REPO = `file://${origin}`;
+  assert.equal((await run(['update', 'visual-qa'], { yes: true })).code, 0);
+  assert.ok(existsSync(p.cache));
+  const c = await run(['check']);
+  assert.equal(c.code, 0, c.text);
+  assert.match(c.text, /nothing to fix/);
+  assert.match(c.text, /INFO visual-qa: the source Muse recorded, .* no longer exists; the installed copy matches the current source/);
+
+  writeEdition(join(p.cache), 'visual-qa', 'v9');
+  assert.equal((await run(['check'])).code, 1, 'a copy that differs from the current source stays a finding');
+  const d = collect();
+  await doctor({ env, flags: { offline: true }, print: d.print });
+  assert.match(d.text(), /WARN extensions/);
 });
