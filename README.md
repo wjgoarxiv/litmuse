@@ -11,7 +11,7 @@
 <a href="https://github.com/wjgoarxiv/litmuse/stargazers"><img src="https://img.shields.io/github/stars/wjgoarxiv/litmuse?style=flat" alt="GitHub stars" /></a>
 </p>
 
-<p align="center"><a href="#in-the-muse-app-too">Muse app</a> &nbsp; <a href="#install">Install</a> &nbsp; <a href="#quick-start">Quick start</a> &nbsp; <a href="#the-status-card">Status card</a> &nbsp; <a href="#automatic-handoff">Handoff</a> &nbsp; <a href="#safety-and-uninstall">Safety</a> &nbsp; <a href="./README_ko-KR.md">한국어</a></p>
+<p align="center"><a href="#inside-one-lit-turn">How it works</a> &nbsp; <a href="#in-the-muse-app-too">Muse app</a> &nbsp; <a href="#install">Install</a> &nbsp; <a href="#quick-start">Quick start</a> &nbsp; <a href="#the-status-card">Status card</a> &nbsp; <a href="#automatic-handoff">Handoff</a> &nbsp; <a href="#safety-and-uninstall">Safety</a> &nbsp; <a href="./README_ko-KR.md">한국어</a></p>
 
 ## What a session looks like
 
@@ -44,6 +44,30 @@ LitMuse gives each session a routine. Start a prompt with `lit` and the plugin's
 
 Muse still runs the session and picks the model. LitMuse adds the way of working, and it lives in plain files you can read.
 
+## Inside one lit turn
+
+A prompt that starts with `lit` goes through four steps, and each one leaves something you can open later. First the prompt hook reads the word after `lit` and picks the route. `lit plan` goes to lit-plan, plain `lit` goes to lit-loop, and another `lit` while that route is still running carries it on. Muse then loads the route's skill, which may hand parts of the work to child agents such as `litmuse/lit-verifier`. During a planning turn the PreToolUse hook lets writes land only under `plans/` and `.litmuse/`. At the end, review decides. The work counts as done when the tests pass and someone looked at the real surface; anything nobody could check is marked unverified. While plan rows are still open, the Stop hook keeps the turn going.
+
+The bottom row shows where all of this ends up. Three of the four live in your project. The route state sits in your home folder, where a planning turn cannot reach it.
+
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="./docs/assets/diagrams/lit-route.en.dark.png">
+    <img src="./docs/assets/diagrams/lit-route.en.light.png" width="900" alt="Four steps of a lit turn in Muse Code. 1, you type lit plan or /lit review. 2, the UserPromptSubmit hook picks the route from the next word and the reply opens with LIT IGNITED. 3, the skill plugin:litmuse:<route> works, child agents run as litmuse/<agent>, and PreToolUse keeps plan turns in plans/. 4, review-work and litmuse/lit-verifier decide; a Stop hook above holds the turn while plan rows are open. Below, the files each step leaves: .litmuse/handoff/latest.md, which SessionStart reads back; route state in ~/.local/state/litmuse/; plans/<slug>.md and .litmuse/ledger/*.jsonl, appended by PostToolUse; and .litmuse/evidence/<slug>/.">
+  </picture>
+</p>
+
+Here is the same turn drawn as a small process plant. A prompt comes in on the left, and the route check sends it to the plan unit or straight to the build unit. Work leaves the build unit through a valve that the Stop hook keeps shut while plan rows are open, then passes the review analyser. Checked work leaves on the right with its evidence, and anything that fails review goes back to be built again. Underneath, the hooks fill two tanks: the ledger of tool events, and the handoff that the next session reads back. The stream table says which file each stream becomes.
+
+<p align="center">
+  <picture>
+    <source media="(prefers-reduced-motion: reduce) and (prefers-color-scheme: dark)" srcset="./docs/assets/schematic/lit-plant.en.dark.png">
+    <source media="(prefers-reduced-motion: reduce)" srcset="./docs/assets/schematic/lit-plant.en.light.png">
+    <source media="(prefers-color-scheme: dark)" srcset="./docs/assets/schematic/lit-plant-loop.en.dark.webp">
+    <img src="./docs/assets/schematic/lit-plant-loop.en.light.webp" width="900" alt="Process flow diagram of a lit turn inside one Muse Code session, with flow moving along the lines. A lit <task> prompt enters on the left; UserPromptSubmit picks the route, sending lit plan to the plan unit (lit-plan, PreToolUse keeps writes in plans/) and plain lit to the build unit (start-work). The plan file flows into the build unit. Its outlet valve is held by a level controller labelled Stop: holds while rows are open. The draft passes an analyser for review-work and lit-verifier, whose diverter sends checked work out as Done, with proof and Evidence, or back to the build unit as rework. Below, a hook signal fills the ledger tank and the handoff tank feeds the next session, which SessionStart reads back. A stream table lists what each stream leaves on disk: plans/<slug>.md, .litmuse/evidence/, .litmuse/ledger/ and .litmuse/handoff/.">
+  </picture>
+</p>
+
 ## In the Muse app too
 
 Meta ships two Muse products. Muse Code is the terminal agent this README is about. The Muse app is the desktop agent with a chat window, side chats, notes and tasks. LitFamily also works inside the Muse app: its lit skills load there the same way, and a reply opens with the same ignition mark you see in the terminal.
@@ -62,7 +86,18 @@ npx @litfamily/litmuse install
 
 The installer shows every destination first. It copies the plugin to `~/.local/share/litmuse/bundle`, backs up the Muse files it is about to change, and runs `muse plugins install` at user scope, so LitMuse is available in every project. Skills and commands work right away.
 
-Muse runs a plugin's hooks and agents only after you approve them. The installer lists the 21 capabilities (10 hooks, 11 agents) and asks you once whether to approve them all. Say no and it prints the `muse plugins approve ...` lines for later. Muse re-arms the agent approvals whenever the plugin is updated, so after an update the installer asks once more for those. Then check the result:
+Muse runs a plugin's hooks and agents only after you approve them. The installer lists the 21 capabilities (10 hooks, 11 agents) and asks you once whether to approve them all. Say no and it prints the `muse plugins approve ...` lines for later. Muse re-arms the agent approvals whenever the plugin is updated, so after an update the installer asks once more for those.
+
+The picture follows one install from left to right. The top row is what the installer does, and the row under it is where each step writes. The preview writes nothing, and `--dry-run` stops there. Staging fills LitMuse's own folder, the `muse` CLI records the plugin in Muse's plugin store, and your yes to the approval question is kept in Muse's settings. The bottom row covers three more things: why an update may ask you again, what install leaves alone, and the one file it writes only after you agree.
+
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="./docs/assets/diagrams/install-approve.en.dark.png">
+    <img src="./docs/assets/diagrams/install-approve.en.light.png" width="900" alt="Four install steps and where each one writes. 1 Preview: litmuse install, run through npx, shows every destination first; --dry-run ends here with nothing written. 2 Stage: backs up Muse's settings.json and installed.json and copies the bundle into ~/.local/share/litmuse/ (bundle/, backups/, receipt.json). 3 Install in Muse: muse plugins validate and muse plugins install --scope user, recorded in ~/.local/share/muse/plugins/installed.json; skills and commands work from that moment. 4 Approve: asks once for 10 hooks and 11 agents; on yes the approvals are kept in ~/.config/muse/settings.json, on no it prints the muse plugins approve lines. Below: each hook command carries a digest of its code, so new hook code asks again, agent approvals re-arm on every update, and a hook whose code no longer matches refuses to run. Install leaves ~/.claude, ~/.codex and ~/.config/muse/skills/<id>/ alone and never reads Muse's credential file. It writes ~/.config/muse/AGENTS.md only inside its marked block, after asking once; config agentFile off removes it.">
+  </picture>
+</p>
+
+Then check the result:
 
 ```bash
 npx @litfamily/litmuse doctor
@@ -186,6 +221,15 @@ The skills call programs already on your machine: Python 3.10 to 3.14 for autore
 ### Extensions
 
 LitMuse's core is complete and works on its own: planning, building, review, research, handoffs and the rest of the table above need nothing else. The nine skills that make files (decks, documents, figures, design and video covers) are LitFamily extensions. They live on the extension shelf, [wjgoarxiv-skills](https://github.com/wjgoarxiv/wjgoarxiv-skills), and you install the ones you use alongside LitMuse to get the full LitFamily experience. The installer says this when you install or update, and the first Muse session after it says it once more.
+
+The picture puts the two halves side by side. Everything in the core on the left ships with LitMuse and works on its own. The nine stubs on the right keep their ids and `lit` routes, and each one points to its Muse edition on the extension shelf. Installing an edition copies one folder into Muse's user skills. LitMuse never writes that folder, so an update of LitMuse leaves your copy where it is.
+
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="./docs/assets/diagrams/core-extensions.en.dark.png">
+    <img src="./docs/assets/diagrams/core-extensions.en.light.png" width="900" alt="The LitMuse plugin lists 42 skills in plugin.json. The core, 33 skills complete on their own, in nine groups: work loop, ideas first, teams, prose, plan and build, tools, review and cleanup, research, continuity. Beside it, nine stubs in five families (decks lit-pptx; documents lit-docx; figures lit-diagram-drawer, lit-schematic, lit-scientific-visualization; design frontend-ui-ux, visual-qa; video-covers lit-typographic-motion, readme-studio) each point to wjgoarxiv-skills, where the Muse editions sit in variants/litmuse/<id>/. muse skills install <clone>/variants/litmuse/<id> --scope user copies one into ~/.config/muse/skills/<id>/, which LitMuse install, update and uninstall never write. When a lit route reaches a stub, Muse loads the installed copy, or the stub shows the install line.">
+  </picture>
+</p>
 
 LitMuse keeps a same-name stub for each extension: the id, its `lit` routes and its catalog entry stay, and the stub either hands over to your installed copy or tells you how to install it. It never builds a stand-in.
 

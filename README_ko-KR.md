@@ -11,7 +11,7 @@
 <a href="https://github.com/wjgoarxiv/litmuse/stargazers"><img src="https://img.shields.io/github/stars/wjgoarxiv/litmuse?style=flat" alt="GitHub stars" /></a>
 </p>
 
-<p align="center"><a href="#muse-앱에서도">Muse 앱</a> &nbsp; <a href="#설치">설치</a> &nbsp; <a href="#빠른-시작">빠른 시작</a> &nbsp; <a href="#상태-카드">상태 카드</a> &nbsp; <a href="#자동-핸드오프">핸드오프</a> &nbsp; <a href="#안전과-제거">안전</a> &nbsp; <a href="./README.md">English</a></p>
+<p align="center"><a href="#lit-한-턴의-안쪽">동작 방식</a> &nbsp; <a href="#muse-앱에서도">Muse 앱</a> &nbsp; <a href="#설치">설치</a> &nbsp; <a href="#빠른-시작">빠른 시작</a> &nbsp; <a href="#상태-카드">상태 카드</a> &nbsp; <a href="#자동-핸드오프">핸드오프</a> &nbsp; <a href="#안전과-제거">안전</a> &nbsp; <a href="./README.md">English</a></p>
 
 ## 세션은 이렇게 돌아갑니다
 
@@ -44,6 +44,30 @@ LitMuse는 세션마다 따라갈 순서를 줍니다. 프롬프트를 `lit`으�
 
 세션을 돌리고 모델을 고르는 것은 여전히 Muse입니다. LitMuse는 일하는 방식을 더하고, 그 방식은 직접 읽을 수 있는 평범한 파일로 남습니다.
 
+## lit 한 턴의 안쪽
+
+`lit`으로 시작하는 프롬프트는 네 단계를 거치고, 단계마다 나중에 열어 볼 수 있는 흔적을 남깁니다. 먼저 프롬프트 훅이 `lit` 다음 단어를 읽고 경로를 고릅니다. `lit plan`은 lit-plan으로, 그냥 `lit`은 lit-loop으로 가고, 그 경로가 아직 도는 중에 다시 `lit`을 치면 하던 일을 이어 갑니다. 그다음 Muse가 그 경로의 스킬을 불러오고, 스킬은 일부를 `litmuse/lit-verifier` 같은 자식 에이전트에게 맡기기도 합니다. 계획 턴에서는 PreToolUse 훅이 쓰기를 `plans/`와 `.litmuse/` 안으로만 받아 줍니다. 마지막은 리뷰가 판정합니다. 테스트가 통과하고 실제 화면까지 확인해야 끝난 것으로 치고, 아무도 확인하지 못한 부분은 미확인으로 표시합니다. 계획 행이 남아 있는 동안에는 Stop 훅이 턴을 계속 이어 갑니다.
+
+아래 줄은 이 모든 것이 어디에 남는지 보여 줍니다. 넷 중 셋은 프로젝트 안에 있습니다. 경로 상태만 홈 폴더에 있어서 계획 턴의 도구가 거기까지 닿지 못합니다.
+
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="./docs/assets/diagrams/lit-route.ko.dark.png">
+    <img src="./docs/assets/diagrams/lit-route.ko.light.png" width="900" alt="Muse Code에서 lit 한 턴이 거치는 네 단계. 1 lit plan 또는 /lit review를 입력한다. 2 UserPromptSubmit 훅이 다음 단어로 경로를 고르고 답의 첫 줄은 LIT IGNITED다. 3 plugin:litmuse:<경로> 스킬이 일하고, 자식 에이전트는 litmuse/<agent>로 돌며, PreToolUse가 계획 턴의 쓰기를 plans/로 묶는다. 4 review-work와 litmuse/lit-verifier가 판정하고, 위쪽의 Stop 훅은 열린 계획 행이 있으면 턴을 이어 간다. 아래 줄은 단계마다 남는 파일이다. SessionStart가 다시 읽는 .litmuse/handoff/latest.md, 홈 폴더의 ~/.local/state/litmuse/ 경로 상태, PostToolUse가 덧붙이는 plans/<slug>.md와 .litmuse/ledger/*.jsonl, 그리고 .litmuse/evidence/<slug>/.">
+  </picture>
+</p>
+
+같은 턴을 작은 공정 플랜트로 그려 봤습니다. 프롬프트는 왼쪽으로 들어오고, 경로 확인을 거쳐 계획 유닛이나 곧장 작업 유닛으로 갑니다. 작업 유닛에서 나가는 흐름은 밸브 하나를 지나는데, 계획 행이 남아 있으면 Stop 훅이 이 밸브를 잠가 둡니다. 밸브를 지난 작업은 리뷰 분석계를 거칩니다. 확인을 통과한 결과는 증거와 함께 오른쪽으로 나가고, 리뷰에서 걸린 작업은 다시 만들러 돌아갑니다. 아래쪽에서는 훅이 탱크 두 개를 채웁니다. 하나는 도구 기록을 모으는 원장이고, 다른 하나는 다음 세션이 다시 읽는 인계 메모입니다. 스트림 표를 보면 스트림마다 어떤 파일로 남는지 알 수 있습니다.
+
+<p align="center">
+  <picture>
+    <source media="(prefers-reduced-motion: reduce) and (prefers-color-scheme: dark)" srcset="./docs/assets/schematic/lit-plant.ko.dark.png">
+    <source media="(prefers-reduced-motion: reduce)" srcset="./docs/assets/schematic/lit-plant.ko.light.png">
+    <source media="(prefers-color-scheme: dark)" srcset="./docs/assets/schematic/lit-plant-loop.ko.dark.webp">
+    <img src="./docs/assets/schematic/lit-plant-loop.ko.light.webp" width="900" alt="Muse Code 세션 하나 안에서 lit 한 턴을 그린 공정 흐름도. 선을 따라 흐름이 움직인다. 왼쪽으로 들어온 lit <작업> 프롬프트를 UserPromptSubmit이 나눠, lit plan은 계획 유닛(lit-plan, PreToolUse: 쓰기는 plans/ 안에서만)으로, 그냥 lit은 작업 유닛(start-work)으로 보낸다. 계획 파일은 작업 유닛으로 흘러든다. 작업 유닛의 출구 밸브는 'Stop: 열린 행이 있으면 잡아 둠'이라고 적힌 레벨 조절계가 잡고 있다. 초안은 review-work와 lit-verifier 분석계를 지나고, 전환 밸브가 확인한 결과를 '증거와 함께 완료'와 '증거'로 내보내거나 재작업으로 되돌린다. 아래에서는 훅 신호가 원장 탱크를 채우고, 인계 메모 탱크는 SessionStart가 다시 읽는 다음 세션으로 이어진다. 스트림 표는 스트림마다 남는 곳을 적었다. plans/<slug>.md, .litmuse/evidence/, .litmuse/ledger/, .litmuse/handoff/.">
+  </picture>
+</p>
+
 ## Muse 앱에서도
 
 Meta의 Muse 제품은 두 가지입니다. 이 README가 다루는 Muse Code는 터미널에서 쓰는 에이전트이고, Muse 앱은 채팅 창과 사이드챗, 노트, 할 일을 갖춘 데스크톱 에이전트입니다. LitFamily는 Muse 앱 안에서도 돌아갑니다. lit 스킬이 똑같이 불려 오고, 답은 터미널에서 보던 점화 표시로 시작합니다.
@@ -62,7 +86,18 @@ npx @litfamily/litmuse install
 
 설치기는 먼저 쓸 위치를 모두 보여 줍니다. 그다음 플러그인을 `~/.local/share/litmuse/bundle`에 복사하고, 바꿀 Muse 파일을 백업한 뒤, `muse plugins install`을 user 범위로 실행합니다. 그래서 모든 프로젝트에서 LitMuse를 쓸 수 있습니다. 스킬과 명령은 설치 직후부터 동작합니다.
 
-Muse는 플러그인의 훅과 에이전트를 사용자가 승인한 뒤에만 실행합니다. 설치기는 승인할 21개(훅 10, 에이전트 11)를 보여 주고 한 번에 승인할지 딱 한 번 묻습니다. 아니라고 답하면 나중에 실행할 `muse plugins approve ...` 줄을 출력합니다. Muse는 플러그인이 업데이트될 때마다 에이전트 승인을 다시 요구하므로, 업데이트 뒤에는 설치기가 그 부분만 한 번 더 묻습니다. 그다음 결과를 확인합니다.
+Muse는 플러그인의 훅과 에이전트를 사용자가 승인한 뒤에만 실행합니다. 설치기는 승인할 21개(훅 10, 에이전트 11)를 보여 주고 한 번에 승인할지 딱 한 번 묻습니다. 아니라고 답하면 나중에 실행할 `muse plugins approve ...` 줄을 출력합니다. Muse는 플러그인이 업데이트될 때마다 에이전트 승인을 다시 요구하므로, 업데이트 뒤에는 설치기가 그 부분만 한 번 더 묻습니다.
+
+아래 그림은 설치 한 번을 왼쪽부터 따라갑니다. 윗줄은 설치기가 하는 일이고, 그 밑은 단계마다 파일을 쓰는 곳입니다. 미리 보기 단계에서는 아무것도 쓰지 않고, `--dry-run`이면 거기서 끝납니다. 준비 단계는 LitMuse 폴더를 채우고, `muse` CLI는 Muse 플러그인 저장소에 플러그인을 기록합니다. 승인 질문에 예라고 답하면 그 답은 Muse 설정에 남습니다. 맨 아래 줄은 업데이트 뒤에 다시 묻는 이유, 설치가 손대지 않는 곳, 동의를 받은 뒤에만 쓰는 파일 하나를 정리했습니다.
+
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="./docs/assets/diagrams/install-approve.ko.dark.png">
+    <img src="./docs/assets/diagrams/install-approve.ko.light.png" width="900" alt="설치 네 단계와 단계마다 쓰는 곳. 1 미리 보기: npx로 실행하는 litmuse install이 쓸 곳을 모두 먼저 보여 주고, --dry-run이면 여기서 끝난다. 2 준비: Muse의 settings.json과 installed.json을 백업하고 번들을 ~/.local/share/litmuse/(bundle/, backups/, receipt.json)로 복사한다. 3 Muse에 설치: muse plugins validate와 muse plugins install --scope user를 실행하고 ~/.local/share/muse/plugins/installed.json에 기록되며, 스킬과 명령은 이때부터 동작한다. 4 승인: 훅 10개와 에이전트 11개를 한 번에 승인할지 묻고, 예라면 승인 상태가 ~/.config/muse/settings.json에 남고 아니요라면 muse plugins approve 줄을 출력한다. 아래 줄: 훅 명령마다 코드의 다이제스트를 담아 훅 코드가 바뀌면 다시 묻고, 에이전트 승인은 업데이트마다 다시 걸리며, 다이제스트와 다른 코드는 훅이 거부한다. 설치는 ~/.claude, ~/.codex, ~/.config/muse/skills/<id>/를 건드리지 않고 Muse 자격 증명 파일은 읽지도 않는다. ~/.config/muse/AGENTS.md에는 한 번 물어본 뒤 표시한 블록 안쪽만 쓰고, config agentFile off로 끈다.">
+  </picture>
+</p>
+
+설치가 끝나면 결과를 확인합니다.
 
 ```bash
 npx @litfamily/litmuse doctor
@@ -186,6 +221,15 @@ Muse의 `/hud`는 켜고 끄는 고정 항목 목록이라서 플러그인 글�
 ### 확장
 
 LitMuse의 핵심은 그 자체로 완성되어 있고 혼자서도 돌아갑니다. 계획, 구현, 검토, 조사, 인계를 비롯해 위 표에 있는 일에는 다른 것이 필요 없습니다. 파일을 만드는 스킬 아홉 개(덱, 문서, 그림, 디자인, 영상 커버)는 LitFamily 확장입니다. 확장은 확장 선반인 [wjgoarxiv-skills](https://github.com/wjgoarxiv/wjgoarxiv-skills)에 있고, 쓰는 것을 LitMuse 옆에 함께 설치하면 LitFamily를 온전히 누릴 수 있습니다. 설치기는 설치하거나 업데이트할 때 이 내용을 알려 주고, 그 뒤 첫 Muse 세션에서도 한 번 더 알려 줍니다.
+
+그림은 두 부분을 나란히 놓았습니다. 왼쪽 핵심에 든 것은 LitMuse와 함께 설치되고 그것만으로 동작합니다. 오른쪽 스텁 아홉 개는 id와 `lit` 경로를 그대로 지키면서, 저마다 확장 선반에 있는 Muse판을 가리킵니다. Muse판을 설치하면 폴더 하나가 Muse 사용자 스킬로 복사됩니다. LitMuse는 그 폴더에 쓰는 일이 없으니, LitMuse를 업데이트해도 설치한 사본은 그 자리에 그대로 있습니다.
+
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="./docs/assets/diagrams/core-extensions.ko.dark.png">
+    <img src="./docs/assets/diagrams/core-extensions.ko.light.png" width="900" alt="LitMuse 플러그인의 plugin.json에는 스킬 42개가 있다. 혼자서 완성인 핵심 33개가 작업 고리, 아이디어 다지기, 팀, 글, 계획과 구현, 도구, 검토와 정리, 조사, 이어 가기의 아홉 분야로 나뉜다. 옆의 스텁 아홉 개는 다섯 묶음(decks lit-pptx, documents lit-docx, figures lit-diagram-drawer·lit-schematic·lit-scientific-visualization, design frontend-ui-ux·visual-qa, video-covers lit-typographic-motion·readme-studio)로 묶여 wjgoarxiv-skills를 가리키고, Muse판은 variants/litmuse/<id>/에 있다. muse skills install <clone>/variants/litmuse/<id> --scope user가 그 폴더를 ~/.config/muse/skills/<id>/로 복사하며, LitMuse 설치·업데이트·제거는 이 폴더를 건드리지 않는다. lit 경로가 스텁에 닿으면 설치한 사본을 불러오고, 없으면 스텁이 설치 줄을 보여 준다.">
+  </picture>
+</p>
 
 LitMuse는 확장마다 같은 이름의 스텁을 남깁니다. id와 `lit` 경로, 카탈로그 항목은 그대로이고, 스텁은 설치한 사본으로 넘기거나 설치 방법을 알려 줍니다. 대신 만든 결과물을 내놓는 일은 없습니다.
 
