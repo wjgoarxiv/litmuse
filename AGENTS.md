@@ -116,6 +116,10 @@ order, the 33 active tool names, `plugins validate`, and the hook refusal path. 
   always the self-contained Muse edition `variants/litmuse/<id>` of wjgoarxiv-skills, installed under the same id; the
   shared body under `plugins/<family>/` reaches family helpers outside its folder and is not installable alone. The
   installer and uninstaller never write `$CONFIG_DIR/skills/`, so an upgrade keeps the copy.
+  `litmuse extensions <verb>` (`lib/extensions.mjs`, `test/extensions-cli.test.mjs`) is the one writer there, and only
+  with `--yes`: it moves a folder into `$CONFIG_DIR/extension-backups/<stamp>/`, wraps `muse skills install` and
+  `uninstall` (Muse's lock is the receipt), and keeps a sparse source clone in `$XDG_CACHE_HOME/litmuse/extensions-src`.
+  Keep its text out of `plugin/hooks/lib/`: a change there changes every hook digest and re-arms all ten approvals.
   `test/moved-stubs.test.mjs` pins all of it, including that install, reinstall and uninstall leave a copy byte for byte. The motion done gate, the office runtime, every pinned engine and the
   `litmuse runtime` command left with these families; never port a body back into a stub.
 - Bump versions only with the user's approval, in `package.json`, `plugin/.muse-plugin/plugin.json` and

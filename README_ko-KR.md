@@ -222,12 +222,12 @@ Muse의 `/hud`는 켜고 끄는 고정 항목 목록이라서 플러그인 글�
 
 LitMuse의 핵심은 그 자체로 완성되어 있고 혼자서도 돌아갑니다. 계획, 구현, 검토, 조사, 인계를 비롯해 위 표에 있는 일에는 다른 것이 필요 없습니다. 파일을 만드는 스킬 아홉 개(덱, 문서, 그림, 디자인, 영상 커버)는 LitFamily 확장입니다. 확장은 확장 선반인 [wjgoarxiv-skills](https://github.com/wjgoarxiv/wjgoarxiv-skills)에 있고, 쓰는 것을 LitMuse 옆에 함께 설치하면 LitFamily를 온전히 누릴 수 있습니다. 설치기는 설치하거나 업데이트할 때 이 내용을 알려 주고, 그 뒤 첫 Muse 세션에서도 한 번 더 알려 줍니다.
 
-그림은 두 부분을 나란히 놓았습니다. 왼쪽 핵심에 든 것은 LitMuse와 함께 설치되고 그것만으로 동작합니다. 오른쪽 스텁 아홉 개는 id와 `lit` 경로를 그대로 지키면서, 저마다 확장 선반에 있는 Muse판을 가리킵니다. Muse판을 설치하면 폴더 하나가 Muse 사용자 스킬로 복사됩니다. LitMuse는 그 폴더에 쓰는 일이 없으니, LitMuse를 업데이트해도 설치한 사본은 그 자리에 그대로 있습니다.
+그림은 두 부분을 나란히 놓았습니다. 왼쪽 핵심에 든 것은 LitMuse와 함께 설치되고 그것만으로 동작합니다. 오른쪽 스텁 아홉 개는 id와 `lit` 경로를 그대로 지키면서, 저마다 확장 선반에 있는 Muse판을 가리킵니다. 그 아래 줄은 설치 한 번을 네 단계로 보여 줍니다. Muse가 읽는 폴더에서 같은 이름을 살피고, 이미 있는 폴더를 옆으로 옮기고, Muse판을 Muse 사용자 스킬로 복사하면, Muse가 잠금 파일에 기록합니다. 이 단계는 직접 쳐도 되고 `extensions install`에 맡겨도 됩니다. LitMuse 설치기와 업데이트는 그 폴더에 쓰지 않으니, LitMuse를 업데이트해도 설치한 사본은 그 자리에 그대로 있습니다.
 
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="./docs/assets/diagrams/core-extensions.ko.dark.png">
-    <img src="./docs/assets/diagrams/core-extensions.ko.light.png" width="900" alt="LitMuse 플러그인의 plugin.json에는 스킬 42개가 있다. 혼자서 완성인 핵심 33개가 작업 고리, 아이디어 다지기, 팀, 글, 계획과 구현, 도구, 검토와 정리, 조사, 이어 가기의 아홉 분야로 나뉜다. 옆의 스텁 아홉 개는 다섯 묶음(decks lit-pptx, documents lit-docx, figures lit-diagram-drawer·lit-schematic·lit-scientific-visualization, design frontend-ui-ux·visual-qa, video-covers lit-typographic-motion·readme-studio)로 묶여 wjgoarxiv-skills를 가리키고, Muse판은 variants/litmuse/<id>/에 있다. muse skills install <clone>/variants/litmuse/<id> --scope user가 그 폴더를 ~/.config/muse/skills/<id>/로 복사하며, LitMuse 설치·업데이트·제거는 이 폴더를 건드리지 않는다. lit 경로가 스텁에 닿으면 설치한 사본을 불러오고, 없으면 스텁이 설치 줄을 보여 준다.">
+    <img src="./docs/assets/diagrams/core-extensions.ko.light.png" width="900" alt="LitMuse 플러그인의 plugin.json에는 스킬 42개가 있다. 혼자서 완성인 핵심 33개가 작업 고리, 아이디어 다지기, 팀, 글, 계획과 구현, 도구, 검토와 정리, 조사, 이어 가기의 아홉 분야로 나뉜다. 옆의 스텁 아홉 개는 다섯 묶음(decks lit-pptx, documents lit-docx, figures lit-diagram-drawer·lit-schematic·lit-scientific-visualization, design frontend-ui-ux·visual-qa, video-covers lit-typographic-motion·readme-studio)로 묶여 wjgoarxiv-skills를 가리키고, Muse판은 variants/litmuse/<id>/에 있다. 설치는 네 단계다. Muse가 읽는 폴더에서 같은 이름을 살펴 있으면 멈추고, 이미 있는 폴더를 통째로 extension-backups/<stamp>/로 옮기고, muse skills install <clone>/variants/litmuse/<id> --scope user가 Muse판을 ~/.config/muse/skills/<id>/로 복사하면, Muse가 skills/.muse/lock.json에 원본과 시각, 파일 해시를 기록한다. npx @litfamily/litmuse extensions(list, check, install, update, remove, prune-backups)가 이 단계를 대신 실행하고 --yes 전에는 계획만 보여 준다. LitMuse 설치·업데이트는 이 사본을 건드리지 않는다. lit 경로가 스텁에 닿으면 설치한 사본을 불러오고, 없으면 스텁이 설치 줄을 보여 준다.">
   </picture>
 </p>
 
@@ -260,6 +260,19 @@ muse skills install <path to your wjgoarxiv-skills clone>/variants/litmuse/<skil
 ```
 
 Muse판은 Muse에서 혼자 돌아가도록 다시 쓴 스킬입니다. 쓰는 도우미와 글꼴, 잠금 파일을 폴더 안에 함께 싣고 Muse 도구로 일합니다. 엔진이 필요하면(오피스 런타임, 다이어그램 렌더러, matplotlib, 모션 엔진) 처음 쓸 때 설치된 폴더에서 직접 준비하므로 LitMuse 훅이나 승인, 런타임 명령이 필요 없습니다. 다음 세션부터 사본이 같은 id의 사용자 스킬로 보이고, `lit` 경로는 그 사본을 불러오며, `doctor`는 겹침이 아니라 `INFO moved`로 보고합니다. 사본은 `$CONFIG_DIR/skills/<skill>/`에 있고, LitMuse 설치기와 업데이트, 제거 명령은 이 폴더를 쓰거나 지우지 않으므로 LitMuse를 올려도 그대로 남습니다. Muse는 설치마다 자기 잠금 파일(`$CONFIG_DIR/skills/.muse/lock.json`: 원본 폴더, 시각, 파일 해시)에 기록하고, 이미 있는 폴더 위에는 설치하지 않습니다. 둘째 줄을 먼저 두는 까닭입니다. `~/.claude/skills`나 `~/.codex/skills`의 개인 사본은 사용자 스킬보다 순위가 낮아 가려진 것으로 표시되고, 프로젝트의 `.agents/skills`나 `.claude/skills` 사본은 그 프로젝트 안에서 사용자 스킬보다 앞섭니다. 업데이트는 세 줄을 다시 실행하면 됩니다. `--force`와 `muse skills update`는 쓰지 마세요. 둘 다 배포 파일만 제자리에서 다시 쓰고 다른 파일은 모두 남겨서, 새 판에서 빠진 파일이 그대로 남습니다. 빼려면 둘째 줄을 실행한 뒤 `muse skills uninstall <skill>`을 씁니다. 그러면 Muse의 기록만 지웁니다.
+
+이 줄들은 LitMuse가 대신 실행할 수도 있습니다. `npx @litfamily/litmuse extensions install <skill>`은 먼저 살펴보고, Muse가 읽는 다른 폴더에 같은 이름의 스킬이 있으면 멈추고 그 경로를 알려 줍니다(그 폴더는 건드리지 않으며, `--allow-shadow`를 주면 경고만 하고 설치합니다). 이미 있는 폴더는 날짜가 붙은 `extension-backups/` 폴더로 옮긴 뒤 `muse skills install`을 부르므로, 영수증은 계속 Muse의 잠금 파일입니다. id 여러 개나 `--family <name>`, `--all`도 받습니다. 무언가를 쓰는 명령은 모두 계획부터 보여 주고, `--yes`를 붙이기 전에는 아무것도 바꾸지 않습니다. `--from <clone>`을 주면 직접 받은 클론을 쓰고, 주지 않으면 LitMuse가 `variants/litmuse`만 담은 얕은 클론을 `~/.cache/litmuse/extensions-src`에 두고 실행할 때마다 새로 받습니다. git이나 네트워크가 없으면 아무것도 바꾸기 전에 멈추고 `--from`을 권합니다.
+
+```bash
+npx @litfamily/litmuse extensions list            # 확장마다 설치 안 됨, 설치됨(원본, 시각), 직접 둔 폴더, 같은 이름의 사본
+npx @litfamily/litmuse extensions check           # 손볼 곳과 고치는 줄
+npx @litfamily/litmuse extensions install lit-docx --yes
+npx @litfamily/litmuse extensions update --yes    # 선반에서 파일이 바뀐 확장만 다시 설치
+npx @litfamily/litmuse extensions remove lit-docx --yes
+npx @litfamily/litmuse extensions prune-backups --older-than 30 --yes
+```
+
+`remove`는 폴더를 백업으로 옮긴 다음 `muse skills uninstall`을 실행합니다. Muse 기록이 없는 폴더나 wjgoarxiv-skills의 Muse판이 아닌 곳에서 설치된 폴더는 경로를 알려 주고 거절합니다. 지우는 명령은 `prune-backups` 하나뿐이고, `extension-backups/` 안의 날짜 폴더만 지웁니다. `doctor`도 같은 검사를 돌려 한 줄로 알려 주고, 설치기는 손볼 곳이 있으면 `extensions check`를 가리키는 줄을 덧붙입니다. 저절로 바뀌는 것은 없습니다.
 
 **명령 4개**: `/lit <경로> <작업>`, `/lit-korean <파일 또는 글>`, `/lit-status`, `/lit-hud`.
 
@@ -297,6 +310,7 @@ Muse에는 자기만의 사용자 규칙 파일 `~/.config/muse/AGENTS.md`(`$XDG
 - 설치기는 `~/.local/share/litmuse/`에 쓰고, `muse` CLI를 거쳐 Muse의 플러그인 저장소와 설정에 씁니다. 그 전에 `~/.config/muse/settings.json`과 Muse의 `installed.json`을 백업하며, Muse 인증 파일은 열어 보지 않습니다. 이 밖에 손대는 파일은 Muse의 사용자 규칙 파일 하나뿐이고, 그것도 표시된 자기 블록 안에서만 씁니다(위 참고).
 - 번들 폴더가 심볼릭 링크이거나, 다른 사람의 파일이 들어 있거나, 설치 후 수정되었으면 교체를 거부합니다.
 - `~/.claude`와 `~/.codex` 아래에는 아무것도 쓰지 않으며, 테스트가 이를 고정합니다.
+- `extensions`는 `--yes`를 붙였을 때만 쓰고, 그때도 세 곳에만 씁니다. Muse 사용자 스킬(`muse skills install`과 `uninstall`을 거쳐), `~/.config/muse/extension-backups/`, 그리고 `~/.cache/litmuse/extensions-src`의 자기 클론입니다. 이 중 어느 곳이든 링크된 폴더면 첫 변경 전에 멈춥니다.
 - 훅은 실패해도 세션을 막지 않고 그대로 통과시킵니다.
 - LitMuse는 이제 엔진 런타임을 싣지 않습니다. 0.1.11까지의 릴리스는 엔진을 `~/.local/share/litmuse/runtime/`에 캐시했고 `uninstall`은 그 폴더를 지우지 않았습니다. 이제 그 폴더를 읽는 것은 없으므로(확장은 자기 엔진을 따로 준비합니다) 공간을 비우려면 지우세요. 폴더가 남아 있는 동안 `doctor`는 `INFO leftover`로 보여 줍니다.
 - 전부 지우려면 `npx @litfamily/litmuse uninstall`(미리 보려면 `--dry-run`). 규칙 파일의 블록도 함께 빠집니다. 프로젝트 안의 계획과 `.litmuse/` 폴더는 그대로 남습니다.

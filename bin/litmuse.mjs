@@ -14,6 +14,7 @@ import { agentFileState, configCommand, readAgentFileSetting } from '../lib/agen
 import { buildCard, renderCard } from '../lib/stage-card.mjs';
 import { styleCommand } from '../lib/style.mjs';
 import { runRewindCli } from '../plugin/lib/rewind/collect.mjs';
+import { extensionsCommand } from '../lib/extensions.mjs';
 
 const HELP = `LitMuse ${packageVersion()}: LitFamily workflows for Meta's Muse Code
 
@@ -28,6 +29,8 @@ Commands
   config       agentFile on|off: the short LitFamily block in Muse's user rules file (acts at once)
   style        eli5 | asd-ste100 | off | status: the answer style LitMuse adds to every session
   rewind       Cross-session KPI board [--lang ko|en] [--detail] [--json] [--here] [--since 7d] [--max 12] [--session <id>]
+  extensions   list | check | install | update | remove | prune-backups: the nine LitFamily extensions as Muse
+               user skills (litmuse extensions help; writes only with --yes)
   uninstall    Remove the plugin from Muse and the staged bundle
   help         This text
 
@@ -40,6 +43,7 @@ Options
   --no-agent-file  install: leave Muse's user rules file alone for this run
   --offline    Skip the npm update check
   --discard-modified  uninstall: also remove a bundle edited after install
+  --from <p>   extensions: use this wjgoarxiv-skills clone instead of LitMuse's cached one
   --version    Print the version`;
 
 function parse(argv) {
@@ -56,6 +60,11 @@ function parse(argv) {
     else if (a === '--discard-modified') flags.discardModified = true;
     else if (a === '--card') flags.card = true;
     else if (a === '--scope') flags.scope = argv[++i];
+    else if (a === '--from') flags.from = argv[++i];
+    else if (a === '--family') flags.family = argv[++i];
+    else if (a === '--older-than') flags.olderThan = argv[++i];
+    else if (a === '--all') flags.all = true;
+    else if (a === '--allow-shadow') flags.allowShadow = true;
     else if (a === '--help' || a === '-h') flags.help = true;
     else if (a === '--version' || a === '-v') flags.version = true;
     else rest.push(a);
@@ -82,6 +91,7 @@ async function main() {
     print(packageVersion());
     return 0;
   }
+  if (command === 'extensions') return extensionsCommand({ args, flags, env, print });
   if (flags.help || command === 'help') {
     print(HELP);
     return 0;

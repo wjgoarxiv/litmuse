@@ -49,7 +49,7 @@ test('a fresh install tells the user about LitFamily extensions, with the shelf 
   assert.ok(text.includes(`git clone ${SHELF}`), 'the clone line');
   assert.ok(text.includes(LINE), 'the Muse install line the stubs print');
   assert.match(text, /refuses a folder that is already there/, 'says an occupied folder stops the install');
-  assert.match(text, /move the old copy aside/, 'and points to the move-aside lines');
+  assert.match(text, /extensions install <skill>` moves an old copy aside first/, 'and names the verb that moves it aside');
   for (const id of Object.keys(MOVED)) assert.ok(text.includes(id), id);
   assert.match(text, /full LitFamily experience/);
   assert.doesNotMatch(text, /litmuse\/runtime/, 'a fresh install has no leftovers to name');
@@ -86,8 +86,6 @@ test('the first Muse session after an install carries the notice once; later ses
   const first = sessionStart(env, 'ext-first');
   assert.match(first, /LitFamily extensions/);
   assert.ok(first.includes(SHELF) && first.includes(LINE), 'shelf and install line reach the model');
-  assert.match(first, /refuses a folder that is already there/, 'the model hears that an occupied folder stops the install');
-  assert.match(first, /move the old copy aside/);
   assert.match(first, /once/i);
   assert.equal(sessionStart(env, 'ext-first', 'resume'), first, 'a resume of that session keeps byte-identical context');
   assert.equal(sessionStart(env, 'ext-first', 'compact'), first, 'and so does a compaction');

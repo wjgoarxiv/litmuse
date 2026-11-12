@@ -55,6 +55,14 @@ past that. A personal copy in `~/.claude/skills/lit-pptx/` or `~/.codex/skills/l
 the install Muse loads this one and reports those as shadowed. A project copy in `.agents/skills/lit-pptx/` or
 `.claude/skills/lit-pptx/` ranks above it inside that project; move or rename that one to use the extension there.
 
+### Or let LitMuse run the lines
+
+`npx @litfamily/litmuse extensions install lit-pptx` runs steps 1 to 3 for you. It prints the plan first, stops and names
+any same-name skill in another folder Muse reads (that one is never touched), moves an occupied folder aside into
+`extension-backups/`, then calls `muse skills install`. Nothing changes until you add `--yes`. `--from <clone>` uses
+your own clone; without it LitMuse keeps a shallow clone in its cache. `extensions update`, `extensions remove lit-pptx`,
+`extensions check`, `extensions list` and `extensions prune-backups` cover the rest, with the same `--yes` rule.
+
 ### Update
 
 Run steps 1 to 3 again; the old copy lands in a new dated folder. Leave out `--force` and `muse skills update lit-pptx`:
@@ -79,7 +87,7 @@ The copy and this stub do not collide. The stub is the plugin skill `plugin:litm
 2. **Installed:** load it with read_skill id `lit-pptx` (the user skill, without the `plugin:litmuse:` prefix) and
    follow it for the whole request. This stub adds no rules of its own.
 3. **Not installed, asked for directly:** reply in a few lines: what the skill makes, that it is now a LitFamily extension in the `decks`
-   family of wjgoarxiv-skills, the three lines above (look first, move an occupied folder aside, install), and that a new session picks it up. Build nothing and write no
+   family of wjgoarxiv-skills, the three lines above (look first, move an occupied folder aside, install) or the one `extensions install` line, and that a new session picks it up. Build nothing and write no
    files in its place.
 4. **Not installed, inside a lit workflow:** record in the ledger that `lit-pptx` is not installed, leave its deliverable open (never mark it done), name the install line once in the final report, and carry on with the rest of the work.
 

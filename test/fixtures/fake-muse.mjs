@@ -1,8 +1,9 @@
 #!/usr/bin/env node
 // Test double for the `muse` CLI. It records every argv line in FAKE_MUSE_LOG and keeps plugin state
 // in FAKE_MUSE_STATE, answering with the JSON shapes Muse Code 1.4.10 printed during the task-1 probe.
-import { readFileSync, writeFileSync, existsSync, mkdirSync, readdirSync } from 'node:fs';
-import { join, dirname } from 'node:path';
+import { readFileSync, writeFileSync, existsSync, mkdirSync, readdirSync, lstatSync, cpSync, rmSync, rmdirSync } from 'node:fs';
+import { createHash } from 'node:crypto';
+import { join, dirname, relative, resolve } from 'node:path';
 
 const args = process.argv.slice(2);
 const log = process.env.FAKE_MUSE_LOG;
@@ -78,6 +79,63 @@ if (group === 'plugins' && cmd === 'remove') {
   save();
   out({ removed: 'litmuse' });
 }
+// User skills, as Muse Code 1.4.15 printed them: `muse skills install` copies a folder into $CONFIG_DIR/skills/<id>,
+// records each file's hash in $CONFIG_DIR/skills/.muse/lock.json, and refuses an occupied folder; `uninstall` deletes
+// the recorded files and keeps the rest; `list` reads project, user and personal folders in precedence order and
+// reports the losers as skill-shadowed.
+const home = process.env.HOME;
+const museDir = join(configHome, 'muse');
+const userSkills = join(museDir, 'skills');
+const lockPath = join(userSkills, '.muse', 'lock.json');
+const readLock = () => (existsSync(lockPath) ? JSON.parse(readFileSync(lockPath, 'utf8')) : { version: 1, skills: {} });
+const writeLock = (l) => { mkdirSync(dirname(lockPath), { recursive: true }); writeFileSync(lockPath, JSON.stringify(l, null, 2)); };
+const fail = (code, message) => { process.stderr.write(`${message}\n`); out({ error: { code, message, details: {} } }, 1); };
+function files(dir, base = dir, acc = []) {
+  for (const name of readdirSync(dir).sort()) {
+    const p = join(dir, name);
+    const st = lstatSync(p);
+    if (st.isDirectory()) files(p, base, acc);
+    else if (st.isFile()) acc.push({ relative_path: relative(base, p).split('\\').join('/'), sha256: `sha256:${createHash('sha256').update(readFileSync(p)).digest('hex')}`, bytes: st.size });
+  }
+  return acc;
+}
+const flagValue = (name) => { const i = args.indexOf(name); return i >= 0 ? args[i + 1] : null; };
+
+if (group === 'skills' && cmd === 'install') {
+  if (process.env.FAKE_MUSE_SKILL_INSTALL_FAIL) fail('fake-install-failed', 'fake install failure');
+  const src = resolve(target);
+  if (!existsSync(join(src, 'SKILL.md'))) fail('skill-not-found', `no SKILL.md in ${src}`);
+  const id = flagValue('--name') || src.split(/[\\/]/).pop();
+  const dest = join(userSkills, id);
+  const lock = readLock();
+  if (lock.skills[id] && existsSync(dest)) fail('skill-already-installed', `skill already installed: ${id}`);
+  if (existsSync(dest)) fail('install-would-overwrite-unmanaged-files', `install would overwrite unmanaged files for skill \`${id}\` at ${dest}`);
+  cpSync(src, dest, { recursive: true });
+  const list = files(src);
+  lock.skills[id] = { id, source: { type: 'local', path: src }, installed_at: new Date().toISOString(), files: list };
+  writeLock(lock);
+  out({ installed: { id, path: `$CONFIG_DIR/skills/${id}`, provenance: { files: list } }, lockfile_path: '$CONFIG_DIR/skills/.muse/lock.json', diagnostics: [] });
+}
+if (group === 'skills' && cmd === 'uninstall') {
+  const lock = readLock();
+  const entry = lock.skills[target];
+  if (!entry) fail('skill-not-installed', `skill not installed: ${target}`);
+  const dest = join(userSkills, target);
+  const removed = [];
+  for (const f of entry.files) {
+    const p = join(dest, f.relative_path);
+    if (existsSync(p)) { rmSync(p); removed.push(f.relative_path); }
+  }
+  const prune = (d) => {
+    if (!existsSync(d) || !lstatSync(d).isDirectory()) return;
+    for (const n of readdirSync(d)) prune(join(d, n));
+    if (!readdirSync(d).length) rmdirSync(d);
+  };
+  prune(dest);
+  delete lock.skills[target];
+  writeLock(lock);
+  out({ uninstalled: { id: target, removed_files: removed, kept_files: [] }, lockfile_path: '$CONFIG_DIR/skills/.muse/lock.json' });
+}
 if (group === 'skills' && cmd === 'list') {
   const skills = state.installed
     ? manifest().capabilities.skills.map((s) => ({
@@ -85,7 +143,30 @@ if (group === 'skills' && cmd === 'list') {
       path: `plugin://litmuse/${s.path}`, context_cost: { startup_bytes: 300 },
     }))
     : [];
-  out({ skills: [...skills, ...(state.extraSkills || [])], diagnostics: [] });
+  const diagnostics = [];
+  const trusted = args.includes('--trust-workspace');
+  const ws = flagValue('--workspace') || process.cwd();
+  const roots = [
+    ...(trusted ? [['project', join(ws, '.agents', 'skills'), '.agents/skills'], ['project', join(ws, '.claude', 'skills'), '.claude/skills']] : []),
+    ['user', userSkills, '$CONFIG_DIR/skills'],
+    ['user', join(home, '.claude', 'skills'), '$HOME/.claude/skills'],
+    ['user', join(home, '.codex', 'skills'), '$HOME/.codex/skills'],
+  ];
+  const seen = new Set();
+  for (const [scope, dir, shown] of roots) {
+    if (!existsSync(dir)) continue;
+    for (const id of readdirSync(dir).sort()) {
+      if (!existsSync(join(dir, id, 'SKILL.md'))) continue;
+      const path = `${shown}/${id}/SKILL.md`;
+      if (seen.has(id)) {
+        diagnostics.push({ code: 'skill-shadowed', message: `skill \`${id}\` skipped because a higher-priority source defines the same id`, scope, path });
+        continue;
+      }
+      seen.add(id);
+      skills.push({ id, name: id, scope, activation: 'on', path, context_cost: { startup_bytes: 120 } });
+    }
+  }
+  out({ skills: [...skills, ...(state.extraSkills || [])], diagnostics });
 }
 process.stderr.write(`fake-muse: unsupported ${args.join(' ')}\n`);
 process.exit(2);
