@@ -36,7 +36,16 @@ const MOVED = {
   'readme-studio': ['video-covers', 'variants/litmuse/readme-studio', 'readme-studio'],
 };
 const installLine = (id) => `muse skills install ${PLACEHOLDER}/${MOVED[id][1]} --scope user`;
+// The safe install lines, probed against Muse 1.4.15: `muse skills install` refuses an occupied folder (`skill already
+// installed`, or `install would overwrite unmanaged files` when only the user's files are left), while `--force` and
+// `muse skills update` rewrite the shipped files and keep every other one. So the stub looks first (reads only: Muse's
+// user skills, the two foreign personal folders Muse loads, and the two project folders that outrank a user skill),
+// moves an occupied folder whole into a dated folder beside Muse's skills that Muse does not scan, then installs.
+const CONFIG = '${XDG_CONFIG_HOME:-$HOME/.config}/muse';
+const preflightLine = (id) => `command ls -d "${CONFIG}/skills/${id}" "$HOME/.claude/skills/${id}" "$HOME/.codex/skills/${id}" .agents/skills/${id} .claude/skills/${id} 2>/dev/null`;
+const moveAsideLine = (id) => `D="${CONFIG}/skills/${id}"; B="${CONFIG}/extension-backups/$(date +%Y%m%d-%H%M%S)"; [ -e "$D" ] && mkdir -p "$B" && mv "$D" "$B/" && echo "moved to $B/${id}"`;
 const stubText = (id) => readFileSync(join(SKILLS, id, 'SKILL.md'), 'utf8');
+const shells = ['bash', 'zsh'].filter((sh) => spawnSync(sh, ['-c', 'true']).status === 0);
 const quiet = () => {};
 
 const STATE_HOME = mkdtempSync(join(tmpdir(), 'litmuse-moved-state-'));
@@ -66,9 +75,27 @@ for (const [id, [family, folder, installs]] of Object.entries(MOVED)) {
     assert.ok(text.includes(`muse skills uninstall ${installs}`), 'says how to take the copy out again');
     assert.ok(text.includes(`plugin:litmuse:${id}`) && text.includes(`$CONFIG_DIR/skills/${installs}/`), 'says the stub and the copy live in different scopes');
     assert.match(text, /INFO moved/, 'says how doctor reports the copy');
-    assert.match(text, /install line again with `--force`/, 'says how to take a newer edition');
     assert.doesNotMatch(text, /\/Users\/[a-z]|\/home\/[a-z]|\/private\/tmp/, 'no private path');
     assert.doesNotMatch(text, /muse skills install \S*\/(?:Users|home)\//, 'install line uses the placeholder only');
+  });
+
+  test(`${id}: the stub looks first, moves an occupied folder aside whole, then installs; update and remove reuse them`, () => {
+    const text = stubText(id);
+    const look = text.indexOf(preflightLine(id));
+    const move = text.indexOf(moveAsideLine(id));
+    const put = text.indexOf(installLine(id));
+    assert.ok(look > 0, 'carries the read-only look-first line');
+    assert.ok(move > look, 'carries the move-aside line after it');
+    assert.ok(put > move, 'and the install line last');
+    assert.match(text, /^### Update$/m, 'an update section');
+    assert.match(text, /^### Remove$/m, 'a remove section');
+    const remove = text.slice(text.indexOf('### Remove'));
+    assert.ok(remove.includes(`muse skills uninstall ${installs}`), 'remove ends with uninstall, which then only drops Muse\'s record');
+    assert.match(remove, /step 2/, 'remove moves the folder aside first');
+    assert.match(text, /lock\.json/, 'names Muse\'s own install record');
+    assert.doesNotMatch(text, /muse skills install [^\n`]*--force|install line again with `--force`/, 'never installs with --force (it merges)');
+    assert.doesNotMatch(text, /\brm -r/, 'never deletes a user folder');
+    assert.doesNotMatch(moveAsideLine(id), /muse\/skills\/[^"]*extension-backups/, 'the backup sits outside the scanned skills folder');
   });
 
   test(`${id}: the stub is a stub: SKILL.md alone, small, with no body instructions left`, () => {
@@ -79,6 +106,49 @@ for (const [id, [family, folder, installs]] of Object.entries(MOVED)) {
     assert.match(text, /build(?:s)? nothing|write(?:s)? no /i, 'says it builds nothing while the copy is missing');
   });
 }
+
+test('the look-first and move-aside lines run as printed in bash and zsh: whole folder moved, user file kept, no nesting', { skip: shells.length === 0 }, () => {
+  for (const sh of shells) {
+    const home = mkdtempSync(join(tmpdir(), `litmuse-aside-${sh}-`));
+    const env = { PATH: process.env.PATH, HOME: home, XDG_CONFIG_HOME: join(home, '.config') };
+    const ws = join(home, 'ws');
+    mkdirSync(ws);
+    const run = (line) => spawnSync(sh, ['-c', line], { cwd: ws, env, encoding: 'utf8' });
+    const id = 'lit-pptx';
+    const dest = join(home, '.config', 'muse', 'skills', id);
+    assert.equal(run(preflightLine(id)).stdout, '', `${sh}: an empty home prints nothing`);
+    assert.notEqual(run(moveAsideLine(id)).status, 0, `${sh}: nothing to move`);
+    assert.equal(existsSync(join(home, '.config', 'muse', 'extension-backups')), false, `${sh}: no backup folder made for nothing`);
+
+    mkdirSync(dest, { recursive: true });
+    writeFileSync(join(dest, 'SKILL.md'), '---\nname: lit-pptx\n---\nold\n');
+    writeFileSync(join(dest, 'my-notes.md'), 'mine\n');
+    mkdirSync(join(home, '.claude', 'skills', id), { recursive: true });
+    const seen = run(preflightLine(id)).stdout.trim().split('\n');
+    assert.deepEqual(seen.map((p) => p.replace(home, '~')).sort(), [`~/.claude/skills/${id}`, `~/.config/muse/skills/${id}`], `${sh}: lists every same-name folder`);
+
+    const moved = run(moveAsideLine(id));
+    assert.equal(moved.status, 0, moved.stderr);
+    assert.equal(existsSync(dest), false, `${sh}: the skills folder is free for the install`);
+    const backups = readdirSync(join(home, '.config', 'muse', 'extension-backups'));
+    assert.equal(backups.length, 1);
+    assert.match(backups[0], /^\d{8}-\d{6}$/, 'a dated folder');
+    const kept = join(home, '.config', 'muse', 'extension-backups', backups[0], id);
+    assert.deepEqual(readdirSync(kept).sort(), ['SKILL.md', 'my-notes.md'], `${sh}: moved whole, nothing nested`);
+    assert.equal(readFileSync(join(kept, 'my-notes.md'), 'utf8'), 'mine\n');
+    assert.ok(moved.stdout.includes(kept), `${sh}: says where it went`);
+  }
+});
+
+test('the README Extensions sections carry the same safe lines for any id', () => {
+  for (const f of ['README.md', 'README_ko-KR.md']) {
+    const text = readFileSync(join(ROOT, f), 'utf8');
+    for (const line of [preflightLine('<skill>'), moveAsideLine('<skill>'), 'muse skills install <path to your wjgoarxiv-skills clone>/variants/litmuse/<skill> --scope user', 'muse skills uninstall <skill>']) {
+      assert.ok(text.includes(line), `${f}: ${line}`);
+    }
+    assert.doesNotMatch(text, /install line again with `--force`|설치 줄을 `--force`/, `${f}: no --force advice`);
+  }
+});
 
 test('the stubbed ids stay enrolled: manifest, route table, doctor listing and the lock policy', () => {
   const manifestIds = readManifest().capabilities.skills.map((s) => s.id);

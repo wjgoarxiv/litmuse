@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+- The nine extension stubs and both READMEs now give three lines for installing an extension safely. The first only reads: it prints every folder Muse could load under that id (Muse's user skills, the personal `~/.claude/skills` and `~/.codex/skills` that Muse also loads, and the project's `.agents/skills` and `.claude/skills`). The second moves an existing copy in Muse's user skills, whole and with any file you added, into a dated folder under `$CONFIG_DIR/extension-backups/`, which Muse does not scan. The third is the `muse skills install` line. Muse 1.4.15 refuses to install over a folder that is already there, and `--force` and `muse skills update` rewrite the shipped files in place while keeping every other file, so the stubs no longer suggest `--force` for a newer edition: an update is the same three lines again.
+- Removing an extension is now the move-aside line followed by `muse skills uninstall <id>`, which then only drops Muse's record. Run on its own, uninstall leaves the files you added in a folder Muse no longer lists, and that folder blocks the next install.
+- Muse already records every install (source folder, time and file hashes) in `$CONFIG_DIR/skills/.muse/lock.json`, so LitMuse adds no receipt file of its own.
+- The install notice and the first-session notice now say that Muse refuses an occupied folder and that the old copy is moved aside first. The hook code changed, so Muse asks you to approve the LitMuse hooks again after this update.
+
 ## 0.1.12 — 2026-11-11
 
 - LitMuse's core is complete and works on its own. The nine skills that make files are now LitFamily extensions, kept on the extension shelf wjgoarxiv-skills (https://github.com/wjgoarxiv/wjgoarxiv-skills); install the ones you use alongside LitMuse to get the full LitFamily experience. They are `lit-pptx` (decks), `lit-docx` (documents), `lit-diagram-drawer`, `lit-schematic` and `lit-scientific-visualization` (figures), `frontend-ui-ux` and `visual-qa` (design), and `lit-typographic-motion` and `readme-studio` (video-covers). To add one, clone the repository once (`git clone https://github.com/wjgoarxiv/wjgoarxiv-skills`) and install that skill's Muse edition: `muse skills install <path to your wjgoarxiv-skills clone>/variants/litmuse/<skill> --scope user`. The Muse edition carries its own helpers, fonts and lockfiles and sets up any engine it needs on first use, so it needs no LitMuse hook, approval or runtime command.

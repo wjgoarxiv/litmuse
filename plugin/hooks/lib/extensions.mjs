@@ -26,6 +26,7 @@ export function extensionsNotice({ leftovers = [] } = {}) {
     '  Install the ones you use, alongside LitMuse, to get the full LitFamily experience:',
     `    git clone ${SHELF}`,
     `    ${GENERIC_LINE}`,
+    '  Muse refuses a folder that is already there: to replace one, move the old copy aside first (each stub and the README give the lines).',
     `  The nine: ${ids()}.`,
   ];
   for (const dir of leftovers) {
@@ -40,7 +41,7 @@ export function firstSessionContext({ version, leftovers = [] }) {
   const left = leftovers.length
     ? ` Also say that an earlier LitMuse set up engines for those skills in ${leftovers.map((d) => `\`${d}\``).join(' and ')}; nothing reads that folder now (an extension they install sets up its own engines), so they can delete it to free the space.`
     : '';
-  return `This is the first session after LitMuse ${version} was installed or updated. In your first reply, before anything else, tell the user once, in their language and in a few short lines: LitMuse's core is complete and works on its own; nine skills that make files (decks, documents, figures, design and video covers: ${ids()}) are now LitFamily extensions, kept on the extension shelf ${SHELF}; installing the ones they use alongside LitMuse gives the full LitFamily experience, with \`git clone ${SHELF}\` and then \`${GENERIC_LINE}\`.${left} Do not repeat it later in the session.`;
+  return `This is the first session after LitMuse ${version} was installed or updated. In your first reply, before anything else, tell the user once, in their language and in a few short lines: LitMuse's core is complete and works on its own; nine skills that make files (decks, documents, figures, design and video covers: ${ids()}) are now LitFamily extensions, kept on the extension shelf ${SHELF}; installing the ones they use alongside LitMuse gives the full LitFamily experience, with \`git clone ${SHELF}\` and then \`${GENERIC_LINE}\`; Muse refuses a folder that is already there, so to replace an older copy they move the old copy aside first, with the lines in that skill's LitMuse stub or the README.${left} Do not repeat it later in the session.`;
 }
 
 export function noticePath(env = process.env) {

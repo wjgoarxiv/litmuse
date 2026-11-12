@@ -245,10 +245,21 @@ Clone the shelf once, then install each extension on its own into Muse's user sk
 
 ```bash
 git clone https://github.com/wjgoarxiv/wjgoarxiv-skills
+```
+
+Then, for each extension, from the project you work in, replace `<skill>` with its id and run three lines. The first
+only reads: it prints each folder Muse could load under that id (your Muse user skills, the personal `~/.claude/skills`
+and `~/.codex/skills` that Muse also loads, and the project's `.agents/skills` and `.claude/skills`). The second moves
+an existing copy in Muse's user skills, whole and with any file you added, into a dated folder under
+`extension-backups/` beside them, where Muse does not look; with nothing there it does nothing. The third installs.
+
+```bash
+command ls -d "${XDG_CONFIG_HOME:-$HOME/.config}/muse/skills/<skill>" "$HOME/.claude/skills/<skill>" "$HOME/.codex/skills/<skill>" .agents/skills/<skill> .claude/skills/<skill> 2>/dev/null
+D="${XDG_CONFIG_HOME:-$HOME/.config}/muse/skills/<skill>"; B="${XDG_CONFIG_HOME:-$HOME/.config}/muse/extension-backups/$(date +%Y%m%d-%H%M%S)"; [ -e "$D" ] && mkdir -p "$B" && mv "$D" "$B/" && echo "moved to $B/<skill>"
 muse skills install <path to your wjgoarxiv-skills clone>/variants/litmuse/<skill> --scope user
 ```
 
-A Muse edition is the skill rewritten to stand alone in Muse: it carries its own helpers, fonts and lockfiles, uses Muse's tools, and sets up any engine it needs (the office runtime, the diagram renderer, matplotlib, the motion engine) on first use from the installed folder, so it needs no LitMuse hook, approval or runtime command. The next session lists the copy as a user skill under the same id; `lit` routes then load it, and `doctor` reports it as `INFO moved` rather than an overlap. The copy lives in `$CONFIG_DIR/skills/<skill>/`, which LitMuse's installer, its updates and its uninstaller never write or remove, so upgrading LitMuse keeps it; run the install line again with `--force` to take a newer edition, and `muse skills uninstall <skill>` to take it out.
+A Muse edition is the skill rewritten to stand alone in Muse: it carries its own helpers, fonts and lockfiles, uses Muse's tools, and sets up any engine it needs (the office runtime, the diagram renderer, matplotlib, the motion engine) on first use from the installed folder, so it needs no LitMuse hook, approval or runtime command. The next session lists the copy as a user skill under the same id; `lit` routes then load it, and `doctor` reports it as `INFO moved` rather than an overlap. The copy lives in `$CONFIG_DIR/skills/<skill>/`, which LitMuse's installer, its updates and its uninstaller never write or remove, so upgrading LitMuse keeps it; Muse records each install in its own lock (`$CONFIG_DIR/skills/.muse/lock.json`: source folder, time, file hashes) and refuses to install over a folder that is already there, which is why the second line comes first. A personal copy in `~/.claude/skills` or `~/.codex/skills` ranks below the user skill and shows as shadowed; a project copy in `.agents/skills` or `.claude/skills` ranks above it inside that project. To update, run the three lines again. Leave out `--force` and `muse skills update`: both rewrite the shipped files in place and keep every other file, so anything a newer edition dropped would stay behind. To remove one, run the second line and then `muse skills uninstall <skill>`, which then only drops Muse's record of it.
 
 **4 commands**: `/lit <route> <task>`, `/lit-korean <file or text>`, `/lit-status`, `/lit-hud`.
 

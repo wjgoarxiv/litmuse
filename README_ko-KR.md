@@ -245,10 +245,21 @@ LitMuse는 확장마다 같은 이름의 스텁을 남깁니다. id와 `lit` 경
 
 ```bash
 git clone https://github.com/wjgoarxiv/wjgoarxiv-skills
+```
+
+그다음 확장마다, 작업하는 프로젝트에서 `<skill>`을 그 id로 바꾸어 세 줄을 실행합니다. 첫 줄은 읽기만 합니다. 그 id로 Muse가
+불러올 수 있는 폴더를 모두 보여 줍니다(Muse 사용자 스킬, Muse가 함께 읽는 개인 폴더 `~/.claude/skills`와 `~/.codex/skills`,
+프로젝트의 `.agents/skills`와 `.claude/skills`). 둘째 줄은 Muse 사용자 스킬에 이미 있는 사본을, 직접 넣은 파일까지 폴더째,
+그 옆 `extension-backups/` 아래 날짜 폴더로 옮깁니다. Muse는 그 폴더를 읽지 않고, 옮길 것이 없으면 아무것도 하지 않습니다.
+셋째 줄이 설치합니다.
+
+```bash
+command ls -d "${XDG_CONFIG_HOME:-$HOME/.config}/muse/skills/<skill>" "$HOME/.claude/skills/<skill>" "$HOME/.codex/skills/<skill>" .agents/skills/<skill> .claude/skills/<skill> 2>/dev/null
+D="${XDG_CONFIG_HOME:-$HOME/.config}/muse/skills/<skill>"; B="${XDG_CONFIG_HOME:-$HOME/.config}/muse/extension-backups/$(date +%Y%m%d-%H%M%S)"; [ -e "$D" ] && mkdir -p "$B" && mv "$D" "$B/" && echo "moved to $B/<skill>"
 muse skills install <path to your wjgoarxiv-skills clone>/variants/litmuse/<skill> --scope user
 ```
 
-Muse판은 Muse에서 혼자 돌아가도록 다시 쓴 스킬입니다. 쓰는 도우미와 글꼴, 잠금 파일을 폴더 안에 함께 싣고 Muse 도구로 일합니다. 엔진이 필요하면(오피스 런타임, 다이어그램 렌더러, matplotlib, 모션 엔진) 처음 쓸 때 설치된 폴더에서 직접 준비하므로 LitMuse 훅이나 승인, 런타임 명령이 필요 없습니다. 다음 세션부터 사본이 같은 id의 사용자 스킬로 보이고, `lit` 경로는 그 사본을 불러오며, `doctor`는 겹침이 아니라 `INFO moved`로 보고합니다. 사본은 `$CONFIG_DIR/skills/<skill>/`에 있고, LitMuse 설치기와 업데이트, 제거 명령은 이 폴더를 쓰거나 지우지 않으므로 LitMuse를 올려도 그대로 남습니다. 새 판을 받으려면 설치 줄에 `--force`를 붙여 다시 실행하고, 빼려면 `muse skills uninstall <skill>`을 씁니다.
+Muse판은 Muse에서 혼자 돌아가도록 다시 쓴 스킬입니다. 쓰는 도우미와 글꼴, 잠금 파일을 폴더 안에 함께 싣고 Muse 도구로 일합니다. 엔진이 필요하면(오피스 런타임, 다이어그램 렌더러, matplotlib, 모션 엔진) 처음 쓸 때 설치된 폴더에서 직접 준비하므로 LitMuse 훅이나 승인, 런타임 명령이 필요 없습니다. 다음 세션부터 사본이 같은 id의 사용자 스킬로 보이고, `lit` 경로는 그 사본을 불러오며, `doctor`는 겹침이 아니라 `INFO moved`로 보고합니다. 사본은 `$CONFIG_DIR/skills/<skill>/`에 있고, LitMuse 설치기와 업데이트, 제거 명령은 이 폴더를 쓰거나 지우지 않으므로 LitMuse를 올려도 그대로 남습니다. Muse는 설치마다 자기 잠금 파일(`$CONFIG_DIR/skills/.muse/lock.json`: 원본 폴더, 시각, 파일 해시)에 기록하고, 이미 있는 폴더 위에는 설치하지 않습니다. 둘째 줄을 먼저 두는 까닭입니다. `~/.claude/skills`나 `~/.codex/skills`의 개인 사본은 사용자 스킬보다 순위가 낮아 가려진 것으로 표시되고, 프로젝트의 `.agents/skills`나 `.claude/skills` 사본은 그 프로젝트 안에서 사용자 스킬보다 앞섭니다. 업데이트는 세 줄을 다시 실행하면 됩니다. `--force`와 `muse skills update`는 쓰지 마세요. 둘 다 배포 파일만 제자리에서 다시 쓰고 다른 파일은 모두 남겨서, 새 판에서 빠진 파일이 그대로 남습니다. 빼려면 둘째 줄을 실행한 뒤 `muse skills uninstall <skill>`을 씁니다. 그러면 Muse의 기록만 지웁니다.
 
 **명령 4개**: `/lit <경로> <작업>`, `/lit-korean <파일 또는 글>`, `/lit-status`, `/lit-hud`.
 
