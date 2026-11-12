@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // Test double for the `muse` CLI. It records every argv line in FAKE_MUSE_LOG and keeps plugin state
 // in FAKE_MUSE_STATE, answering with the JSON shapes Muse Code 1.4.10 printed during the task-1 probe.
-import { readFileSync, writeFileSync, existsSync, mkdirSync, readdirSync, lstatSync, cpSync, rmSync, rmdirSync } from 'node:fs';
+import { readFileSync, writeFileSync, existsSync, mkdirSync, readdirSync, lstatSync, statSync, cpSync, rmSync, rmdirSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { join, dirname, relative, resolve } from 'node:path';
 
@@ -82,7 +82,7 @@ if (group === 'plugins' && cmd === 'remove') {
 // User skills, as Muse Code 1.4.15 printed them: `muse skills install` copies a folder into $CONFIG_DIR/skills/<id>,
 // records each file's hash in $CONFIG_DIR/skills/.muse/lock.json, and refuses an occupied folder; `uninstall` deletes
 // the recorded files and keeps the rest; `list` reads project, user and personal folders in precedence order and
-// reports the losers as skill-shadowed.
+// reports the losers as skill-shadowed. A symlink to a file is copied and recorded as that file's content.
 const home = process.env.HOME;
 const museDir = join(configHome, 'muse');
 const userSkills = join(museDir, 'skills');
@@ -93,7 +93,7 @@ const fail = (code, message) => { process.stderr.write(`${message}\n`); out({ er
 function files(dir, base = dir, acc = []) {
   for (const name of readdirSync(dir).sort()) {
     const p = join(dir, name);
-    const st = lstatSync(p);
+    const st = lstatSync(p).isSymbolicLink() ? statSync(p) : lstatSync(p);
     if (st.isDirectory()) files(p, base, acc);
     else if (st.isFile()) acc.push({ relative_path: relative(base, p).split('\\').join('/'), sha256: `sha256:${createHash('sha256').update(readFileSync(p)).digest('hex')}`, bytes: st.size });
   }
@@ -110,7 +110,7 @@ if (group === 'skills' && cmd === 'install') {
   const lock = readLock();
   if (lock.skills[id] && existsSync(dest)) fail('skill-already-installed', `skill already installed: ${id}`);
   if (existsSync(dest)) fail('install-would-overwrite-unmanaged-files', `install would overwrite unmanaged files for skill \`${id}\` at ${dest}`);
-  cpSync(src, dest, { recursive: true });
+  cpSync(src, dest, { recursive: true, dereference: true });
   const list = files(src);
   lock.skills[id] = { id, source: { type: 'local', path: src }, installed_at: new Date().toISOString(), files: list };
   writeLock(lock);
@@ -137,6 +137,7 @@ if (group === 'skills' && cmd === 'uninstall') {
   out({ uninstalled: { id: target, removed_files: removed, kept_files: [] }, lockfile_path: '$CONFIG_DIR/skills/.muse/lock.json' });
 }
 if (group === 'skills' && cmd === 'list') {
+  if (process.env.FAKE_MUSE_SKILL_LIST_FAIL) fail('fake-list-failed', 'fake list failure');
   const skills = state.installed
     ? manifest().capabilities.skills.map((s) => ({
       id: `plugin:litmuse:${s.id}`, name: `plugin:litmuse:${s.id}`, scope: 'plugin', activation: 'on',

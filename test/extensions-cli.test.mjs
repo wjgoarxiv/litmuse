@@ -245,3 +245,83 @@ test('unknown ids and families are refused before anything runs', async () => {
   assert.equal(fam.text.match(/muse skills install/g).length, 3);
 });
 
+
+// Review fixes (2026-11-13).
+
+test('a personal same-name skill with no extension installed is only listed, never a check finding', async () => {
+  const { env, home, run } = setup();
+  const mine = personal(home, '.claude/skills', 'lit-pptx');
+  const c = await run(['check']);
+  assert.equal(c.code, 0, c.text);
+  assert.match(c.text, /nothing to fix/);
+  assert.ok((await run(['list'])).text.includes(mine), 'list still names it');
+  const d = collect();
+  await doctor({ env, flags: { offline: true }, print: d.print });
+  assert.match(d.text(), /INFO extensions: 0 of 9 installed, nothing to fix/);
+});
+
+test('a symlinked file in an edition is hashed by its content, as Muse records it', async () => {
+  const { p, run, backups } = setup();
+  const from = shelf();
+  symlinkSync('notes.md', join(from, 'variants', 'litmuse', 'visual-qa', 'references', 'link.md'));
+  assert.equal((await run(['install', 'visual-qa'], { from, yes: true })).code, 0);
+  const u = await run(['update', 'visual-qa'], { from, yes: true });
+  assert.match(u.text, /visual-qa: current/, u.text);
+  assert.deepEqual(backups(), [], 'a symlink does not force a reinstall');
+  symlinkSync('notes.md', join(from, 'variants', 'litmuse', 'visual-qa', 'references', 'later.md'));
+  const dry = await run(['update', 'visual-qa'], { from });
+  assert.match(dry.text, /visual-qa: move/, 'a symlink added later is a change');
+  assert.ok(existsSync(join(p.skills, 'visual-qa', 'SKILL.md')));
+});
+
+test('a failed muse skills list stops every verb instead of hiding the same-name guard', async () => {
+  const { env, home, run } = setup();
+  personal(home, '.claude/skills', 'visual-qa');
+  env.FAKE_MUSE_SKILL_LIST_FAIL = '1';
+  const c = await run(['check']);
+  assert.equal(c.code, 1);
+  assert.match(c.text, /FAIL .*muse skills list/);
+  const i = await run(['install', 'visual-qa'], { from: shelf(), yes: true });
+  assert.equal(i.code, 1);
+  assert.match(i.text, /FAIL .*muse skills list/);
+});
+
+test('dry runs say what they compared with: nothing before the first fetch, the cached copy after it', async () => {
+  const { env, home, p, run } = setup();
+  const g = (args, cwd) => spawnSync('git', args, { cwd, encoding: 'utf8' });
+  const origin = shelf('v1');
+  g(['init', '-q'], origin);
+  g(['add', '.'], origin);
+  g(['-c', 'user.name=t', '-c', 'user.email=t@t', 'commit', '-qm', 'v1'], origin);
+  await run(['install', 'visual-qa'], { from: shelf('v1'), yes: true });
+  env.LITMUSE_EXTENSIONS_REPO = `file://${origin}`;
+  const dry = await run(['install', 'visual-qa']);
+  assert.equal(dry.code, 0);
+  assert.doesNotMatch(dry.text, /visual-qa: move/, 'no move is promised before there is anything to compare');
+  assert.match(dry.text, /visual-qa: compared after the source is fetched/);
+  assert.ok(!existsSync(p.cache));
+  assert.equal((await run(['update', 'visual-qa'], { yes: true })).code, 0);
+  const cached = await run(['update', 'visual-qa']);
+  assert.match(cached.text, /Compared with the cached copy; --yes fetches first, so the result may differ\./);
+});
+
+test('the same files from a new path are current; only the receipt source moves, atomically', async () => {
+  const { p, run, lock, backups } = setup();
+  const a = shelf();
+  await run(['install', 'visual-qa'], { from: a, yes: true });
+  const before = lock()['visual-qa'];
+  const b = shelf();
+  const dry = await run(['update', 'visual-qa'], { from: b });
+  assert.match(dry.text, /visual-qa: current/);
+  assert.equal(lock()['visual-qa'].source.path, before.source.path, 'a dry run rewrites nothing');
+  const r = await run(['update', 'visual-qa'], { from: b, yes: true });
+  assert.equal(r.code, 0, r.text);
+  assert.match(r.text, /visual-qa: current/);
+  assert.doesNotMatch(r.text, /Muse recorded each install/, 'nothing was installed, so no install receipt is claimed');
+  const after = lock()['visual-qa'];
+  assert.equal(after.source.path, join(b, 'variants', 'litmuse', 'visual-qa'));
+  assert.equal(after.installed_at, before.installed_at);
+  assert.deepEqual(after.files, before.files);
+  assert.deepEqual(backups(), []);
+  assert.deepEqual(readdirSync(join(p.skills, '.muse')), ['lock.json'], 'no temp file left');
+});
