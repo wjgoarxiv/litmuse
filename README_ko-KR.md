@@ -161,11 +161,11 @@ Muse의 `/hud`는 켜고 끄는 고정 항목 목록이라서 플러그인 글�
 
 `frontend-ui-ux`는 이를 감싸는 페이지를 만듭니다. 렌더 한 종마다 플레이트 하나인 갤러리이며, 휴대전화·태블릿·데스크톱 너비에서 확인했습니다.
 
-이 덱과 P&ID, 페이지를 만든 스킬은 그 뒤 wjgoarxiv-skills로 옮겨 갔습니다. 하나씩 다시 들이는 방법은 아래 [옮겨 간 스킬](#옮겨-간-스킬)에 있습니다.
+이 덱과 P&ID, 페이지를 만든 스킬은 이제 LitFamily 확장입니다. LitMuse 옆에 함께 설치하는 방법은 아래 [확장](#확장)에 있습니다.
 
 ## 들어 있는 것
 
-**스킬 33개.** 필요할 때 불러오는 밀도 높은 Muse 스킬이며, 각 스킬에 필요한 참고 문서와 스크립트가 그 스킬 폴더 안에 함께 들어 있습니다. 여기에 밖으로 옮겨 간 스킬의 짧은 스텁 아홉 개가 더해집니다([옮겨 간 스킬](#옮겨-간-스킬) 참고). 카탈로그에는 짧은 설명만 올라가므로 개인 스킬이 많은 환경에서도 자리를 지킵니다.
+**스킬 33개.** 필요할 때 불러오는 밀도 높은 Muse 스킬이며, 각 스킬에 필요한 참고 문서와 스크립트가 그 스킬 폴더 안에 함께 들어 있습니다. 여기에 LitFamily 확장이 된 스킬의 짧은 스텁 아홉 개가 더해집니다([확장](#확장) 참고). 카탈로그에는 짧은 설명만 올라가므로 개인 스킬이 많은 환경에서도 자리를 지킵니다.
 
 아래 모든 스킬은 각자 폴더에 들어 있으며 필요할 때 불러옵니다. 하려는 일에 맞는 행을 찾으세요.
 
@@ -183,9 +183,11 @@ Muse의 `/hud`는 켜고 끄는 고정 항목 목록이라서 플러그인 글�
 
 스킬들은 내 컴퓨터에 이미 있는 프로그램을 씁니다: autoresearch에는 Python 3.10~3.14(더 새로운 `python3`는 건너뛰고 이 범위에서 가장 새로운 `python3.X`를 씀), browser-drive에는 Chrome 또는 Chromium, 그리고 ast-grep과 `lsp` 스킬이 부르는 언어 검사 도구. 빠진 것과 설치 명령은 `doctor`가 알려 주며, LitMuse가 전역으로 무언가를 설치하는 일은 없습니다.
 
-### 옮겨 간 스킬
+### 확장
 
-LitMuse는 예전에 덱, 문서, 그림, 화면, 영상 스킬을 직접 실었고, 이 스킬들이 패키지 대부분을 차지했습니다. 지금은 LitFamily 제품에서 빠져나온 스킬을 한곳에 모은 [wjgoarxiv-skills](https://github.com/wjgoarxiv/wjgoarxiv-skills)에 있어서, 쓰는 것만 골라 들이면 됩니다. LitMuse는 스킬마다 같은 이름의 스텁을 남깁니다. id와 `lit` 경로, 카탈로그 항목은 그대로이고, 스텁은 설치한 사본으로 넘기거나 설치 방법을 알려 줍니다. 대신 만든 결과물을 내놓는 일은 없습니다.
+LitMuse의 핵심은 그 자체로 완성되어 있고 혼자서도 돌아갑니다. 계획, 구현, 검토, 조사, 인계를 비롯해 위 표에 있는 일에는 다른 것이 필요 없습니다. 파일을 만드는 스킬 아홉 개(덱, 문서, 그림, 디자인, 영상 커버)는 LitFamily 확장입니다. 확장은 확장 선반인 [wjgoarxiv-skills](https://github.com/wjgoarxiv/wjgoarxiv-skills)에 있고, 쓰는 것을 LitMuse 옆에 함께 설치하면 LitFamily를 온전히 누릴 수 있습니다. 설치기는 설치하거나 업데이트할 때 이 내용을 알려 주고, 그 뒤 첫 Muse 세션에서도 한 번 더 알려 줍니다.
+
+LitMuse는 확장마다 같은 이름의 스텁을 남깁니다. id와 `lit` 경로, 카탈로그 항목은 그대로이고, 스텁은 설치한 사본으로 넘기거나 설치 방법을 알려 줍니다. 대신 만든 결과물을 내놓는 일은 없습니다.
 
 | 묶음 | 스킬 |
 | --- | --- |
@@ -195,9 +197,10 @@ LitMuse는 예전에 덱, 문서, 그림, 화면, 영상 스킬을 직접 실었
 | `design` | frontend-ui-ux, visual-qa |
 | `video-covers` | lit-typographic-motion, readme-studio |
 
-스킬은 하나씩 Muse 사용자 스킬로 설치합니다. wjgoarxiv-skills가 스킬마다 따로 두는 Muse판을 설치하면 됩니다.
+선반을 한 번 클론한 뒤, 확장을 하나씩 Muse 사용자 스킬로 설치합니다. wjgoarxiv-skills가 스킬마다 따로 두는 Muse판을 설치하면 됩니다.
 
 ```bash
+git clone https://github.com/wjgoarxiv/wjgoarxiv-skills
 muse skills install <path to your wjgoarxiv-skills clone>/variants/litmuse/<skill> --scope user
 ```
 
@@ -240,7 +243,7 @@ Muse에는 자기만의 사용자 규칙 파일 `~/.config/muse/AGENTS.md`(`$XDG
 - 번들 폴더가 심볼릭 링크이거나, 다른 사람의 파일이 들어 있거나, 설치 후 수정되었으면 교체를 거부합니다.
 - `~/.claude`와 `~/.codex` 아래에는 아무것도 쓰지 않으며, 테스트가 이를 고정합니다.
 - 훅은 실패해도 세션을 막지 않고 그대로 통과시킵니다.
-- LitMuse는 이제 엔진 런타임을 싣지 않습니다. 0.1.11까지의 릴리스는 엔진을 `~/.local/share/litmuse/runtime/`에 캐시했고 `uninstall`은 그 폴더를 지우지 않았으니, 공간을 비우려면 그 폴더를 지우세요.
+- LitMuse는 이제 엔진 런타임을 싣지 않습니다. 0.1.11까지의 릴리스는 엔진을 `~/.local/share/litmuse/runtime/`에 캐시했고 `uninstall`은 그 폴더를 지우지 않았습니다. 이제 그 폴더를 읽는 것은 없으므로(확장은 자기 엔진을 따로 준비합니다) 공간을 비우려면 지우세요. 폴더가 남아 있는 동안 `doctor`는 `INFO leftover`로 보여 줍니다.
 - 전부 지우려면 `npx @litfamily/litmuse uninstall`(미리 보려면 `--dry-run`). 규칙 파일의 블록도 함께 빠집니다. 프로젝트 안의 계획과 `.litmuse/` 폴더는 그대로 남습니다.
 
 ## 패밀리

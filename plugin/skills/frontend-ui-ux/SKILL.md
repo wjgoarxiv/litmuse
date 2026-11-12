@@ -1,14 +1,14 @@
 ---
 name: frontend-ui-ux
-description: "Interfaces: moved to wjgoarxiv-skills (design); hands over or gives the install line."
+description: "Interfaces: LitFamily extension (wjgoarxiv-skills, design); hands over or gives install line."
 ---
 
-# frontend-ui-ux moved to wjgoarxiv-skills
+# frontend-ui-ux is now a LitFamily extension
 
-LitMuse no longer carries this skill. It built and inspected interfaces from one locked house style, layout family and design kit: a design contract, a design-intelligence database, a pixel-art and signature-moment kit, and an interface probe across the responsive matrix.
+LitMuse's core works on its own, and this skill is now a LitFamily extension that you add when you need it. It built and inspected interfaces from one locked house style, layout family and design kit: a design contract, a design-intelligence database, a pixel-art and signature-moment kit, and an interface probe across the responsive matrix.
 
-The full skill, with its references, scripts and engines, now lives in wjgoarxiv-skills: the one repository that keeps
-the LitFamily skills which moved out of the products, so each user installs only the skills they use. This folder is a
+The full skill, with its references, scripts and engines, lives in wjgoarxiv-skills, the LitFamily extension shelf.
+Installed alongside LitMuse, the extensions you use give you the full LitFamily experience. This folder is a
 same-name stub. It keeps the `frontend-ui-ux` id, its catalog entry, its doctor row and every `lit` route that reaches it, and
 it does one of two things: hand over to the installed copy, or say how to install it. It builds nothing itself.
 
@@ -40,7 +40,7 @@ The copy and this stub do not collide. The stub is the plugin skill `plugin:litm
    without it, a user-scope `frontend-ui-ux` in the catalog (or in `muse skills list --source user`) means it is.
 2. **Installed:** load it with read_skill id `frontend-ui-ux` (the user skill, without the `plugin:litmuse:` prefix) and
    follow it for the whole request. This stub adds no rules of its own.
-3. **Not installed, asked for directly:** reply in a few lines: what the skill makes, that it moved to the `design`
+3. **Not installed, asked for directly:** reply in a few lines: what the skill makes, that it is now a LitFamily extension in the `design`
    family of wjgoarxiv-skills, the install line above, and that a new session picks it up. Build nothing and write no
    files in its place.
 4. **Not installed, inside a lit workflow:** Inside a lit workflow that edits an interface (lit-loop, litwork, start-work), the edit itself may go ahead under that workflow's own rules; record in the ledger that frontend-ui-ux is not installed, claim no design-lock or probe verdict, and name the install line once in the final report.

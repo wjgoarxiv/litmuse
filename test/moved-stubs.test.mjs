@@ -54,6 +54,9 @@ for (const [id, [family, folder, installs]] of Object.entries(MOVED)) {
     const text = stubText(id);
     assert.match(text, new RegExp(`^---\\nname: ${id}\\n`), 'frontmatter keeps the id');
     assert.match(text, /wjgoarxiv-skills/);
+    assert.match(text, /^description: "[^"]*LitFamily extension/m, 'the catalog entry calls it a LitFamily extension');
+    assert.match(text, new RegExp(`^# ${id} is now a LitFamily extension$`, 'm'), 'the heading calls it a LitFamily extension');
+    assert.match(text, /extension shelf/, 'names wjgoarxiv-skills as the extension shelf');
     assert.ok(text.includes(`\`${family}\``), `names the ${family} family`);
     assert.ok(text.includes(`plugins/${family}/skills/${id}/`), 'names the folder the shared body lives in');
     assert.ok(text.includes(`\`${folder}/\``), 'names the Muse edition folder the install line copies');

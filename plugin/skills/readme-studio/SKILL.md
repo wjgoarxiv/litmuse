@@ -1,14 +1,14 @@
 ---
 name: readme-studio
-description: "READMEs: moved to wjgoarxiv-skills (video-covers); hands over or gives the install line."
+description: "READMEs: LitFamily extension (wjgoarxiv-skills, video-covers); hands over or gives install line."
 ---
 
-# readme-studio moved to wjgoarxiv-skills
+# readme-studio is now a LitFamily extension
 
-LitMuse no longer carries this skill. It wrote factual READMEs from the repository itself: an inspected cover with outlined title type, an optional motion cover, and claims checked against the code; review requests stayed read-only.
+LitMuse's core works on its own, and this skill is now a LitFamily extension that you add when you need it. It wrote factual READMEs from the repository itself: an inspected cover with outlined title type, an optional motion cover, and claims checked against the code; review requests stayed read-only.
 
-The full skill, with its references, scripts and engines, now lives in wjgoarxiv-skills: the one repository that keeps
-the LitFamily skills which moved out of the products, so each user installs only the skills they use. This folder is a
+The full skill, with its references, scripts and engines, lives in wjgoarxiv-skills, the LitFamily extension shelf.
+Installed alongside LitMuse, the extensions you use give you the full LitFamily experience. This folder is a
 same-name stub. It keeps the `readme-studio` id, its catalog entry, its doctor row and every `lit` route that reaches it, and
 it does one of two things: hand over to the installed copy, or say how to install it. It builds nothing itself.
 
@@ -40,7 +40,7 @@ The copy and this stub do not collide. The stub is the plugin skill `plugin:litm
    without it, a user-scope `readme-studio` in the catalog (or in `muse skills list --source user`) means it is.
 2. **Installed:** load it with read_skill id `readme-studio` (the user skill, without the `plugin:litmuse:` prefix) and
    follow it for the whole request. This stub adds no rules of its own.
-3. **Not installed, asked for directly:** reply in a few lines: what the skill makes, that it moved to the `video-covers`
+3. **Not installed, asked for directly:** reply in a few lines: what the skill makes, that it is now a LitFamily extension in the `video-covers`
    family of wjgoarxiv-skills, the install line above, and that a new session picks it up. Build nothing and write no
    files in its place.
 4. **Not installed, inside a lit workflow:** record in the ledger that `readme-studio` is not installed, leave its deliverable open (never mark it done), name the install line once in the final report, and carry on with the rest of the work.

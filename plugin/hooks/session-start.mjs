@@ -4,6 +4,7 @@ import { homedir } from 'node:os';
 import { run, emitContext, PLUGIN_ROOT, pluginVersion, cachedLatest, newerThan, sessionPath, workspaceOf } from './lib/common.mjs';
 import { SKILL_ROUTES } from './lib/routes.mjs';
 import { MOVED } from './lib/moved.mjs';
+import { takeFirstSessionNotice } from './lib/extensions.mjs';
 import { readFreshSnapshot } from './lib/handoff-snapshot.mjs';
 import { recordLoadedVersion } from './lib/stage.mjs';
 
@@ -61,12 +62,14 @@ run((payload) => {
   recordLoadedVersion(payload, version);
   const base = readFileSync(join(PLUGIN_ROOT, 'context', 'session.md'), 'utf8').replaceAll('{{version}}', version);
   const routes = SKILL_ROUTES.map((r) => `- ${r.id}: ${r.when}`).join('\n');
-  const moved = `Moved to wjgoarxiv-skills (each id loads a LitMuse stub that hands over to an installed copy or gives its one-skill install line, and builds nothing itself): ${Object.keys(MOVED).join(', ')}.`;
+  const moved = `LitFamily extensions, kept on the wjgoarxiv-skills shelf (each id loads a LitMuse stub that hands over to an installed copy or gives its one-skill install line, and builds nothing itself): ${Object.keys(MOVED).join(', ')}.`;
   const parts = [base.trim(), `LitMuse routes (skill id: use when)\n${routes}`, moved];
   const latest = cachedLatest();
   if (latest && newerThan(latest, version)) {
     parts.push(`Update: LitMuse ${latest} is available (installed ${version}). Mention it once if the user asks about LitMuse; the update command is \`npx @litfamily/litmuse@latest install\`.`);
   }
+  const notice = takeFirstSessionNotice(payload.session_id);
+  if (notice) parts.push(notice);
   const style = chosenStyle();
   if (style) parts.push(style);
   const snapshot = takeSnapshot(payload);

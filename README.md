@@ -161,11 +161,11 @@ Four real outputs rendered on a Mac during the quality parity round, each opened
 
 `frontend-ui-ux` builds the page around them: one gallery, one plate per render, checked at phone, tablet, and desktop widths.
 
-The deck, the P&ID and the page came from skills that have since moved to wjgoarxiv-skills; [Moved skills](#moved-skills) below says how to add them back one at a time.
+The deck, the P&ID and the page came from skills that are now LitFamily extensions; [Extensions](#extensions) below says how to add them alongside LitMuse.
 
 ## What you get
 
-**33 skills**, each a dense Muse skill loaded on demand, with the references and scripts it needs inside its own folder, plus nine short stubs for the skills that moved out (see [Moved skills](#moved-skills)). The catalog only holds their short descriptions, so they keep their place even next to a large personal skill collection.
+**33 skills**, each a dense Muse skill loaded on demand, with the references and scripts it needs inside its own folder, plus nine short stubs for the skills that became LitFamily extensions (see [Extensions](#extensions)). The catalog only holds their short descriptions, so they keep their place even next to a large personal skill collection.
 
 Every skill below ships in its own folder and loads on demand. Find the row that matches the task at hand.
 
@@ -183,9 +183,11 @@ Every skill below ships in its own folder and loads on demand. Find the row that
 
 The skills call programs already on your machine: Python 3.10 to 3.14 for autoresearch (a newer `python3` is passed over for the newest `python3.X` in that range), Chrome or Chromium for browser-drive, ast-grep and the language checkers the `lsp` skill drives. `doctor` lists what is missing and the command that installs it; LitMuse installs nothing globally.
 
-### Moved skills
+### Extensions
 
-LitMuse used to carry its own copies of the deck, document, figure, interface and film skills, and they made up most of the package. They now live in [wjgoarxiv-skills](https://github.com/wjgoarxiv/wjgoarxiv-skills), the one repository that keeps the LitFamily skills which moved out of the products, so you add only the ones you use. LitMuse keeps a same-name stub for each: the id, its `lit` routes and its catalog entry stay, and the stub either hands over to your installed copy or tells you how to install it. It never builds a stand-in.
+LitMuse's core is complete and works on its own: planning, building, review, research, handoffs and the rest of the table above need nothing else. The nine skills that make files (decks, documents, figures, design and video covers) are LitFamily extensions. They live on the extension shelf, [wjgoarxiv-skills](https://github.com/wjgoarxiv/wjgoarxiv-skills), and you install the ones you use alongside LitMuse to get the full LitFamily experience. The installer says this when you install or update, and the first Muse session after it says it once more.
+
+LitMuse keeps a same-name stub for each extension: the id, its `lit` routes and its catalog entry stay, and the stub either hands over to your installed copy or tells you how to install it. It never builds a stand-in.
 
 | Family | Skills |
 | --- | --- |
@@ -195,9 +197,10 @@ LitMuse used to carry its own copies of the deck, document, figure, interface an
 | `design` | frontend-ui-ux, visual-qa |
 | `video-covers` | lit-typographic-motion, readme-studio |
 
-Each skill installs on its own into Muse's user skills, from the Muse edition that wjgoarxiv-skills keeps for it:
+Clone the shelf once, then install each extension on its own into Muse's user skills, from the Muse edition that wjgoarxiv-skills keeps for it:
 
 ```bash
+git clone https://github.com/wjgoarxiv/wjgoarxiv-skills
 muse skills install <path to your wjgoarxiv-skills clone>/variants/litmuse/<skill> --scope user
 ```
 
@@ -240,7 +243,7 @@ Only the lines between `<!-- litfamily:litmuse:start … -->` and `<!-- litfamil
 - It refuses to replace a bundle directory that is a symbolic link, holds someone else's files, or was edited after install.
 - It writes nothing under `~/.claude` or `~/.codex`; a test pins that.
 - Hooks fail open: if one breaks, your session continues.
-- LitMuse ships no engine runtime any more. Releases up to 0.1.11 cached them under `~/.local/share/litmuse/runtime/`; `uninstall` never removed that folder, so delete it to free the space.
+- LitMuse ships no engine runtime any more. Releases up to 0.1.11 cached them under `~/.local/share/litmuse/runtime/`, and `uninstall` never removed that folder. Nothing reads it now (an extension sets up its own engines), so delete it to free the space; `doctor` shows it as `INFO leftover` while it is there.
 - Remove everything with `npx @litfamily/litmuse uninstall` (add `--dry-run` to preview); it takes the rules-file block out too. Plans and `.litmuse/` folders in your projects stay where they are.
 
 ## Family

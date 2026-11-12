@@ -36,7 +36,7 @@ export function movedActivation(id, env = process.env) {
   const m = movedSkill(id);
   if (!m) return null;
   if (installedCopy(m, env)) {
-    return `\`${id}\` moved to the \`${m.family}\` family of wjgoarxiv-skills and is installed here as user skill \`${m.installs}\`. After that line and before any other tool, load it with read_skill id \`${m.installs}\` and follow it; the LitMuse stub \`plugin:litmuse:${id}\` only points there.`;
+    return `\`${id}\` is a LitFamily extension from the \`${m.family}\` family of wjgoarxiv-skills and is installed here as user skill \`${m.installs}\`. After that line and before any other tool, load it with read_skill id \`${m.installs}\` and follow it; the LitMuse stub \`plugin:litmuse:${id}\` only points there.`;
   }
-  return `\`${id}\` moved to the \`${m.family}\` family of wjgoarxiv-skills and is not installed here. After that line, load the stub with read_skill id \`plugin:litmuse:${id}\` and answer from it: say what the skill makes, that it moved, and give the one-skill install line \`${installLine(m)}\`. Build nothing in its place.`;
+  return `\`${id}\` is a LitFamily extension from the \`${m.family}\` family of wjgoarxiv-skills and is not installed here. After that line, load the stub with read_skill id \`plugin:litmuse:${id}\` and answer from it: say what the skill makes, that it is now a LitFamily extension, and give the one-skill install line \`${installLine(m)}\`. Build nothing in its place.`;
 }
