@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.1.13 — 2026-11-14
 
 - The nine extension stubs and both READMEs now give three lines for installing an extension safely. The first only reads: it prints every folder Muse could load under that id (Muse's user skills, the personal `~/.claude/skills` and `~/.codex/skills` that Muse also loads, and the project's `.agents/skills` and `.claude/skills`). The second moves an existing copy in Muse's user skills, whole and with any file you added, into a dated folder under `$CONFIG_DIR/extension-backups/`, which Muse does not scan. The third is the `muse skills install` line. Muse 1.4.15 refuses to install over a folder that is already there, and `--force` and `muse skills update` rewrite the shipped files in place while keeping every other file, so the stubs no longer suggest `--force` for a newer edition: an update is the same three lines again.
 - Removing an extension is now the move-aside line followed by `muse skills uninstall <id>`, which then only drops Muse's record. Run on its own, uninstall leaves the files you added in a folder Muse no longer lists, and that folder blocks the next install.
@@ -10,6 +10,7 @@
 - Every write verb is a dry run until you add `--yes`. `--from <clone>` uses your own wjgoarxiv-skills clone; without it LitMuse keeps a shallow, sparse clone of `variants/litmuse` in `~/.cache/litmuse/extensions-src`, and stops before any change when git or the network is missing.
 - `doctor` runs the same check and prints one line (`INFO extensions` when clean, `WARN extensions` with the `extensions check` hint otherwise), and `install` adds a line pointing at `extensions check` when it finds something. Nothing changes on its own. The stubs and both READMEs name the verbs next to the manual lines.
 - `extensions check` and `doctor` no longer flag a same-name skill of your own while that extension is not installed; `list` still shows it and `install` still stops on it. A file symlink inside an edition is compared by the content it points to, the way Muse records it, so `update` no longer reinstalls such an extension every time. When `muse skills list` fails, every verb stops with that error instead of reporting a clean slate. A dry run says whether it compared with the cached clone (`--yes` fetches first, so the result may differ) or will compare after the first fetch. When the same files come from a new folder, `update` reports `current` and writes nothing; Muse's lock keeps the old path. If that recorded folder is gone but the installed copy matches the current source (the cached clone, or `--from`), `check` shows it as INFO and exits 0, with the remove-then-install line that makes Muse record the new path; when there is nothing to compare with, it stays a finding.
+- Both READMEs are shorter and easier to scan. Reference detail (hooks, the live record and the rules-file block) moved to `docs/reference.md` (and `docs/reference_ko-KR.md`).
 
 ## 0.1.12 — 2026-11-11
 
