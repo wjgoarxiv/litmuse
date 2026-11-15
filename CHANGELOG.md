@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- `install` now prints the LitFamily extensions notice (and the fixed "Muse refuses a folder that is already there" line after it) once per text. Each printed text leaves a hash and a time as one line in `~/.local/share/litmuse/shown.jsonl`; a later install whose notice would be the same leaves it out, while the live "N things need a look" line and the status line still print. A new text (for example the leftover-engines line after an upgrade) is printed and appended. A missing, corrupt or symlinked record prints the notice as before. No hook, context or manifest file changed, so the hook digests stay the ones 0.1.13 shipped and Muse does not ask you to approve the hooks again.
+
 ## 0.1.13 — 2026-11-14
 
 - The nine extension stubs and both READMEs now give three lines for installing an extension safely. The first only reads: it prints every folder Muse could load under that id (Muse's user skills, the personal `~/.claude/skills` and `~/.codex/skills` that Muse also loads, and the project's `.agents/skills` and `.claude/skills`). The second moves an existing copy in Muse's user skills, whole and with any file you added, into a dated folder under `$CONFIG_DIR/extension-backups/`, which Muse does not scan. The third is the `muse skills install` line. Muse 1.4.15 refuses to install over a folder that is already there, and `--force` and `muse skills update` rewrite the shipped files in place while keeping every other file, so the stubs no longer suggest `--force` for a newer edition: an update is the same three lines again.
