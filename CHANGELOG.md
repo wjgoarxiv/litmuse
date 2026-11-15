@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.1.14 — 2026-11-16
 
 - `install` now prints the LitFamily extensions notice (and the fixed "Muse refuses a folder that is already there" line after it) once per text. Each printed text leaves a hash and a time as one line in `~/.local/share/litmuse/shown.jsonl`; a later install whose notice would be the same leaves it out, while the live "N things need a look" line and the status line still print. A new text (for example the leftover-engines line after an upgrade) is printed and appended. A missing, corrupt or symlinked record prints the notice as before. No hook, context or manifest file changed, so the hook digests stay the ones 0.1.13 shipped and Muse does not ask you to approve the hooks again.
 
