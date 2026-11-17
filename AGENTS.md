@@ -32,10 +32,33 @@ list against `skills.lock.json`) on every push and pull request to `main`, on No
 on the runner. The tests that would need the host use `fake-muse.mjs`. `npm run qa:muse` and `muse plugins validate` stay on a maintainer's machine. The suite also passes inside a herdr
 pane; to rehearse CI, run it with `HERDR_ENV` unset, a temp HOME and `muse` off PATH.
 
-## Host facts (probed on Muse Code 1.4.10, re-checked on 1.4.11; re-probe on a new build)
+## Host facts (probed on Muse Code 1.4.10, re-checked on 1.4.11 and 1.4.20; re-probe on a new build)
 
 On 1.4.11 (2026-10-20) these held unchanged: approvals survived the launcher update, hook events and their
 order, the 33 active tool names, `plugins validate`, and the hook refusal path. Only the catalog changed (below).
+
+Re-checked on 1.4.20 (2026-11-16), offline, in a throwaway HOME with a copy of the bundle (no live model call):
+
+- `muse agents` does not exist (the word is taken as a prompt); the top-level commands are resume, exec, config, export,
+  trace, model-profile, skills, voice, plugins, sandbox, schema, serve, mxp, attach, acp, session-message, sessions, mcp,
+  auth, login, logout, usage, init. `--agents <JSON>` supplies one ephemeral agent-definition overlay. The binary carries
+  `subagent_spawn` with `subagent_type`, `task_name`, `fork_context`, `worktree_isolation` and `output_schema`, and a
+  `workflow` call shape with per-child `agentType`, `model`, `effort` and `isolation`; no team command exists.
+- `muse plugins validate` accepts the hook events PostToolBatch, Notification, StopFailure, PostCompact and
+  PermissionRequest and refuses an unknown one (`unsupported-hook-event`). `muse plugins hook test` runs a StopFailure hook
+  offline (it must be installed and approved first, so it is only testable in a throwaway HOME). The binary's own text
+  says `StopFailure` and `PostToolBatch` are "staged schema values" that "remain production-dark until their downstream
+  runtime acceptance lands", so a real session does not fire them yet. LitMuse therefore ships no StopFailure hook (it
+  would be inert; the payload fields in the binary are `error_details` and `last_assistant_message`). Re-probe, and if
+  the host starts firing it, add one `stop-failure.mjs` that calls `writeSnapshot` (SessionStart already re-injects the
+  snapshot for `source: resume` as well as `compact`); it is a new hook id, so only that one approval is new.
+- `plugins validate` checks agent frontmatter keys: `model`, `effort`, `maxTurns`, `permissionMode`, `background`,
+  `isolation`, `memory`, `skills`, `initialPrompt` and `disallowedTools` pass clean; `color` passes with the warning
+  "key was ignored"; an unknown key warns "ignored unknown keys"; `effort` accepts any value (`bogusvalue` passes), so
+  validate proves the key is known, not that it is honored or that its value is legal. No LitMuse agent sets `model` or
+  `effort`: they inherit the user's choice, and honoring cannot be proven without a live spawn.
+- Agent definitions do not appear in `plugins inspect` (hooks, commands and skills do); the approval target is
+  `litmuse:agent_definition:litmuse/<name>`.
 
 - UserPromptSubmit and SessionStart `hookSpecificOutput.additionalContext` reach the model. Hook stdout cap 16 KiB.
 - Hooks and agent definitions need `muse plugins approve litmuse:hook:<id>` and
