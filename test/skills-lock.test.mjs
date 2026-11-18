@@ -150,15 +150,23 @@ test('sync:lock cannot lower a floor by removing a skill, resyncing and re-addin
 });
 
 test('the lock measures only git-tracked skill files: a stray .DS_Store does not change it', () => {
-  const lock = readLock();
-  const id = Object.keys(lock.skills).sort()[0];
-  const stray = join(SKILLS, id, '.DS_Store');
-  assert.ok(!existsSync(stray), `${stray} already exists`);
+  // Built in a throwaway git repo: writing the stray file into the real plugin tree raced the parallel test files that
+  // copy that tree for an install, which then failed with ENOENT when the file vanished mid-copy.
+  const dir = mkdtempSync(join(tmpdir(), 'litmuse-lock-stray-'));
   try {
-    writeFileSync(stray, 'stray finder metadata');
-    assert.deepEqual(measureSkills(SKILLS)[id], lock.skills[id]);
+    const skills = join(dir, 'skills');
+    mkdirSync(join(skills, 'tiny'), { recursive: true });
+    writeFileSync(join(skills, 'tiny', 'SKILL.md'), '---\nname: tiny\n---\nTiny.\n');
+    for (const args of [['init', '-q'], ['add', '--', 'skills/tiny/SKILL.md']]) {
+      const r = spawnSync('git', args, { cwd: dir, encoding: 'utf8' });
+      assert.equal(r.status, 0, r.stderr);
+    }
+    const before = measureSkills(skills).tiny;
+    assert.equal(before.files, 1);
+    writeFileSync(join(skills, 'tiny', '.DS_Store'), 'stray finder metadata');
+    assert.deepEqual(measureSkills(skills).tiny, before);
   } finally {
-    rmSync(stray, { force: true });
+    rmSync(dir, { recursive: true, force: true });
   }
 });
 
