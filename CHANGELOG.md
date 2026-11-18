@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.1.15 — 2026-11-18
 
 - `lit-adhd` now answers "so what do I do now?" with a verdict card of about six lines: what changed since your last look in this project, the one thing to do with the exact text to type, why and what skipping it costs, what else waits on you, and what was not read. A versioned rule table picks the action from proven records only (a ticked plan, a finished start-work run, a commit), a push is always a question for you, and a card whose action rested on records that moved says the old action is withdrawn. `lit adhd detail` opens the KPI board and the per-session brief; `litmuse rewind --json` carries the card under `verdict`.
 - lit-recap moved into lit-adhd as its recap view, `lit adhd recap [session]`. `lit recap`, `litrecap`, `/litmuse:lit-recap` and `lit status` keep working, and the view they print starts with one line saying where it moved.
