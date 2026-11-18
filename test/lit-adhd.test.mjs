@@ -44,13 +44,11 @@ test('every typed route activates lit-adhd with the read-only brief contract', (
       const ctx = ignite(where, prompt, `sess-fresh-${(sid += 1)}`);
       assert.match(ctx, /LIT IGNITED · lit-adhd/u, prompt);
       assert.match(ctx, /plugin:litmuse:lit-adhd/u, prompt);
-      assert.match(ctx, /litmuse rewind --lang <ko\|en>/u, `board run in context: ${prompt}`);
-      assert.match(ctx, /KPI board it prints as given/u, prompt);
-      assert.match(ctx, /`--detail` only when the user asks/u, `detail on request only: ${prompt}`);
-      assert.match(ctx, /litmuse rewind --json/u, prompt);
+      assert.match(ctx, /node "[^"]*\/skills\/lit-adhd\/scripts\/rewind\.mjs" --lang (?:ko|en)\b/u, `the bundled collector, never a PATH bin: ${prompt}`);
+      assert.match(ctx, /verdict card it prints exactly as given/u, prompt);
+      assert.match(ctx, /Only when the user asks for detail[^\n]*add `--detail`/u, `detail on request only: ${prompt}`);
+      assert.match(ctx, /rewind\.mjs" --json/u, prompt);
       assert.match(ctx, /READ-ONLY/u, prompt);
-      assert.match(ctx, /\[▉▉▉░░\] 3\/5/u, `gauge rule in context: ${prompt}`);
-      assert.match(ctx, /… N steps/u, `pulse line in context: ${prompt}`);
     }
   } finally {
     rmSync(where.ws, { recursive: true, force: true });
@@ -58,18 +56,43 @@ test('every typed route activates lit-adhd with the read-only brief contract', (
   }
 });
 
-test('near-miss words do not activate it and recap keeps its own route', () => {
+test('the hook picks the card language in code: Korean unless the prompt asks for English', () => {
+  const where = project();
+  try {
+    let n = 0;
+    const cases = [
+      ['lit adhd', 'ko'], ['lit rewind', 'ko'], ['lit adhd detail', 'ko'], ['lit recap', 'ko'], ['lit adhd what should I do now', 'ko'],
+      ['lit adhd --en', 'en'], ['lit adhd in English', 'en'], ['lit adhd 영어로', 'en'], ['lit adhd --lang en', 'en'],
+    ];
+    for (const [prompt, lang] of cases) {
+      const ctx = ignite(where, prompt, `sess-lang-${(n += 1)}`);
+      assert.match(ctx, new RegExp(`rewind\\.mjs" [^\\n]*--lang ${lang}\\b`, 'u'), `${prompt} -> --lang ${lang}`);
+      assert.doesNotMatch(ctx, /--lang <ko\|en>/u, `${prompt}: the model does not choose`);
+    }
+  } finally {
+    rmSync(where.ws, { recursive: true, force: true });
+    rmSync(where.stateHome, { recursive: true, force: true });
+  }
+});
+
+test('near-miss words do not activate it and the old recap names open its recap view', () => {
   const where = project();
   try {
     for (const prompt of ['adhdx', 'rewinding the tape', 'adhd', 'lit adhder', 'lit rewinding']) {
       const ctx = ignite(where, prompt);
       assert.doesNotMatch(ctx, /lit-adhd/u, prompt);
     }
-    for (const prompt of ['lit recap']) {
-      const ctx = ignite(where, prompt);
-      assert.match(ctx, /plugin:litmuse:lit-recap/u, prompt);
-      assert.doesNotMatch(ctx, /plugin:litmuse:lit-adhd/u, prompt);
+    let n = 0;
+    for (const prompt of ['lit recap', 'litrecap', 'lit status']) {
+      const ctx = ignite(where, prompt, `sess-recap-${(n += 1)}`);
+      assert.match(ctx, /plugin:litmuse:lit-adhd/u, prompt);
+      assert.match(ctx, /rewind\.mjs" --recap/u, prompt);
+      assert.match(ctx, /rewind\.mjs" --recap --moved/u, `the collector prints the moved note first: ${prompt}`);
+      assert.doesNotMatch(ctx, /plugin:litmuse:lit-recap/u, prompt);
     }
+    const own = ignite(where, 'lit adhd recap', 'sess-recap-own');
+    assert.match(own, /rewind\.mjs" --recap/u);
+    assert.doesNotMatch(own, /moved into/u, 'the new name needs no moved note');
   } finally {
     rmSync(where.ws, { recursive: true, force: true });
     rmSync(where.stateHome, { recursive: true, force: true });
@@ -129,7 +152,7 @@ test('lit-adhd is enrolled on every surface that lists skills', () => {
   }
 });
 
-test('the skill body carries its contracts and cross-links lit-recap both ways', () => {
+test('the skill body carries its contracts and owns the recap view lit-recap used to give', () => {
   const text = readFileSync(join(SKILL, 'SKILL.md'), 'utf8');
   assert.ok(text.split(/\s+/u).length >= 1000, 'dense body');
   for (const heading of ['## When this applies', '## Inputs and state', '## Procedure', '## Muse tools and approvals', '## Evidence', '## Stop and report', '## Pitfalls']) {
@@ -141,8 +164,9 @@ test('the skill body carries its contracts and cross-links lit-recap both ways',
   for (const heading of ['## 🎯 지금 할 일', '## 📊 한눈에 보기', '## 🏁 마일스톤', '## ✅ 최근 끝낸 일', '## ⬜ 남은 일', '## 🔔 잊지 말 것', '## 🎯 Do this now', "## 🔔 Don't forget"]) {
     assert.ok(text.includes(heading), `board section ${heading}`);
   }
-  assert.match(text, /litmuse rewind --lang <ko\|en>/u, 'the board run');
-  assert.match(text, /### Detail view \(`--detail`\)/u, 'the detail list is on request');
+  assert.match(text, /### The verdict card \(default\)/u, 'the card is the default');
+  assert.match(text, /### Detail view \(`detail`\): the KPI board/u, 'the board is on request');
+  assert.match(text, /## Recap view \(lit-recap moved here\)/u, 'the recap view');
   assert.match(text, /Show its stdout as the reply, exactly as printed/u, 'shown as given');
   for (const ref of ['references/status-taxonomy.md', 'references/card-examples.md']) {
     assert.ok(text.includes(ref), ref);
@@ -150,8 +174,8 @@ test('the skill body carries its contracts and cross-links lit-recap both ways',
   }
   const description = /^description: "(.*)"$/mu.exec(text)[1];
   assert.ok(Buffer.byteLength(description) <= 110, `catalog description ${Buffer.byteLength(description)} B fits the budget`);
-  assert.match(text, /lit recap/u, 'cross-links lit-recap');
-  assert.match(readFileSync(join(ROOT, 'plugin', 'skills', 'lit-recap', 'SKILL.md'), 'utf8'), /lit adhd/u, 'lit-recap cross-links lit-adhd');
+  assert.match(text, /lit adhd recap/u, 'names the recap view');
+  assert.equal(existsSync(join(ROOT, 'plugin', 'skills', 'lit-recap')), false, 'lit-recap is gone as a skill');
 });
 
 test('the collector runs from the package bin and the skill fallback runs the same code', () => {
@@ -176,7 +200,7 @@ test('the collector runs from the package bin and the skill fallback runs the sa
     });
     assert.equal(fallback.status, 0, fallback.stderr);
     assert.equal(JSON.parse(fallback.stdout).next.kind, 'start-plan');
-    const board = spawnSync(process.execPath, [join(SKILL, 'scripts', 'rewind.mjs'), '--here', '--lang', 'ko'], {
+    const board = spawnSync(process.execPath, [join(SKILL, 'scripts', 'rewind.mjs'), '--here', '--lang', 'ko', '--detail'], {
       cwd: where.ws,
       encoding: 'utf8',
       env: { ...process.env, LITMUSE_SESSION_STORE: join(where.ws, 'no-store'), HERDR_ENV: '' },

@@ -137,7 +137,7 @@ Common spine for every mode:
 5. **Minimum first.** Prefer existing docs and pages; create only navigation that real material justifies. Deduplicate
    before creating pages, preserve decisions and contradictions, keep append-only logs honest.
 6. **Verify and hand off.** Run `review-work` over locality, source immutability, navigation, provenance,
-   contradictions, drift, hostile input and the docs surface. Close with `lit-recap` (read-only recap) or `lit-handoff`
+   contradictions, drift, hostile input and the docs surface. Close with `lit adhd recap` (read-only recap) or `lit-handoff`
    (continuation).
 
 ### Novice onboarding
@@ -563,7 +563,7 @@ represented; whether knowledge capture is on. This is what turns a Markdown pile
 - `request_user_input` for the onboarding questions and for any approval gate; headless runs log the default chosen as a
   `decision` line.
 - `add_memory` only for cross-project preferences, never for workspace facts.
-- `read_skill litresearch` for public retrieval receipts; `review-work`, `lit-recap`, `lit-handoff` for the closing
+- `read_skill litresearch` for public retrieval receipts; `review-work`, `lit-adhd` (recap view), `lit-handoff` for the closing
   steps. Skills need no approval; hooks for bare `lit` routing need `muse plugins approve litmuse:hook:<id>`.
 - Node is required only for the knowledge script (`node --version`); everything else is plain tools. The script uses the
   standard library only and never touches the network.

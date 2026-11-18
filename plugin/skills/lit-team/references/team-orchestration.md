@@ -21,11 +21,13 @@ command, real-surface evidence and a cleanup receipt.
 |---|---|
 | read-only analysis | shared checkout |
 | disjoint file ownership | shared checkout with explicit `--paths` |
-| overlapping implementation | separate worktrees, each authorized by the user |
+| overlapping implementation | Muse-isolated worktrees (`worktree_isolation: true` on the member's `subagent_spawn`) |
 | release, secrets or remote settings | keep in the leader lane unless explicitly delegated |
 
-The packet records worktree intent and paths. It does not grant permission to create, merge, delete or push a worktree
-or branch; apply Git authority separately and ask with `request_user_input`.
+The packet records worktree intent and paths. Muse creates an isolated worktree for the member, removes it when the
+member left it clean, and keeps it when the member left changes. The orchestrator brings a kept worktree's change into
+the main checkout as a working-tree diff, one member at a time; nobody commits, pushes or deletes a branch, and a merge
+conflict is a question for the user.
 
 ## 2. Initialize the packet
 
@@ -132,7 +134,7 @@ node <skill-dir>/scripts/team.mjs archive --team <id> [--note "<receipt note>"]
 
 Archive refuses while any member is neither reported nor blocked, writes `archive-receipt.json`, and freezes the
 packet (later mutations are refused). Cancel running children with `subagent_cancel`, stop processes, release ports,
-remove temporary directories and handle worktrees only under explicit Git authority; then compare the durable status
+remove temporary directories and leave kept worktrees to the user once their diff is merged; then compare the durable status
 with live resources.
 
 ```

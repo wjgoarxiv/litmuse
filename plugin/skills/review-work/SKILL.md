@@ -1,6 +1,7 @@
 ---
 name: review-work
 description: "Review a plan before work or a diff after it: five lanes, findings first, PASS/FAIL/BLOCKED."
+goal: never
 ---
 
 # Review Work

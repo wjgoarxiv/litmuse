@@ -503,7 +503,7 @@ same one-line edit as for ordinary rows.
 - `subagent_spawn` (always with `subagent_type`), `subagent_wait`, `subagent_read_result`, `subagent_status`,
   `subagent_send_message`, `subagent_cancel` for delegation: `litmuse/lit-executor` implements, `litmuse/qa-runner`
   runs surface probes, `litmuse/lit-verifier` and `litmuse/quality-reviewer` review.
-- `get_goal`, `create_goal`, `update_goal` for native goal binding, when exposed; `write_todos` for the live checklist.
+- `get_goal`, `create_goal`, `update_goal` for native goal binding. A run started by `yes` at plan approval sets exactly the `[lit:<id>]` objective the hook names, and closes it with `update_goal` status complete once every row is ticked and the plan's check exits 0 (status blocked on a BLOCKED stop); `write_todos` for the live checklist.
   `report_progress` suits long runs only.
 - `request_user_input` for plan choice, approvals, scope changes and boundaries. In headless runs the question goes
   in the reply, a default is logged as a `decision`, and the run stops at the boundary.

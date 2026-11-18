@@ -1,29 +1,48 @@
 ---
 name: lit-team
-description: "Coordinate 2+ child agents behind a durable team packet: owned slices, evidence reports, archive receipt."
+description: "Type lit team <goal>: this session orchestrates the team, picks how to split it, merges and verifies."
 ---
 
-# lit-team: cooperating members behind one durable packet
+# lit-team: this session becomes the orchestrator
 
-Coordinated work by two or more members, each a Muse child agent that owns a distinct slice, behind a local packet
-that survives compaction: who the members are, what each owns, which agent runs it, which have reported with
-evidence, and whether the team was cleaned up. The root Muse session is the leader and the only writer of the
-packet; members never touch it.
+Type `lit team <goal>`; this session becomes the orchestrator and runs the team for you. It decides how to split the
+goal, says in one line how it will distribute the work, writes the durable team packet, launches the members,
+watches them, wakes a stalled one, merges what they return, verifies the assembled result itself, and comes back with
+one short report: what is done, what is risky, and what needs you. It asks nothing up front, except one question when
+the goal itself is unclear.
 
-Use a plain `subagent_spawn` instead when the task is one isolated lookup, review or edit; a packet around a single
-delegation buys nothing. Use `lit-plan` first when the objective is still unclear: splitting an unclear objective
-makes every member build the wrong thing in parallel. Use `autoconference` when the lanes are competing researchers
-who must face an adversarial reviewer rather than cooperating owners.
+Each member is a Muse child that owns a distinct slice. The packet under `.litmuse/team/<team-id>/` survives
+compaction and records who the members are, what each owns, how each was launched, which ones reported with evidence,
+and whether the team was cleaned up. The orchestrator is the only writer of the packet; members never touch it.
+
+A single isolated lookup, review or edit is one plain `subagent_spawn`, and a packet around it buys nothing. An
+objective nobody can state yet goes to `lit-plan` first, since splitting an unclear goal makes every member build the
+wrong thing in parallel. Competing researchers who must face an adversarial reviewer are `autoconference`.
 
 ## When this applies
 
-- The user types `lit team`, `lit team mode`, `lit teammates`, `/lit-team`, or asks for team mode, a team of agents,
-  coordinated parallel work, member briefs, team state, or team cleanup. The LitMuse hook inlines this skill for a
-  leading bare `lit team …`; the hook activates the skill and never spawns anything itself.
-- There are at least two slices that can progress independently and that can be given non-overlapping ownership
-  (areas of the product, disjoint files or modules, or read-only perspectives on the same artifact).
-- If fewer than two genuinely distinct slices exist, say so in one line and use a single child. Splitting work that
-  does not divide is slower than not splitting it, and two members on one slice is one worker plus coordination cost.
+- The user types `lit team <goal>`, `lit team mode`, `/lit-team`, or asks for team mode, a team of agents, coordinated
+  parallel work, member briefs, team state or team cleanup. The LitMuse prompt hook routes a leading `lit team …`
+  here; the hook activates the skill and never spawns anything itself.
+- At least two slices can progress independently with non-overlapping ownership: areas of the product, disjoint files
+  or modules, many similar items, or read-only perspectives on one artifact.
+- With fewer than two genuinely distinct slices, say so in one line and do the work with a single child. Splitting
+  work that does not divide is slower than not splitting it.
+
+### Picking the distribution
+
+The orchestrator picks one distribution from the slices themselves and states it in one line before launching, for
+example `Team: 3 subagents (api, ui, docs), shared checkout.` The first row that fits wins.
+
+| The slices are | Distribution | Muse surface |
+|---|---|---|
+| 2 to 6 independent slices, each with its own files | subagents | one `subagent_spawn` per member with `subagent_type`, one brief each (TASK / DELIVERABLE / SCOPE / VERIFY) |
+| many similar items (files to migrate, pages to check), or a review or verify fan-out | Workflow | one `workflow` call whose script fans the items out with `host.parallel([...])`, one request per item (at most 16 run at once, 1000 calls per run) |
+| long-running parallel sessions, another harness, or work the user wants to watch live | herdr panes | only when `HERDR_ENV=1` and `herdr` is on PATH (check with `command -v herdr`); otherwise fall back to subagents and say so |
+| slices that must edit the same files | isolated worktrees | `subagent_spawn` with `worktree_isolation: true` (or the `isolation` field of a Workflow child request, when the live `workflow` ToolSpec offers it); Muse creates the worktree and keeps it when the child leaves changes |
+
+Never assign vague job titles. A member needs a concrete focus, a deliverable, in-scope paths, forbidden actions, a
+verification command, real-surface evidence and a cleanup receipt.
 
 ### Composition lenses
 
@@ -33,15 +52,13 @@ who must face an adversarial reviewer rather than cooperating owners.
 | `ownership` | Disjoint files or modules owned by one member each | `litmuse/lit-executor` with explicit `--paths` |
 | `perspective` | Read-only reviews of the same artifact from different risk lenses | `litmuse/quality-reviewer`, `litmuse/lit-verifier`, `litmuse/qa-runner` |
 
-Never assign vague job titles. A member needs a concrete focus, a deliverable, in-scope paths, forbidden actions, a
-verification command, real-surface evidence and a cleanup receipt.
-
 ## Inputs and state
 
 - The objective being split, the current working-tree state (`git status --porcelain`; unrelated dirty files are
   protected, never reformatted or reverted), the approved plan if one exists (`plans/<slug>.md`), and the authority
-  the user gave: allowed roots, whether children may edit, whether worktrees may be created, and every forbidden
-  action (commit, push, tag, publish, deploy, merge, delete).
+  the user gave: allowed roots, whether children may edit, and every forbidden action (commit, push, tag, publish,
+  deploy, delete). Host isolation (`worktree_isolation`) needs no separate permission; a worktree is created, kept and
+  removed by Muse itself.
 - The packet, `.litmuse/team/<team-id>/`: `team.json` (script-owned), `guide.md` (rewritten on every mutation so a
   member always reads current state), `artifacts/` (members' notes, diffs and evidence), `archive-receipt.json`
   after archive, and `.lock/` while a command runs. The `.litmuse/` folder carries its own `.gitignore`, so the packet
@@ -76,45 +93,56 @@ node <skill-dir>/scripts/team.mjs archive    --team <id> [--note "<text>"]
 node <skill-dir>/scripts/team.mjs delete     --team <id> [--force]
 ```
 
-1. **Decide it is team work.** Two or more independent slices with distinct owners. Otherwise stop and use one child.
-   Ask for the user's approval of composition, isolation and authority with `request_user_input` when the work edits
-   files; headless runs log the default as a `decision` ledger line.
-2. **Choose isolation first.** Read-only analysis uses the shared checkout. Disjoint file ownership uses the shared
-   checkout with explicit `--paths`. Overlapping implementation needs separate worktrees, which only the user may
-   authorize; `--worktree` and `--cwd` record intent and paths, they do not create, merge, delete or push anything.
-   Release, secrets and remote settings stay in the leader lane unless explicitly delegated.
-3. **`init`, then `add-member` once per slice.** The script rejects an invalid id, a duplicate id, a duplicate focus,
-   overlapping `--paths`, a write-capable agent with no owned paths, and a read-only agent that claims write paths.
-   Do not hand-write or patch `team.json`.
-4. **Take each brief from `prompt`.** It returns the assignment (`TASK`, `DELIVERABLE`, `SCOPE` naming the other
+1. **Read the goal and split it.** Name the slices, their owners and their paths from the goal, the repository and
+   the approved plan when there is one. Ask one question only when the goal itself is unclear (what should exist at
+   the end); composition, isolation and distribution are the orchestrator's call, made from the table above.
+2. **Say the distribution in one line**, then write the packet: `init` (with `--worktree` when slices share files),
+   then `add-member` once per slice. The script rejects an invalid id, a duplicate id, a duplicate focus, overlapping
+   `--paths`, a write-capable agent with no owned paths, and a read-only agent that claims write paths. Never
+   hand-write or patch `team.json`.
+3. **Take each brief from `prompt`.** It returns the assignment (`TASK`, `DELIVERABLE`, `SCOPE` naming the other
    members' slices and this member's writable paths, `FORBIDDEN`, `RETURN_MODE`, `VERIFY`, `STOP WHEN`, the
-   `WORKING:`/`BLOCKED:`/`DONECLAIM:` markers) plus ready-made `spawn_args`. Add current repository facts, protected
-   dirty state and the expected receipt, then call `subagent_spawn` with those arguments. `--return-mode` defaults to
-   `reader`; it controls that child's return only and cannot raise the parent's mode.
-5. **Bind what the host returned.** `subagent_spawn` gives a child id; record it with `bind-agent`. Never invent an id,
-   and never mark a member `active` for a spawn that did not happen. A refused spawn (unapproved agent, no capability)
-   is a `BLOCKED:` for that member, not a silent fallback.
-6. **Supervise.** Use `subagent_status` and `subagent_wait` while doing independent leader work; a timeout means "no
-   new message", not failure. Send corrections with `subagent_send_message`; stop a lane with `subagent_cancel`. An
-   acknowledgement without a deliverable does not satisfy a lane; follow up for the structured `DONECLAIM:`.
-7. **Accept or reject each report.** Read the child's result with `subagent_read_result`, then verify it yourself:
-   for an implementation member inspect the actual diff in its paths or worktree and rerun the decisive command; for
-   an analysis member verify the cited paths and reproduce a key search; for a perspective member keep each verdict
-   independent instead of averaging. If it passes, write `report --evidence <path>` (the path must exist inside the
-   workspace; the script refuses otherwise). If a member cannot proceed, write `block --reason`. Reject a DoneClaim
-   that lacks exact evidence, crossed ownership, touched unrelated dirty work, left a process or port running, rests on
-   a stale artifact, or implies an unauthorized commit, push or release; send the narrow failure back to the same
-   member or assign a bounded repair.
-8. **Aggregate and verify.** The team is done only when `status` shows `done: true` (every member reported or blocked)
-   and the leader has verified the assembled result on the real surface, not just each slice. A blocked or
-   inconclusive member remains blocking unless the approved plan removes that dependency. Run `review-work` over the
-   combined change set.
-9. **Archive and clean up.** `archive` refuses while any member is neither reported nor blocked and names who is
-   missing. It writes `archive-receipt.json` (per-member status, evidence, agent id and the digest of the packet it
-   closed). Cancel remaining children, stop processes and ports, remove temporary directories, handle worktrees only
-   under explicit Git authority, then compare the packet with live resources. `delete` removes the packet and its
-   receipt: prefer keeping an archived packet when audit or continuation value remains, copy the receipt out first if
-   it is needed, and use `--force` only with explicit user authority.
+   `WORKING:` / `BLOCKED:` / `DONECLAIM:` markers) plus ready-made `spawn_args`. Add current repository facts, the
+   protected dirty state, the member's own scratch directory (`.litmuse/team/<team-id>/artifacts/<member>/`) and the
+   expected receipt.
+4. **Launch.**
+   - Subagents: call `subagent_spawn` with the `spawn_args`, all independent members in one block, and record each
+     returned child id with `bind-agent`.
+   - Workflow: put one request per item in a single `workflow` script (`host.parallel([...])`) with the brief as `input`,
+     a `schema` for the receipt and `label: "member-<id>"`; record the run id with `bind-agent --agent-id workflow:<run id>`.
+   - Herdr panes: open one pane per member with the host's own herdr commands, start the member's session there with
+     its brief, and record the pane id with `bind-agent --agent-id herdr:<pane id>`. Read panes; never type an approval
+     into one.
+   - Worktrees: add `worktree_isolation: true` to that member's `subagent_spawn`; record the path Muse reports with
+     `bind-agent --cwd <path>`.
+   Never invent an id and never mark a member `active` for a launch that did not happen. A refused launch (unapproved
+   agent, no capability, isolation unavailable outside a Git workspace) is a `BLOCKED:` for that member.
+5. **Monitor and wake.** Poll with `subagent_status` / `subagent_wait` (a timeout means no new message, not failure),
+   the Workflow's own status, or the pane's last output and the modification time of the member's scratch directory.
+   A member whose status and scratch files have not moved for ten minutes is stalled: send one short nudge with
+   `subagent_send_message` (or the pane's message command) naming what is missing, then wait again. A second silent
+   interval marks it `block --reason stalled`. Keep doing independent orchestrator work in between; never block the
+   user on one member.
+6. **Accept or reject each report.** Read the result (`subagent_read_result`, the Workflow's `result.data`, or the
+   pane's final output), then verify it yourself: for an implementation member inspect the actual diff in its paths or
+   worktree and rerun the decisive command; for an analysis member verify the cited paths and reproduce a key search;
+   for a perspective member keep each verdict independent. If it passes, write `report --evidence <path>` (the path
+   must exist inside the workspace). If it cannot proceed, write `block --reason`. Reject a DoneClaim that lacks exact
+   evidence, crossed ownership, touched unrelated dirty work, left a process or port running, rests on a stale
+   artifact, or implies a commit, push or release; send the narrow failure back to the same member once.
+7. **Merge.** Shared-checkout members already wrote in place. For a retained worktree, bring its change into the main
+   checkout as a working-tree diff (`git -C <worktree> diff` applied with `git apply --3way`), one member at a time,
+   rerunning that member's check after each apply. A conflict stops the merge and becomes a question for the user.
+   Members never commit; the orchestrator never commits either.
+8. **Re-verify the whole.** The team is done only when `status` shows `done: true` and the orchestrator has exercised
+   the assembled result on the real surface, not just each slice. Run `review-work` over the combined change set.
+9. **Archive and clean up.** `archive` refuses while any member is neither reported nor blocked. It writes
+   `archive-receipt.json` (per-member status, evidence, launch id and the digest of the packet it closed). Cancel
+   remaining children, close the panes this team opened, stop processes and ports, and let Muse remove clean
+   worktrees; a retained dirty one stays until the user says otherwise. `delete` removes the packet and its receipt;
+   prefer keeping an archived packet, and use `--force` only with explicit user authority.
+10. **Report once,** in reader mode: done, risks, what needs the user. Filter every member's return again before it
+   reaches the reply; a member cannot raise the reader mode.
 
 ## Muse tools and approvals
 
@@ -136,8 +164,13 @@ node <skill-dir>/scripts/team.mjs delete     --team <id> [--force]
   and acceptance. A member's claim counts only after `subagent_read_result` and your own check.
 - `read_file`, `search`: verify diffs, cited paths and evidence. `write_file` and `edit_file` belong to the leader
   only for leader-lane work; the packet itself is written only by `team.mjs`.
-- `request_user_input`: composition, isolation, any worktree, any merge decision, `delete --force`. A default chosen
-  in a headless run is a `decision` ledger line, and never grants approval for commit, push, merge or deletion.
+- `workflow`: the many-similar-items distribution. Children inherit the session model; set `effort` per child only
+  when a light item does not need depth.
+- `request_user_input`: one question when the goal is unclear, a merge conflict, `delete --force`. Nothing else is
+  asked up front. A default chosen in a headless run is a `decision` ledger line, and never grants approval for
+  commit, push, merge or deletion.
+- Herdr: only when `HERDR_ENV=1` and `command -v herdr` succeeds. The orchestrator reads panes and sends messages; it
+  never types an approval or a permission answer into a member's pane.
 - Approvals: this skill needs none. Children of type `litmuse/*` run only after the user approved the agent
   definitions once; if a spawn is refused for that reason stop with `BLOCKED: agent not approved` and name
   `muse plugins approve litmuse:agent_definition:litmuse/<name>`. Never run an approve command yourself.
@@ -163,8 +196,8 @@ Terminal status is `PASS`, `FAIL` or `BLOCKED:` plus the archive receipt.
   `review-work` is clean, and the team is archived with cleanup confirmed.
 - **FAIL:** a deliverable is wrong or unsupported after the bounded repair, or ownership was breached.
 - **BLOCKED:** fewer than two distinct slices, no authority to edit, an unapproved or unavailable agent, a member that
-  cannot proceed and cannot be dropped, a lock that cannot be acquired, corrupt packet state, or a request to commit,
-  push, tag, publish, merge or create a worktree without separate authority.
+  cannot proceed and cannot be dropped, a lock that cannot be acquired, corrupt packet state, a merge conflict the
+  user has not settled, or a request to commit, push, tag or publish without separate authority.
 
 Reply with the result, material risk (blocked or inconclusive lanes, residual risk), the required action, and
 retained local state. The reader reply carries no command diary, no routine pass inventory, no timestamps and no child

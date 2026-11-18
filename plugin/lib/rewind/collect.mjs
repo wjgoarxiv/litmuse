@@ -4,17 +4,19 @@
 // redacted, capped JSON brief. A source that is not there reads `unknown`; nothing is inferred.
 // It writes one file only: this session's next-step record for `go`.
 import { execFileSync } from 'node:child_process';
-import { closeSync, constants, fstatSync, lstatSync, openSync, readSync, readdirSync, existsSync } from 'node:fs';
+import { closeSync, constants, fstatSync, lstatSync, mkdirSync, openSync, readFileSync, readSync, readdirSync, renameSync, writeFileSync, existsSync } from 'node:fs';
+import { createHash } from 'node:crypto';
 import { homedir } from 'node:os';
-import { basename, join, resolve } from 'node:path';
+import { basename, dirname, join, resolve } from 'node:path';
 
 import { parsePlanTaskRows } from '../plan-task-rows.mjs';
 import { PULSE_UNKNOWN, aggregateProgress, clipToWidth, displayWidth, progressOf } from './gauge.mjs';
 import { buildBoard } from './board.mjs';
+import { nextCursor, renderVerdict } from './verdict.mjs';
 import { chooseNextStep, writeNextStep } from './next-step.mjs';
 import { makeRedactor } from './redact.mjs';
 import { findTranscripts, makeBudget, readTranscriptLines, sessionRecord } from './transcripts.mjs';
-import { rainbowLine } from '../../../lib/stage-card.mjs';
+import { rainbowLine } from './rainbow.mjs';
 import { projectKey, resolveProjectStateRoot } from '../../hooks/lib/workflow-stack.mjs';
 import { readLiveness } from '../../hooks/lib/stage.mjs';
 
@@ -247,17 +249,23 @@ const PLAN_NAME = /^plans\/[A-Za-z0-9._-]+\.md$/u;
 const stageDirOf = (env) => join(env.XDG_STATE_HOME || join(env.HOME || homedir(), '.local', 'state'), 'litmuse', 'stage');
 const STAGE_RECORDS_MAX = 200;
 
+// Only an old record carries no plan; for it, a folder with no open plan is the guess that the run finished.
+const anyOpenPlan = (root, budget) => (entries(join(root, 'plans')) ?? [])
+  .filter((item) => item.isFile() && PLAN_NAME.test(`plans/${item.name}`))
+  .some((item) => parsePlanTaskRows(readSmallFile(join(root, 'plans', item.name), budget) ?? '').some((row) => !row.checked));
+
 const runOf = (root, record, sessionId, budget, redact) => {
   const plan = typeof record.plan === 'string' && PLAN_NAME.test(record.plan) ? record.plan : null;
   const planText = plan ? readSmallFile(join(root, plan), budget) : null;
   const rows = planText === null ? [] : parsePlanTaskRows(planText);
   const open = rows.filter((row) => !row.checked);
   const id = typeof record.session === 'string' ? record.session : sessionId ?? null;
+  const finished = plan ? rows.length > 0 && !open.length : !anyOpenPlan(root, budget);
   return {
     worktree: redact(root),
     workId: `stage-${id ?? 'unknown'}`,
     plan: plan ?? 'unknown',
-    status: rows.length && !open.length ? 'complete' : 'active',
+    status: finished ? 'complete' : 'active',
     sessionId: id,
     id8: typeof id === 'string' ? id.slice(0, 8) : 'unknown',
     completedMs: rows.length && !open.length ? mtimeOf(join(root, plan)) : null,
@@ -328,7 +336,9 @@ const lanesOf = (sessions, herdr, sessionId, roots, env) => {
   for (const item of herdr.raw ?? []) {
     if (!LANE_AGENT.has(item.agent_status)) continue;
     if (env.HERDR_PANE_ID && item.pane_id === env.HERDR_PANE_ID) continue;
-    const here = (env.HERDR_WORKSPACE_ID && item.workspace_id === env.HERDR_WORKSPACE_ID) || inside(item.cwd, roots) || inside(item.foreground_cwd, roots);
+    // Only an agent working inside this repo races `go`; sharing the herdr workspace is not enough (a machine-wide
+    // workspace holds agents of other repos).
+    const here = inside(item.cwd, roots) || inside(item.foreground_cwd, roots);
     if (!here) continue;
     const session = typeof item.agent_session?.value === 'string' ? item.agent_session.value : null;
     if (session && (session === sessionId || counted.has(session))) continue;
@@ -400,9 +410,24 @@ export const collectRewind = ({
 
   const transcripts = findTranscripts(sessionStoreDir(env), roots);
   const sessions = [];
+  // What the verdict card's coverage line reports: session logs changed inside the window that this run did not read.
+  const notRead = { budget: 0, limit: 0, unreadable: 0 };
   for (const file of transcripts.files) {
-    if (sessions.length >= limit || budget.exhausted) break;
+    let changed = null;
+    try {
+      changed = lstatSync(file.path).mtimeMs;
+    } catch { /* gone since the listing */ }
+    if (changed !== null && now - changed > sinceMs) continue;
+    if (sessions.length >= limit) {
+      notRead.limit += 1;
+      continue;
+    }
+    if (budget.exhausted) {
+      notRead.budget += 1;
+      continue;
+    }
     const lines = readTranscriptLines(file.path, budget);
+    if (!lines) notRead.unreadable += 1;
     const session = lines ? sessionRecord(file.sessionId, lines, { redact, now }) : null;
     if (!session || (session.lastMs !== null && now - session.lastMs > sinceMs)) continue;
     if (here && session.cwd && resolve(session.cwd) !== start) continue;
@@ -475,6 +500,7 @@ export const collectRewind = ({
       herdr: herdr.status,
     },
     budget: { bytesRead: budget.used, limit: budget.limit, exhausted: budget.exhausted },
+    coverage: { notRead },
     summary: {
       sessions: sessions.length,
       waitingOnUser: sessions.filter((session) => session.status === 'waiting-on-user').length,
@@ -500,6 +526,7 @@ export const collectRewind = ({
       items: lanes.slice(0, 10).map(({ id8, waiting, worktree }) => ({ id8: redact(String(id8)), waiting, worktree })),
     },
   };
+  data.worktreeState = roots.map((root) => worktreeStateOf(root, exec, redact));
   const next = chooseNextStep(data, sessionId);
   data.next = next;
   data.opener = openerOf(data, sessionId, redact(start));
@@ -515,7 +542,7 @@ export const collectRewind = ({
     next,
     step: stepOf(data),
     handoffNext: handoffNextOf(data),
-    worktreeState: roots.map((root) => worktreeStateOf(root, exec, redact)),
+    worktreeState: data.worktreeState,
     unread: budget.exhausted || skippedPlans.count > 0,
   }, lang);
   data.nextRecorded = false;
@@ -902,17 +929,50 @@ export const renderRewind = (data, width = 100, { color = false } = {}) => {
   return `${out.join('\n')}\n`;
 };
 
+// The verdict card's "since your last look" cursor: one small file per project under LitMuse's state home
+// ($XDG_STATE_HOME/litmuse/adhd), outside every repository. It moves only after a card was printed.
+export const adhdCursorPath = (env, cwd) => {
+  const home = env.XDG_STATE_HOME || join(env.HOME || homedir(), '.local', 'state');
+  const key = createHash('sha256').update(projectKey(resolve(cwd))).digest('hex').slice(0, 16);
+  return join(home, 'litmuse', 'adhd', `cursor-${key}.json`);
+};
+
+const readCursor = (path) => {
+  try {
+    const cursor = JSON.parse(readFileSync(path, 'utf8'));
+    return cursor && typeof cursor === 'object' && typeof cursor.at === 'string' ? cursor : null;
+  } catch {
+    return null;
+  }
+};
+
+const writeCursor = (path, cursor) => {
+  try {
+    mkdirSync(dirname(path), { recursive: true });
+    const staging = `${path}.${process.pid}.tmp`;
+    writeFileSync(staging, `${JSON.stringify(cursor)}\n`);
+    renameSync(staging, path);
+  } catch { /* an unwritable cursor only means the next card keeps the same baseline */ }
+};
+
 /**
- * `litmuse rewind [--lang ko|en] [--detail] [--json] [--here] [--since 7d] [--max 12] [--session <id>] [--width N]`.
- * Prints the KPI board; `--detail` adds the per-session brief under it; `--json` prints the records
- * with the board's fields and text in `board`.
+ * `litmuse rewind [--lang ko|en | --en] [--detail | --recap [<session>] | --json] [--here] [--since 7d] [--max 12] [--session <id>] [--width N]`.
+ * The default is the verdict card (Korean unless English is asked for). `--detail` prints the KPI board with the
+ * per-session brief under it; `--recap [<session>]` prints the per-session brief alone, of one session when its id or
+ * first characters are given; `--json` prints the records with the board and the verdict.
  */
+// The one line the old lit-recap names lead with; the collector prints it so it is always the view's first line.
+export const RECAP_MOVED_NOTE = 'lit-recap moved into lit-adhd; this is its recap view (lit adhd recap).';
+
 export const runRewindCli = (args, cwd = process.cwd(), { env = process.env, stdout = process.stdout, stderr = process.stderr, exec, now } = {}) => {
   const options = { cwd, env, here: false, since: DEFAULT_SINCE, max: DEFAULT_MAX, sessionId: null, lang: 'en', ...(exec ? { exec } : {}), ...(now ? { now } : {}) };
   let json = false;
   let detail = false;
+  let recap = null;
+  let moved = false;
+  let lang = null;
   let width = Number(stdout.columns) || 100;
-  const usage = 'Usage: litmuse rewind [--lang ko|en] [--detail] [--json] [--here] [--since 7d] [--max 12] [--session <id>] [--width N]';
+  const usage = 'Usage: litmuse rewind [--lang ko|en | --en] [--detail | --recap [<session>] [--moved] | --json] [--here] [--since 7d] [--max 12] [--session <id>] [--width N]';
   if (args.some((arg) => arg === '--help' || arg === '-h')) {
     stdout.write(`${usage}\n`);
     return 0;
@@ -921,7 +981,10 @@ export const runRewindCli = (args, cwd = process.cwd(), { env = process.env, std
     const arg = args[index];
     if (arg === '--json') json = true;
     else if (arg === '--detail') detail = true;
-    else if (arg === '--lang' && ['ko', 'en'].includes(args[index + 1])) options.lang = args[++index];
+    else if (arg === '--recap') recap = /^[A-Za-z0-9._:-]{1,160}$/u.test(args[index + 1] ?? '') && !args[index + 1].startsWith('--') ? args[++index] : '';
+    else if (arg === '--moved') moved = true;
+    else if (arg === '--lang' && ['ko', 'en'].includes(args[index + 1])) lang = args[++index];
+    else if (arg === '--en') lang = 'en';
     else if (arg === '--here') options.here = true;
     else if (arg === '--since' && parseSince(args[index + 1])) options.since = args[++index];
     else if (arg === '--max' && /^\d{1,2}$/u.test(args[index + 1] ?? '')) options.max = Number(args[++index]);
@@ -932,13 +995,28 @@ export const runRewindCli = (args, cwd = process.cwd(), { env = process.env, std
       return 64;
     }
   }
+  // The board and the per-session brief keep their English default; the verdict card is Korean unless asked.
+  options.lang = lang ?? (detail || recap !== null || json ? 'en' : 'ko');
   const data = collectRewind(options);
+  const cursorPath = adhdCursorPath(env, cwd);
   if (json) {
+    data.verdict = renderVerdict(data, { lang: options.lang, cursor: readCursor(cursorPath) });
     stdout.write(`${JSON.stringify(data, null, 2)}\n`);
     return 0;
   }
-  // The board is the default; the per-session brief sits under it only on request. The static
-  // rainbow marks the adhd turn on a real terminal only, never in pipes.
-  stdout.write(detail ? `${data.board.text}\n${renderRewind(data, width, { color: stdout.isTTY === true })}` : data.board.text);
+  if (recap !== null) {
+    const sessions = recap ? data.sessions.filter((session) => session.id8.startsWith(recap.slice(0, 8))) : data.sessions;
+    stdout.write(`${moved ? `${RECAP_MOVED_NOTE}\n` : ''}${renderRewind({ ...data, sessions }, width, { color: stdout.isTTY === true })}`);
+    return 0;
+  }
+  // `detail` keeps the KPI board with the per-session brief under it. The static rainbow marks the adhd turn on a real
+  // terminal only, never in pipes.
+  if (detail) {
+    stdout.write(`${data.board.text}\n${renderRewind(data, width, { color: stdout.isTTY === true })}`);
+    return 0;
+  }
+  const card = renderVerdict(data, { lang: options.lang, cursor: readCursor(cursorPath) });
+  stdout.write(card.text);
+  writeCursor(cursorPath, nextCursor(card.verdict, Date.parse(data.generatedAt)));
   return 0;
 };

@@ -86,13 +86,15 @@ test('S1: a lane waiting on the user is named in the box', () => {
   assert.equal(lastLine(text), 'Do not type `go` until they finish.');
 });
 
-test('S1: herdr agents count as lanes by workspace or cwd, own pane and idle agents skipped, one lane counted once', () => {
+test('S1: herdr agents count as lanes only when their cwd is inside this repo, own pane and idle agents skipped, one lane counted once', () => {
   const { repo, storeDir, env } = fixture();
   onePlan(repo);
   writeLog(storeDir, 'lane0001', [routeLine(repo, 6), intentLine('port the card', 6), toolLine('edit_file', 2)]);
   const agents = [
     agent({ pane_id: 'w1:p1', workspace_id: 'w1' }), // own pane
-    agent({ pane_id: 'w1:p2', workspace_id: 'w1' }), // same workspace, working
+    agent({ pane_id: 'w1:p2', workspace_id: 'w1', cwd: repo }), // same workspace, working here
+    agent({ pane_id: 'w1:p8', workspace_id: 'w1', cwd: '/elsewhere/other-repo', foreground_cwd: '/elsewhere/other-repo' }), // same workspace, another repo
+    agent({ pane_id: 'w1:p9', workspace_id: 'w1' }), // same workspace, cwd unknown
     agent({ pane_id: 'w9:p3', cwd: join(repo, 'src'), foreground_cwd: join(repo, 'src'), agent_status: 'blocked' }), // inside the repo, waits
     agent({ pane_id: 'w9:p4', foreground_cwd: repo, agent_session: { value: 'lane0001' } }), // the session lane again
     agent({ pane_id: 'w1:p5', workspace_id: 'w1', agent_status: 'idle' }),
@@ -286,4 +288,43 @@ test('S5: `go` resumes a paused frame only while this session still holds it', (
   const out = prompt(where, 'frm1', 'go');
   assert.match(out, /no longer holds/u);
   assert.doesNotMatch(out, /resuming the paused/u);
+});
+
+// ---- R4: a finished run never reads as active -----------------------------------------------------
+
+test('R4: this session\'s run on a fully ticked plan reads finished while another plan is open; no continue offer', () => {
+  const { repo, env } = fixture();
+  writeFileSync(join(repo, 'plans', 'a.md'), '# A\n- [x] 1. one\n- [x] 2. two\n');
+  writeFileSync(join(repo, 'plans', 'b.md'), '# B\n- [ ] 1. open\n');
+  const stage = join(env.XDG_STATE_HOME, 'litmuse', 'stage');
+  mkdirSync(stage, { recursive: true });
+  writeFileSync(join(stage, 'self0001.json'), JSON.stringify({ version: 1, session: 'self0001', route: 'start-work', plan: 'plans/a.md', cwd: repo }));
+  const data = collectRewind({ cwd: repo, env, now: NOW, exec: noGit, here: true, sessionId: 'self0001', record: false });
+  const own = data.startWork.find((run) => run.plan === 'plans/a.md');
+  assert.equal(own.status, 'complete', 'plan A is finished');
+  assert.notEqual(data.next.kind, 'continue-work', 'a finished run is not continued');
+});
+
+test('R4: an old plan-less record reads finished only when no plan in the folder is open', () => {
+  const { repo, env } = fixture();
+  writeFileSync(join(repo, 'plans', 'a.md'), '# A\n- [x] 1. one\n');
+  const stage = join(env.XDG_STATE_HOME, 'litmuse', 'stage');
+  mkdirSync(stage, { recursive: true });
+  writeFileSync(join(stage, 'self0001.json'), JSON.stringify({ version: 1, session: 'self0001', route: 'start-work', cwd: repo }));
+  const done = collectRewind({ cwd: repo, env, now: NOW, exec: noGit, here: true, sessionId: 'self0001', record: false });
+  assert.equal(done.startWork[0].status, 'complete', 'no open plan: the guess says finished');
+  assert.notEqual(done.next.kind, 'continue-work');
+  writeFileSync(join(repo, 'plans', 'b.md'), '# B\n- [ ] 1. open\n');
+  const open = collectRewind({ cwd: repo, env, now: NOW, exec: noGit, here: true, sessionId: 'self0001', record: false });
+  assert.equal(open.startWork[0].status, 'active', 'an open plan keeps the old record active');
+});
+
+test('R4: a start-work route records the exact plan, typed or the one open plan when none is typed', () => {
+  const where = project();
+  prompt(where, 'r4a', 'lit start plans/p.md');
+  assert.equal(stageOf(where, 'r4a').plan, 'plans/p.md');
+  prompt(where, 'r4b', 'lit start');
+  assert.equal(stageOf(where, 'r4b').plan, 'plans/p.md', 'the single open plan is recorded');
+  prompt(where, 'r4c', '/litmuse:start-work plans/p.md');
+  assert.equal(stageOf(where, 'r4c').plan, 'plans/p.md', 'the command form records it too');
 });

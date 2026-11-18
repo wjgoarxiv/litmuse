@@ -119,7 +119,7 @@ rules or the repository policy, and no lane report is trusted beyond the receipt
    The Chair saves them, offers the worktree options (merge, keep, delete) through `request_user_input` with no
    default, appends `conference.completed`, and reports rounds, iterations, best result, dissent and the synthesis
    location.
-8. **Review and hand off.** Run `review-work` over any changed files and worktrees. Offer `lit-recap` or
+8. **Review and hand off.** Run `review-work` over any changed files and worktrees. Offer `lit adhd recap` or
    `lit-handoff` for continuity. `ship` mode produces local draft files only.
 9. **Cancel or interruption.** Append one root-owned checkpoint to `conference_events.jsonl`, cancel running children
    with `subagent_cancel`, and stop. Resume goes through `modes/resume.md` after validating the work id, event

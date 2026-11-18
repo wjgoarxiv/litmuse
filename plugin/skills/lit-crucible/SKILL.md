@@ -1,6 +1,7 @@
 ---
 name: lit-crucible
 description: "Pressure-test a brief before planning: risk lanes, failure modes and hidden constraints."
+goal: never
 ---
 
 # lit-crucible

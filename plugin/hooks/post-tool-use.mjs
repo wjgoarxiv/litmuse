@@ -4,6 +4,8 @@ import { pathToFileURL } from 'node:url';
 import { run, activeRoute, appendLedger, emitContext, toolName, toolInput, workspaceOf, PLUGIN_ROOT } from './lib/common.mjs';
 import { extractAddedComments } from './lib/added-comments.mjs';
 import { markLiveness } from './lib/stage.mjs';
+import { GOAL_STATUS, LIT_TAG, objectiveOf, readGoalRecord, writeGoalRecord } from './lib/goal.mjs';
+import { resolveProjectStateRoot } from './lib/workflow-stack.mjs';
 
 const FILE_TOOLS = new Set(['write_file', 'edit_file', 'apply_patch']);
 const PROSE_FILE = /\.(md|mdx|markdown|txt)$/i;
@@ -83,8 +85,45 @@ async function proseBlock(tool, input, cwd) {
 
 run((payload) => {
   markLiveness(payload, 'alive');
+  try { recordGoal(payload); } catch { /* the goal records are best effort; the tool result stands */ }
   postWrite(payload).catch(() => {});
 });
+
+// A successful goal call (failures arrive at PostToolUseFailure instead). `create_goal` with the armed objective makes
+// LitMuse the owner of that goal; `update_goal` complete or blocked closes an owned goal of this session.
+// goal-propose runs in a shell and cannot know its session, so the PostToolUse of that command stamps the asking
+// session on the question it just wrote; only that session's `yes` answers it.
+// (The pattern lives inside the function: run() may call back before a module-level const below it is initialised.)
+function stampConsent(payload) {
+  const command = String(toolInput(payload)?.command ?? '');
+  if (!payload.session_id || !/(?:^|\s)\S*goal-propose\.mjs\s+plans\/[A-Za-z0-9._-]+\.md\s*$/u.test(command)) return;
+  const root = resolveProjectStateRoot(workspaceOf(payload));
+  const consent = readGoalRecord(root, 'consent');
+  if (!consent || consent.sessionId || consent.answeredAt || Date.now() - Date.parse(consent.askedAt) > 2 * 60_000) return;
+  writeGoalRecord(root, 'consent', { ...consent, sessionId: payload.session_id });
+}
+
+function recordGoal(payload) {
+  const tool = toolName(payload);
+  stampConsent(payload);
+  if (tool !== 'create_goal' && tool !== 'update_goal') return;
+  const root = resolveProjectStateRoot(workspaceOf(payload));
+  const input = toolInput(payload);
+  const now = new Date().toISOString();
+  if (tool === 'create_goal') {
+    const objective = objectiveOf(input);
+    const intent = readGoalRecord(root, 'intent');
+    if (!LIT_TAG.test(objective) || !intent || intent.consumedAt || intent.condition !== objective) return;
+    writeGoalRecord(root, 'owner', { version: 1, condition: intent.condition, id: intent.id, plan: intent.plan, check: intent.check, sessionId: payload.session_id ?? null, setAt: now, closed: null });
+    writeGoalRecord(root, 'intent', { ...intent, consumedAt: now });
+    emitContext('PostToolUse', `Show this line to the user as given: ${GOAL_STATUS.set(intent.id)}`);
+    return;
+  }
+  const owner = readGoalRecord(root, 'owner');
+  const status = String(input.status ?? '').toLowerCase();
+  if (!owner || owner.closed || owner.sessionId !== (payload.session_id ?? null) || !['complete', 'blocked'].includes(status)) return;
+  writeGoalRecord(root, 'owner', { ...owner, closed: { status, at: now } });
+}
 
 async function postWrite(payload) {
   const state = activeRoute(payload);

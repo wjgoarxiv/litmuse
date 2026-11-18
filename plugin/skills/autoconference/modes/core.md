@@ -220,7 +220,7 @@ Offer three options through `request_user_input`; none is the default and none h
 3. Delete all conference worktrees and branches (only those the conference created, listed first)
 
 **13. Log completion**
-Log `conference.completed` event with links to `synthesis.md` and `final_report.md`. Report summary to user: rounds run, total iterations, final best metric/score, synthesis location. Then run `review-work` over any changed files and worktrees before calling the conference done, and offer `lit-recap` or `lit-handoff` for continuity.
+Log `conference.completed` event with links to `synthesis.md` and `final_report.md`. Report summary to user: rounds run, total iterations, final best metric/score, synthesis location. Then run `review-work` over any changed files and worktrees before calling the conference done, and offer `lit adhd recap` or `lit-handoff` for continuity.
 
 ## Output Files
 

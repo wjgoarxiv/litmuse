@@ -3,6 +3,9 @@ import { resolve, dirname, sep, basename } from 'node:path';
 import { run, block, activeRoute, toolName, toolInput, workspaceOf } from './lib/common.mjs';
 import { addedHedgeCluster, HEDGE_MESSAGE } from './lib/hedge.mjs';
 import { LIT_PLAN_READ_ONLY_TOOLS, FILE_TOOLS, SHELL_TOOLS, READ_ONLY_AGENTS, shellReadOnly } from './lib/policy.mjs';
+import { LIT_TAG, objectiveOf, readGoalRecord } from './lib/goal.mjs';
+import { resolveProjectStateRoot } from './lib/workflow-stack.mjs';
+import { PLUGIN_ROOT } from './lib/common.mjs';
 
 const PROSE_FILE = /\.(md|mdx|markdown|txt)$/i;
 const EN_PLEDGE = /\b(never|do not|don't|does not|doesn't|cannot|can't|will not|won't|must not|should not|shouldn't)\b/i;
@@ -113,6 +116,31 @@ function proseWrites(tool, input, cwd) {
 
 const PLAN_HINT = 'Write the plan under plans/ with write_file; implementation waits for /start-work.';
 
+// The one non-read-only command a planning turn may run: this plugin's own goal-propose script on a plan under plans/.
+const GOAL_PROPOSE = resolve(PLUGIN_ROOT, 'skills', 'lit-plan', 'scripts', 'goal-propose.mjs');
+function isGoalPropose(command) {
+  const match = /^node\s+(\S+)\s+(plans\/[A-Za-z0-9._-]+\.md)$/u.exec(String(command ?? '').trim());
+  if (!match || /[;&|<>`$\\\n\r(){}'"]/u.test(command)) return false;
+  try {
+    return realpathSync(match[1]) === realpathSync(GOAL_PROPOSE);
+  } catch {
+    return false;
+  }
+}
+
+// A goal tagged `[lit:<id>]` exists only after the user's exact yes at plan approval: its objective must equal the armed
+// intent of this session. An untagged goal is the user's own business and passes.
+function litGoalRefusal(payload, input) {
+  const objective = objectiveOf(input);
+  if (!LIT_TAG.test(objective)) return null;
+  let intent = null;
+  try {
+    intent = readGoalRecord(resolveProjectStateRoot(workspaceOf(payload)), 'intent');
+  } catch { /* unreadable reads as no intent */ }
+  if (intent && !intent.consumedAt && intent.condition === objective && (!intent.sessionId || intent.sessionId === payload.session_id)) return null;
+  return 'LitMuse sets a [lit:…] goal only after the user typed yes to the plan-approval goal question, with that exact objective. Ask the question again (run goal-propose on the plan) instead of creating it.';
+}
+
 run((payload) => {
   const tool = toolName(payload);
   const input = toolInput(payload);
@@ -124,6 +152,11 @@ run((payload) => {
     if (hit) block(`LitMuse keeps route state for its hooks; ${hit} is not writable by tools.`);
   }
 
+  if (tool === 'create_goal') {
+    const refusal = litGoalRefusal(payload, input);
+    if (refusal) block(refusal);
+  }
+
   const state = activeRoute(payload);
   if (!state) return;
 
@@ -132,7 +165,7 @@ run((payload) => {
       // read-only: allowed
     } else if (SHELL_TOOLS.has(tool)) {
       const command = input.command ?? input.cmd ?? input.script;
-      if (tool === 'bash_input' || !shellReadOnly(command)) {
+      if (tool === 'bash_input' || (!shellReadOnly(command) && !isGoalPropose(command))) {
         block(`LitMuse lit-plan is a planning turn: shell is limited to one plain read-only command (ls, cat, head, tail, wc, rg, git log/status/diff/show) with listed flags and no ; & | < > \` $ or line breaks. Refused: ${tool}. ${PLAN_HINT}`);
       }
     } else if (tool === 'subagent_spawn') {

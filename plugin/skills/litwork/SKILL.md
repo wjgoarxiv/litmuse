@@ -160,11 +160,11 @@ obvious. Pass it the gathered findings (file:line facts, constraints, unknowns).
 steps, justifies no planner; plan directly in `notes.md`. Planning is never delegated before the discovery wave
 returns.
 
-**1. Bind the goal with checkable success criteria.** Call `get_goal` if exposed. With a matching active goal, keep
-it. With none and `create_goal` exposed, create one from the criteria below. A different active goal stays intact,
-and `update_goal` is reserved for verified completion or a genuine blocker. When the native tools are missing, say
-once that the run is in degraded mode and keep the `litgoal` record `.litmuse/goals/<slug>.json` authoritative. Do
-not invent a goal budget or limit.
+**1. Bind the goal with checkable success criteria.** Call `get_goal` first. With a matching active goal, keep it
+(a `[lit:<id>]` goal from plan approval included). With none, create one from the criteria below with `create_goal`.
+A different active goal stays intact, and `update_goal` is reserved for verified completion or a genuine blocker. When
+a goal call is refused (policy, headless run), say so once and keep the `litgoal` record `.litmuse/goals/<slug>.json`
+authoritative. Do not invent a goal budget or limit.
 
 The criteria state, up front:
 
@@ -462,7 +462,7 @@ state, report the last verified boundary, and wait for a fresh instruction befor
   leftovers.
 - `subagent_spawn` (always with `subagent_type`), `subagent_wait`, `subagent_read_result`, `subagent_status`,
   `subagent_send_message`, `subagent_cancel` for delegation.
-- `get_goal`, `create_goal`, `update_goal` for native goal binding when exposed; `write_todos` for the live checklist;
+- `get_goal`, `create_goal`, `update_goal` for native goal binding (Muse's one session goal); `write_todos` for the live checklist;
   `report_progress` for long runs only.
 - `request_user_input` when a criterion depends on an intent you cannot infer; in headless runs, ask in the reply
   and stop at the question, logging any default taken as a `decision`.

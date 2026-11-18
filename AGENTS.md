@@ -60,6 +60,22 @@ Re-checked on 1.4.20 (2026-11-16), offline, in a throwaway HOME with a copy of t
 - Agent definitions do not appear in `plugins inspect` (hooks, commands and skills do); the approval target is
   `litmuse:agent_definition:litmuse/<name>`.
 
+Re-checked on 1.4.23 (2026-11-18), offline, binary strings and `--help` only:
+
+- Muse has a native session goal: model tools `create_goal {objective, token_budget?}` (fails while another goal is
+  unfinished), `update_goal` (status `complete` or `blocked`), `get_goal` and `report_progress`, and the user command
+  `/goal` with `clear`, `pause`, `resume` and `edit`. Hooks cannot call these tools, so the plan-approval goal pipeline
+  (`plugin/hooks/lib/goal.mjs`) steers the model and guards `[lit:<id>]` objectives in PreToolUse.
+- The `workflow` tool in a live 1.4.23 session advertises Workflow API V1 (`export default async function workflow(host)`,
+  `host.parallel([...])`, `host.agent({input, schema, effort?, model?, label, phase})`, `host.args`, `host.readResult`),
+  even though the binary also carries a V2 shape (`Agent.start`); a real 100-agent ultra-brainstorm run proved V1 on
+  2026-11-18. At most 16 active children and 1000 agent calls per workflow. Effort tiers are minimal, low, medium, high, xhigh and
+  max. The model catalog has no price field, so ultra-brainstorm names no cheapest model.
+- `subagent_spawn` with `worktree_isolation: true` gives a child its own worktree; Muse removes it when clean and keeps
+  it when dirty, so lit-team merges from it with `git -C <wt> diff | git apply --3way`.
+- A plugin command id may not equal a skill id (`duplicate-capability-id`), so ultra-brainstorm ships as a skill only;
+  `/ultra-brainstorm` is Muse's skill slash. An unknown skill frontmatter key (`goal: never`) validates clean.
+
 - UserPromptSubmit and SessionStart `hookSpecificOutput.additionalContext` reach the model. Hook stdout cap 16 KiB.
 - Hooks and agent definitions need `muse plugins approve litmuse:hook:<id>` and
   `litmuse:agent_definition:litmuse/<name>`; skills and commands work without approval. `muse plugins remove`

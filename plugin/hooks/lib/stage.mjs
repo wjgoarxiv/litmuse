@@ -94,7 +94,7 @@ export function updateStage(payload, mutate, env = process.env, { pointer = true
   }
 }
 
-export function recordRoute(payload, { route, keyword = null, kind, plan = null, activatedAt = null }, env = process.env) {
+export function recordRoute(payload, { route, keyword = null, kind, plan = null, activatedAt = null, skills = null }, env = process.env) {
   return updateStage(payload, (rec, now) => {
     rec.route = route ?? null;
     rec.keyword = keyword;
@@ -102,6 +102,9 @@ export function recordRoute(payload, { route, keyword = null, kind, plan = null,
     if (activatedAt !== null) rec.activatedAt = activatedAt ?? now;
     if (plan !== null) rec.plan = plan;
     if (kind === 'ignite' && plan === null) delete rec.plan;
+    // The skill plan's ids (primary first) when the prompt matched more than one skill.
+    if (Array.isArray(skills) && skills.length > 1) rec.skills = skills.slice(0, 3).map(String);
+    else if (kind === 'ignite') delete rec.skills;
     return rec;
   }, env);
 }

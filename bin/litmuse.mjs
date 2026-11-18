@@ -28,7 +28,7 @@ Commands
   hud          Show the recommended /hud and /theme preset
   config       agentFile on|off: the short LitFamily block in Muse's user rules file (acts at once)
   style        eli5 | asd-ste100 | off | status: the answer style LitMuse adds to every session
-  rewind       Cross-session KPI board [--lang ko|en] [--detail] [--json] [--here] [--since 7d] [--max 12] [--session <id>]
+  rewind       What to do now (verdict card) [--lang ko|en] [--detail | --recap [id]] [--json] [--here] [--since 7d] [--max 12] [--session <id>]
   extensions   list | check | install | update | remove | prune-backups: the nine LitFamily extensions as Muse
                user skills (litmuse extensions help; writes only with --yes)
   uninstall    Remove the plugin from Muse and the staged bundle

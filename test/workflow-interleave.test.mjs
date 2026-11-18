@@ -74,7 +74,7 @@ test('read-only routes leave the stack alone; lit new starts clean', () => {
     prompt(where, 'lit adhd');
     assert.deepEqual(stackOf(where).frames, before, 'lit-adhd is read-only');
     prompt(where, 'lit recap');
-    assert.deepEqual(stackOf(where).frames, before, 'lit-recap is read-only');
+    assert.deepEqual(stackOf(where).frames, before, 'lit recap (the lit-adhd recap view) is read-only');
     prompt(where, 'lit brainstorm names');
     prompt(where, 'lit new loop from scratch', 'sess-1');
     const frames = stackOf(where).frames;

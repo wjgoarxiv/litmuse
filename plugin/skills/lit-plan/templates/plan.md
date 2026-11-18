@@ -52,6 +52,10 @@ Your next move: <fill: approve, steer, or ask for a high-accuracy review>.
 - Manual-QA channel per criterion: <shell | http | browser | muse exec>
 - Evidence: `.litmuse/evidence/{{slug}}/task-<N>.<ext>`
 
+## Done when
+<!-- One allowlisted test command. goal-propose.mjs compiles it into the Muse goal asked for at approval. Write `goal: never` on its own line instead when this plan must not become a goal. -->
+- check: `<npm test | npm run <script> | node --test … | pytest … | bash scripts/<name>.sh>`
+
 ### Goal (set by litgoal when execution starts)
 - Objective: <one outcome sentence, true for a user when done>
 - Criteria:

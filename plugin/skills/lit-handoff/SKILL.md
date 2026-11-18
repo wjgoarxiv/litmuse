@@ -1,6 +1,7 @@
 ---
 name: lit-handoff
 description: "Write a verified handoff in .litmuse/handoff: done, checked, left, and exact resume steps."
+goal: never
 ---
 
 # lit-handoff
@@ -34,7 +35,7 @@ drafting. Never modify those files and never write generated output into the ski
 - A lit-loop, litwork or start-work run stops before its goal is met.
 - A multi-session task reached a natural break point where a new agent is likely to continue.
 
-Does not apply to: a status answer with no file (load `lit-recap`), a summary, changelog, commit message, PR
+Does not apply to: a status answer with no file (run `lit adhd recap`), a summary, changelog, commit message, PR
 description or release note (those have their own formats; a request for one of them is not automatically a handoff),
 or ongoing work with no transition. If the user only asks to inspect an existing handoff, read it and live state, report
 the discrepancies, and write nothing.
@@ -69,7 +70,7 @@ not a destination override.
 | non-git workspace | root `HANDOFF.md` | create or update at the workspace root |
 
 Muse mirror: every manual handoff also writes the identical content to `.litmuse/handoff/YYYY-MM-DD-HHMM.md` (time from
-`date +%F-%H%M`) and then to `.litmuse/handoff/latest.md`. The mirror is what `lit-recap`, the session-start re-inject
+`date +%F-%H%M`) and then to `.litmuse/handoff/latest.md`. The mirror is what `lit adhd`, the session-start re-inject
 and the next `lit-handoff` look for; it is local working state inside the project and counts as part of the single
 resolved destination set, never a second competing packet. Write the dated copy first so history is never lost.
 

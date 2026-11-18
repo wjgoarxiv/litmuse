@@ -120,10 +120,12 @@ Muse keeps one goal per session, driven by three tools whose arguments follow th
 | no active goal | `create_goal` with `objective` set to the objective sentence | `created` |
 | active goal with the same objective | adopt it, create nothing | `adopted` |
 | active goal with a different objective | adopt nothing and overwrite nothing: report the conflict, keep the record, replace the native objective only on the user's explicit word | `conflict` |
-| tool absent or refused (older build, headless, policy) | keep the record alone, say so once | `unavailable` |
+| active goal tagged `[lit:<id>]` (set at plan approval) | adopt it; `.litmuse/goal/owner.json` names its plan and check | `adopted` |
+| the call is refused (policy, headless run) | keep the record alone, say so once | `unavailable` |
 
 3. `create_goal` runs once at set. `update_goal` runs on each criterion change to refresh `status` (a short word such as active, blocked or complete), `percentComplete`, `currentWork` and `nextWork`, and a final time at the verdict. A second objective for the same work layers criteria onto the existing record through steering.
 4. The native goal is a convenience for the host. The record decides: `native.state` never overrides what the criteria say.
+5. A plan-approval goal (`[lit:<id>]`) belongs to the Done when pipeline: it is created only after the user's exact `yes` (PreToolUse refuses any other `[lit:…]` objective), closed with `update_goal` status complete once every row is ticked and the check exits 0, or status blocked on `lit cancel` or a BLOCKED stop. A goal without that tag is the user's own: report it, never close it.
 
 ### update (record results)
 

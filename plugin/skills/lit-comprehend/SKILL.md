@@ -1,6 +1,7 @@
 ---
 name: lit-comprehend
 description: "Explain agent-written work to a person: intuition, a code walkthrough, a tiny example, a quiz."
+goal: never
 ---
 
 # lit-comprehend: an explainer that leaves the reader able to decide
@@ -19,12 +20,12 @@ Pick the neighbor skill when it fits better:
 
 | The user needs | Use | Because |
 |---|---|---|
-| What happened, where are we? | `lit-recap` | Status, chronology, blockers: fast, in-terminal, read-only. |
+| What happened, where are we? | `lit-adhd` (`lit adhd`, or `lit adhd recap` per session) | Status, chronology, blockers: fast, in-terminal, read-only. |
 | I don't understand what was built. | `lit-comprehend` | Intuition, mental model, verified understanding. |
 | Is this correct or safe to ship? | `review-work` | Judgment against criteria. |
 | Continue this in a fresh session. | `lit-handoff` | Machine-resumable state. |
 
-`lit-recap` answers questions about the work; `lit-comprehend` gives the reader the model they need to ask better questions. When someone asks for a recap but the real complaint is bewilderment, say so and offer this skill. A one-line question about a single function gets a direct answer.
+`lit adhd recap` answers questions about the work; `lit-comprehend` gives the reader the model they need to ask better questions. When someone asks for a recap but the real complaint is bewilderment, say so and offer this skill. A one-line question about a single function gets a direct answer.
 
 ## Inputs and state
 
@@ -166,7 +167,7 @@ Length is a means. A long document that gets skimmed teaches nothing; the target
 | `gate` | No argument, or a prose question only | Propose scope, size and cost from `git status` and `git diff --stat`; wait for approval (headless: choose the narrowest scope and log it). |
 | `build` | A concrete target, or an approved proposal | Run Steps 2 to 10 and write the artifact outside the worktree. |
 | `markdown` | `--md`, or an environment that cannot open HTML | Same sections as Markdown; quizzes as `<details>`; micro-world as a worked example. |
-| `recap-redirect` | The user wants status, and the complaint is not bewilderment | Point to `lit-recap` and build nothing. |
+| `recap-redirect` | The user wants status, and the complaint is not bewilderment | Point to `lit adhd recap` and build nothing. |
 | `blocked` | Scope unreadable, evidence missing, example unreachable | Name the blocker and the smallest unblocker. |
 
 ## Quality bar

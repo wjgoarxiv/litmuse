@@ -196,7 +196,7 @@ test('do this now keeps the next-step priority and only changes the words', () =
   assert.doesNotMatch(waiting.board.text, /👉 입력: `go`/u, 'go is offered only for a step go runs');
 });
 
-test('the CLI prints the board by default and the detail list only on request', () => {
+test('the CLI prints the verdict card by default and the board with the detail list only on request', () => {
   const fx = fixture();
   const run = (args) => {
     const out = [];
@@ -206,8 +206,9 @@ test('the CLI prints the board by default and the detail list only on request', 
   };
   const plain = run(['--lang', 'ko']);
   assert.equal(plain.code, 0);
-  assert.match(plain.text, /^## 🎯 지금 할 일/u);
-  assert.doesNotMatch(plain.text, /RECOMMENDED NEXT STEP/u, 'no detail list by default');
+  assert.match(plain.text, /^(?:처음 봄|\d\d:\d\d 이후)/u, 'the card opens with the delta line');
+  assert.match(plain.text, /^지금 할 일/mu);
+  assert.doesNotMatch(plain.text, /## 🎯|RECOMMENDED NEXT STEP/u, 'no board and no detail list by default');
   const detail = run(['--lang', 'ko', '--detail']);
   assert.match(detail.text, /^## 🎯 지금 할 일/u);
   assert.match(detail.text, /RECOMMENDED NEXT STEP/u, 'the detail list sits under the board');
@@ -215,7 +216,12 @@ test('the CLI prints the board by default and the detail list only on request', 
   const json = JSON.parse(run(['--json', '--lang', 'en']).text);
   assert.equal(json.board.lang, 'en');
   assert.equal(typeof json.board.text, 'string');
+  assert.equal(typeof json.verdict.text, 'string', 'the JSON carries the card too');
   assert.equal(run(['--lang', 'fr']).code, 64, 'an unknown language is refused');
+  const moved = run(['--recap', '--moved']);
+  assert.equal(moved.code, 0);
+  assert.equal(moved.text.split('\n')[0], 'lit-recap moved into lit-adhd; this is its recap view (lit adhd recap).', 'the moved note is the first line of the recap view');
+  assert.equal(run(['--recap']).text.includes('moved into'), false, 'no note without --moved');
 });
 
 test('renderBoard is pure: the same fields give the same text', () => {

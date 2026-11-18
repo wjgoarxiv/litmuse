@@ -1,10 +1,13 @@
-import { run, emitContext, readSession, writeSession, safeId, sessionPath, workspaceOf } from './lib/common.mjs';
+import { run, emitContext, readSession, writeSession, safeId, sessionPath, workspaceOf, PLUGIN_ROOT } from './lib/common.mjs';
 import { detectRoute } from './lib/routes.mjs';
 import { liveRoute, resumablePlan } from './lib/reentry.mjs';
-import { readStage, recordRoute, stageFile } from './lib/stage.mjs';
+import { readLiveness, readStage, recordRoute, stageFile, stageRoot, workspaceHash } from './lib/stage.mjs';
 import { movedActivation } from './lib/moved.mjs';
 import { applyStackEvent, readStack, writeStack, resolveProjectStateRoot, READ_ONLY_DISCIPLINES } from './lib/workflow-stack.mjs';
 import { isGoPrompt, takeNextStep } from './lib/next-step.mjs';
+import { ROUTE_INTENTS } from './lib/routes.mjs';
+import { buildSkillPlan, matchedSkills, parseSkillHatch, skillPlanContext, skillPlanIds } from './lib/skill-plan.mjs';
+import { GOAL_STATUS, consentAnswer, consentIsLive, readGoalRecord, writeGoalRecord } from './lib/goal.mjs';
 import { readFileSync, writeFileSync, mkdirSync, readdirSync, statSync } from 'node:fs';
 import { resolve, join, dirname } from 'node:path';
 
@@ -83,9 +86,16 @@ function activation(hit, payload) {
   if (READ_ONLY_DISCIPLINES.includes(hit.route)) {
     lines.push('This is a READ-ONLY route: report from what the skill reads; it starts, pauses, resumes and finishes nothing.');
   }
-  if (hit.route === 'lit-adhd') {
-    lines.push('Run `litmuse rewind --lang <ko|en>` once (`ko` for a Korean prompt) with `--session` set to this session id, and show the KPI board it prints as given: do this now, at a glance, milestones, done lately, still to do, don\'t forget. Add `--detail` only when the user asks for detail (`lit adhd 자세히`, `lit adhd detail`); the per-session list then sits under the board. `litmuse rewind --json` holds the same records and the board fields.');
-    lines.push('The collector draws every bar (`██████░░░░  6/10 (60%)`), count and reminder; never redraw, round or add to them. In the detail list, gauges follow D9 (`[▉▉▉░░] 3/5`, one cell per item up to ten, scaled above) with the remaining items under each gauge; an unknown total is never `?`: copy the `… N steps` fact line instead, never a guess.');
+  // The collector shipped beside these hooks: a `litmuse` bin on PATH can be an older package that prints another view.
+  const rewind = `node "${join(PLUGIN_ROOT, 'skills', 'lit-adhd', 'scripts', 'rewind.mjs')}"`;
+  // The language is chosen here, never by the model: Korean unless the prompt asks for English in so many words.
+  const lang = /(?:^|\s)--en\b|--lang\s+en\b|\bin english\b|영어로/iu.test(String(payload.prompt ?? '')) ? 'en' : 'ko';
+  if (hit.route === 'lit-adhd' && hit.recap) {
+    const flag = hit.movedFrom ? ' --moved' : '';
+    lines.push(`This is the recap view: run \`${rewind} --recap${flag} [<session id or its first characters>] --lang ${lang}\` once, the session id only when the user named one, and show what it prints as given${flag ? ', starting with its first line, the note that lit-recap moved here' : ''}. Write nothing and start nothing.`);
+  } else if (hit.route === 'lit-adhd') {
+    lines.push('Run `' + rewind + ' --lang ' + lang + '` once, with exactly that language flag, with `--session` set to this session id, and show the verdict card it prints exactly as given: about six lines (since your last look, the one thing to do now, the exact text to type, why and what happens if not, what waits next, what was read). Never add a second action, reorder the lines or soften a `네 확인 필요` / `Your call` line into an action.');
+    lines.push('Only when the user asks for detail (`lit adhd 자세히`, `lit adhd detail`) add `--detail`: it prints the KPI board (bars, milestones, done, left, reminders) with the per-session list under it. The collector draws every bar and count; never redraw, round or add to them. `' + rewind + ' --json` holds the same records, the board and the verdict.');
   }
   if (hit.trailing) {
     lines.push('Soft-confirm: `lit` came last in the prompt. If the request reads like ordinary prose, say in one line that you are starting a lit-loop and carry on; a stray English `lit` is recoverable.');
@@ -94,6 +104,19 @@ function activation(hit, payload) {
     lines.push('The prompt has no task text after the keyword. After loading the skill, ask the user in one line what to run (a task for lit-loop, or a route such as plan or review) and wait for the answer before any other tool.');
   }
   return lines.join('\n');
+}
+
+// The skill plan of a full activation: the cascade's route stays the primary, the other skills the task matched become
+// companions (or the `lit +…` list replaces them). A bare, resuming or recap prompt has no task to plan. Best effort:
+// any failure leaves the single route alone.
+function skillPlanFor(hit, hatch) {
+  try {
+    if (hit.bare || hit.resume || hit.recap || (!hatch && typeof hit.task !== 'string')) return null;
+    const companions = hatch ? [] : matchedSkills(hit.task, ROUTE_INTENTS);
+    return buildSkillPlan({ primary: hit.route, companions, forced: hatch, task: hit.task ?? '' });
+  } catch {
+    return null;
+  }
 }
 
 // Re-entry: a `lit` while its route is active continues it (state kept, except start-work); a bare `lit` resumes started plan work;
@@ -169,7 +192,120 @@ function goHint(why) {
   ].join('\n');
 }
 
+// Why `yes` cannot start start-work on this plan now, or null. The same preconditions the typed start path relies on:
+// the plan exists with an open row, and no other live session of this workspace already runs start-work on it.
+function startRefusal(payload, plan) {
+  const cwd = workspaceOf(payload);
+  let text;
+  try {
+    text = readFileSync(resolve(cwd, plan), 'utf8');
+  } catch {
+    return `${plan} was not found`;
+  }
+  if (!text.split('\n').some((line) => /^- \[ \] (?:\d+|F\d+)\. /u.test(line))) return `${plan} has no open row`;
+  const here = workspaceHash(cwd);
+  const live = new Map(readLiveness().map((rec) => [rec.session, rec]));
+  let names = [];
+  try { names = readdirSync(stageRoot()).filter((n) => n.endsWith('.json') && n !== 'latest.json'); } catch { /* no stage records */ }
+  for (const name of names) {
+    const rec = readStage(join(stageRoot(), name));
+    if (!rec || rec.session === payload.session_id || rec.workspace !== here || rec.route !== 'start-work' || rec.plan !== plan) continue;
+    const beat = live.get(rec.session);
+    if (beat && beat.state === 'alive' && Date.now() - Date.parse(beat.at) <= 15 * 60_000) return `another session is already running start-work on ${plan}`;
+  }
+  return null;
+}
+
+// The answer to the plan-approval question. Only an exact `yes`, `edit` or `no`, typed in the session that was asked,
+// while the question is live counts;
+// any other prompt leaves the question as it was, and a read-only skill holding the session leaves it for the planning
+// session. `yes` approves the plan, starts start-work on it (the same start the typed `lit start plans/<f>.md` makes)
+// and arms its goal; the model then sets the goal with create_goal, which PreToolUse admits only with this exact
+// objective. When the start is refused, no goal is armed either.
+function goalAnswer(payload) {
+  const answer = consentAnswer(payload.prompt);
+  if (!answer) return false;
+  const root = resolveProjectStateRoot(workspaceOf(payload));
+  const consent = readGoalRecord(root, 'consent');
+  if (!consentIsLive(consent)) return false;
+  // Only the session that was asked can answer. A yes typed elsewhere (or on a question no session was stamped on)
+  // starts nothing, but says why and how to start the plan instead of passing silently.
+  if (!consent.sessionId || consent.sessionId !== (payload.session_id ?? null)) {
+    if (answer !== 'yes') return false;
+    emitContext('UserPromptSubmit', [
+      ...banner('LIT CONTINUES', 'lit-plan'),
+      `Show this line to the user as given: ${GOAL_STATUS.notRecorded(consent.plan)}. Start no work and set no goal.`,
+    ].join('\n'));
+    return true;
+  }
+  if (READ_ONLY_DISCIPLINES.includes(readSession(payload)?.route)) return false;
+  const now = new Date().toISOString();
+  writeGoalRecord(root, 'consent', { ...consent, answeredAt: now, answer });
+  if (answer === 'edit') {
+    writeGoalRecord(root, 'consent', consent);
+    emitContext('UserPromptSubmit', [
+      ...banner('LIT CONTINUES', 'lit-plan'),
+      `The user wants to edit the plan before approving. Ask in one line what should change (for the goal, the plan's \`## Done when\` check in ${consent.plan}), rewrite the plan, run goal-propose on it again and ask the approval question again with what it prints. Start no work.`,
+    ].join('\n'));
+    return true;
+  }
+  if (answer === 'no') {
+    emitContext('UserPromptSubmit', [
+      ...banner('LIT CONTINUES', 'lit-plan'),
+      `Show this line as given: ${GOAL_STATUS.declined}. The plan ${consent.plan} stays as written; \`lit start ${consent.plan}\` starts it later. Start no work now.`,
+    ].join('\n'));
+    return true;
+  }
+  const refused = startRefusal(payload, consent.plan);
+  if (refused) {
+    emitContext('UserPromptSubmit', [
+      ...banner('LIT CONTINUES', 'lit-plan'),
+      `Show this line as given: ${GOAL_STATUS.notStarted(refused)}. Start no work and set no goal.`,
+    ].join('\n'));
+    return true;
+  }
+  const withGoal = typeof consent.condition === 'string';
+  if (withGoal) writeGoalRecord(root, 'intent', { version: 1, condition: consent.condition, hash: consent.hash, id: consent.id, plan: consent.plan, check: consent.check, sessionId: payload.session_id ?? null, armedAt: now });
+  const turnId = payload.turn_id ?? null;
+  const pauseRequested = false;
+  writeSession(payload, { route: 'start-work', turnId, activatedAt: Date.now(), stopHeldFor: null, pauseRequested });
+  stackStart(payload, 'start-work', { plan: consent.plan }, false);
+  recordRoute(payload, { route: 'start-work', keyword: 'yes', kind: 'ignite', plan: consent.plan, activatedAt: Date.now() });
+  const lines = [activation({ route: 'start-work', keyword: 'yes', bare: false, resume: false, restart: false, trailing: false }, payload)];
+  if (withGoal) {
+    lines.push(
+      `Plan: ${consent.plan}. The user's yes approves the plan, starts the work and sets its goal: the work starts now; work through its open rows in order.`,
+      `Before the first row, set the goal: call get_goal. With no unfinished goal, call create_goal with objective exactly \`${consent.condition}\` and nothing else. With an unfinished goal already there, leave it untouched and show: ${GOAL_STATUS.yours} If create_goal is refused, show: ${GOAL_STATUS.notConfirmed(consent.condition)}`,
+      `When every row is ticked and \`${consent.check}\` exits 0, call update_goal with status complete and show: ${GOAL_STATUS.met(consent.id)}. On a BLOCKED stop, call update_goal with status blocked and show: ${GOAL_STATUS.cleared(consent.id, 'blocked')}.`,
+    );
+  } else {
+    lines.push(`Plan: ${consent.plan}. The user's yes approves the plan and starts the work now; work through its open rows in order. Show this line once as given: ${GOAL_STATUS.skipped(consent.reason ?? 'no goal for this plan')}. Set no goal.`);
+  }
+  emitContext('UserPromptSubmit', lines.join('\n'));
+  return true;
+}
+
+// `lit cancel` while this session owns an open LitMuse goal: close that goal only, never a goal the user set.
+function cancelOwnedGoal(payload) {
+  if (!/^\s*\/?(?:litmuse:)?lit\s+cancel\s*$/iu.test(String(payload.prompt ?? ''))) return null;
+  try {
+    const owner = readGoalRecord(resolveProjectStateRoot(workspaceOf(payload)), 'owner');
+    if (!owner || owner.closed || owner.sessionId !== (payload.session_id ?? null)) return null;
+    return `This session holds the LitMuse goal [lit:${owner.id}]. Call get_goal: when its objective is exactly \`${owner.condition}\`, call update_goal with status blocked and show: ${GOAL_STATUS.cleared(owner.id, 'cancelled')}. When it is any other goal, leave it untouched and show: ${GOAL_STATUS.yours}`;
+  } catch {
+    return null;
+  }
+}
+
 run((payload) => {
+  try {
+    if (goalAnswer(payload)) return;
+  } catch { /* an unwritable goal record leaves the prompt as ordinary text */ }
+  const cancelNote = cancelOwnedGoal(payload);
+  if (cancelNote) {
+    emitContext('UserPromptSubmit', [...banner('LIT CONTINUES', 'litgoal'), cancelNote, 'Then stop the current work at the next safe point and say what is left.'].join('\n'));
+    return;
+  }
   const pauseRequested = PAUSE.test(String(payload.prompt ?? ''));
   // `go` after a lit-adhd brief continues the briefed step in this session within 30 minutes.
   // Without a record it is ordinary text that changes nothing.
@@ -232,7 +368,9 @@ run((payload) => {
     emitContext('UserPromptSubmit', goHint('an unreadable next step'));
     return;
   }
-  const hit = detectRoute(payload.prompt);
+  // `lit +viz +ui <task>` names the skill plan; the route is read from the prompt without the `+` words.
+  const hatch = parseSkillHatch(payload.prompt);
+  const hit = detectRoute(hatch ? hatch.rest : payload.prompt);
   const previous = readSession(payload);
   if (!hit) {
     if (previous && previous.route) {
@@ -268,11 +406,25 @@ run((payload) => {
     return;
   }
   const named = hit.route === 'start-work' ? typedPlan(payload.prompt) : null;
+  // The run record always names its plan, so a reader can tell a finished run by that plan's rows: the typed one, else
+  // the one open plan start-work would pick. The context's approval line stays for a typed plan only.
+  const runPlan = hit.route === 'start-work' ? named ?? soleOpenPlan(workspaceOf(payload)) : null;
+  const skillPlan = skillPlanFor(hit, hatch);
   writeSession(payload, { route: hit.route, turnId, activatedAt: Date.now(), stopHeldFor: null, pauseRequested });
-  stackStart(payload, hit.route, named ? { plan: named } : undefined, hit.restart);
-  recordRoute(payload, { route: hit.route, keyword: hit.keyword ?? null, kind: 'ignite', plan: named, activatedAt: Date.now() });
-  emitContext('UserPromptSubmit', activation(hit, payload) + (named ? `\nPlan: ${named}. The typed command is the approval: the work starts without a separate approval turn; work through its open rows in order.` : ''));
+  stackStart(payload, hit.route, runPlan ? { plan: runPlan } : undefined, hit.restart);
+  recordRoute(payload, { route: hit.route, keyword: hit.keyword ?? null, kind: 'ignite', plan: runPlan, activatedAt: Date.now(), skills: skillPlanIds(skillPlan) });
+  emitContext('UserPromptSubmit', activation(hit, payload)
+    + (named ? `\nPlan: ${named}. The typed command is the approval: the work starts without a separate approval turn; work through its open rows in order.` : '')
+    + (skillPlan ? `\n${skillPlanContext(skillPlan)}` : ''));
 });
+
+// The one plan under plans/ with an open row, or null when there are none or several.
+function soleOpenPlan(cwd) {
+  let names = [];
+  try { names = readdirSync(join(cwd, 'plans')).filter((name) => /^[A-Za-z0-9._-]+\.md$/u.test(name)); } catch { return null; }
+  const open = names.map((name) => `plans/${name}`).filter((plan) => planHasOpenRows(cwd, plan));
+  return open.length === 1 ? open[0] : null;
+}
 
 // Column-zero task rows with an open box, the same grammar start-work ticks.
 // Fail closed: an unreadable plan reads as having no open row.

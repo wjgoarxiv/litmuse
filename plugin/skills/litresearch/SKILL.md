@@ -1,6 +1,7 @@
 ---
 name: litresearch
 description: "Research a question across sources down to primary evidence and return a referenced synthesis."
+goal: never
 ---
 
 # litresearch — saturation research orchestrator for Muse Code

@@ -7,6 +7,7 @@ export const SKILL_ROUTES = [
   { id: 'litwork', when: 'ship one change with proof: implement, fix, finish' },
   { id: 'lit-plan', when: 'plan before code; writes plans/<slug>.md only' },
   { id: 'lit-brainstorm', when: 'open ideation: diverge on options, then score a shortlist and hand off' },
+  { id: 'ultra-brainstorm', when: 'wide ideation: hundreds of cheap idea agents, reducers and a judge, then you pick' },
   { id: 'deep-interview', when: 'the request is vague or broad and needs questions first' },
   { id: 'lit-crucible', when: 'pressure-test a brief for risks before planning' },
   { id: 'start-work', when: 'execute an approved plan row by row' },
@@ -23,10 +24,9 @@ export const SKILL_ROUTES = [
   { id: 'wikify', when: 'save or query findings in the task wiki under .litmuse/wiki' },
   { id: 'lit-comprehend', when: 'explain agent-written work to a person' },
   { id: 'lit-humanizer', when: 'polish Korean or English prose into the writer\'s voice' },
-  { id: 'lit-recap', when: 'where does the work stand (read-only)' },
   { id: 'lit-handoff', when: 'before stopping or switching sessions' },
   { id: 'lit-hijack', when: 'port published know-how into your own skill, clean-room' },
-  { id: 'lit-adhd', when: 'brief every recent session: asked, did, waiting, roadmap, one next step' },
+  { id: 'lit-adhd', when: 'what do I do now: one verdict across sessions; `detail` board, `recap` per session (read-only)' },
   { id: 'lit-init', when: 'orient in an unfamiliar repository; leaves AGENTS.md' },
   { id: 'frontend-ui-ux', when: 'build or restyle a user interface' },
   { id: 'readme-studio', when: 'write or refresh a README from repo facts' },
@@ -55,8 +55,8 @@ export const KEYWORD_ROUTES = {
   research: 'litresearch',
   review: 'review-work',
   start: 'start-work',
-  recap: 'lit-recap',
-  status: 'lit-recap',
+  recap: 'lit-adhd',
+  status: 'lit-adhd',
   handoff: 'lit-handoff',
   init: 'lit-init',
   debug: 'debugging',
@@ -72,6 +72,8 @@ export const KEYWORD_ROUTES = {
   ideate: 'lit-brainstorm',
   idea: 'lit-brainstorm',
   ideas: 'lit-brainstorm',
+  'ultra-brainstorm': 'ultra-brainstorm',
+  ultra: 'ultra-brainstorm',
   team: 'lit-team',
   hijack: 'lit-hijack',
   hijacking: 'lit-hijack',
@@ -174,13 +176,16 @@ function detectTrailing(prompt) {
   if (withoutFences.includes('```')) return null;
   const text = withoutFences.replace(/`[^`\n]*`/g, ' ');
   if (!TRAILING_LIT.test(text)) return null;
-  return { route: 'lit-loop', keyword: null, bare: false, resume: false, restart: false, trailing: true };
+  return { route: 'lit-loop', keyword: null, bare: false, resume: false, restart: false, trailing: true, task: prompt.replace(/(?:lit|LIT)\s*$/u, '') };
 }
 
 function detectLeading(prompt) {
   let text = prompt.trimStart();
   if (text.startsWith('```')) return null;
   // `/lit <route> <task>` arrives as typed in headless runs; the expanded /lit template starts with a marker line.
+  // `/start-work [plans/<f>.md]` (Muse's skill slash) is the same start as `lit start`, so the run record names its plan.
+  const startSlash = /^\/(?:litmuse:)?start-work(?=$|\s)/.exec(text);
+  if (startSlash) text = `lit start ${text.slice(startSlash[0].length).trimStart()}`;
   const slash = /^\/(?:litmuse:)?lit(?=$|\s)/.exec(text);
   const marker = slash ? null : /^LitMuse route request:/.exec(text);
   if (slash) text = `lit ${text.slice(slash[0].length).trimStart()}`;
@@ -190,6 +195,10 @@ function detectLeading(prompt) {
   // route and the LIT card keeps its normal headline while the brief runs.
   if (/^\/(?:litmuse:)?lit-(?:adhd|rewind)(?=$|\s)/.test(text)) {
     return { route: 'lit-adhd', keyword: null, bare: false, resume: false, restart: false, trailing: false };
+  }
+  // lit-recap moved into lit-adhd: its old names open the recap view with a one-line moved note.
+  if (/^\/?(?:litmuse:)?lit-?recap(?=$|[\s:,.!?])/.test(text)) {
+    return { route: 'lit-adhd', keyword: 'recap', bare: false, resume: false, restart: false, trailing: false, recap: true, movedFrom: 'lit-recap' };
   }
   const m = /^([A-Za-z][A-Za-z-]*)(?=$|[\s:,.!?])/.exec(text);
   if (!m) return null;
@@ -207,13 +216,21 @@ function detectLeading(prompt) {
     const resume = !restart && CONTINUE_WORDS.has(word);
     const bare = !restart && (word === '' || (resume && rest.slice(word.length).trim() === ''));
     const route = KEYWORD_ROUTES[word];
-    if (!route && !bare && !resume && schematicIntent(rest)) return { route: 'lit-schematic', keyword: null, bare, resume, restart };
-    if (!route && !bare && !resume && deckIntent(rest)) return { route: 'lit-pptx', keyword: null, bare, resume, restart };
-    if (!route && !bare && !resume && motionIntent(rest)) return { route: 'lit-typographic-motion', keyword: null, bare, resume, restart };
-    if (!route && !bare && !resume && uiBuildIntent(rest)) return { route: 'frontend-ui-ux', keyword: null, bare, resume, restart };
-    return { route: route ?? 'lit-loop', keyword: route ? word : null, bare, resume, restart };
+    const task = route ? rest.slice(word.length).replace(SEPARATORS, '') : rest;
+    // `lit recap` / `lit status` open the recap view of lit-adhd; `lit adhd recap [session]` is the same view.
+    const recap = (route === 'lit-adhd' && (word === 'recap' || word === 'status')) || (route === 'lit-adhd' && firstWord(task) === 'recap');
+    if (!route && !bare && !resume && schematicIntent(rest)) return { route: 'lit-schematic', keyword: null, bare, resume, restart, task };
+    if (!route && !bare && !resume && deckIntent(rest)) return { route: 'lit-pptx', keyword: null, bare, resume, restart, task };
+    if (!route && !bare && !resume && motionIntent(rest)) return { route: 'lit-typographic-motion', keyword: null, bare, resume, restart, task };
+    if (!route && !bare && !resume && uiBuildIntent(rest)) return { route: 'frontend-ui-ux', keyword: null, bare, resume, restart, task };
+    const moved = route === 'lit-adhd' && (word === 'recap' || word === 'status') ? { movedFrom: 'lit-recap' } : {};
+    return { route: route ?? 'lit-loop', keyword: route ? word : null, bare, resume, restart, task, ...(recap ? { recap: true } : {}), ...moved };
   }
   if (lower === 'lit-rewind') return { route: 'lit-adhd', keyword: null, bare: false, resume: false, restart: false, trailing: false };
+  if (lower === 'ultra-brainstorm') return { route: 'ultra-brainstorm', keyword: null, bare: false, resume: false, restart: false, task: text.slice(token.length).replace(SEPARATORS, '') };
   if (lower.startsWith('lit') && SKILL_IDS.has(lower)) return { route: lower, keyword: null, bare: false, resume: false, restart: false };
   return null;
 }
+
+// The route detectors, for the skill plan's companion list (skill-plan.mjs).
+export const ROUTE_INTENTS = Object.freeze({ schematic: schematicIntent, deck: deckIntent, motion: motionIntent, ui: uiBuildIntent });

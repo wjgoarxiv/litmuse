@@ -7,6 +7,8 @@ import { MOVED } from './lib/moved.mjs';
 import { takeFirstSessionNotice } from './lib/extensions.mjs';
 import { readFreshSnapshot } from './lib/handoff-snapshot.mjs';
 import { recordLoadedVersion } from './lib/stage.mjs';
+import { sweepGoalState } from './lib/goal.mjs';
+import { resolveProjectStateRoot } from './lib/workflow-stack.mjs';
 
 const STDOUT_BUDGET = 15 * 1024;
 const STYLE_FILES = { eli5: 'style-eli5.md', 'asd-ste100': 'style-asd-ste100.md' };
@@ -60,6 +62,8 @@ function fenced(text, room) {
 run((payload) => {
   const version = pluginVersion();
   recordLoadedVersion(payload, version);
+  // A crashed or abandoned approval leaves a stale goal question or armed intent behind; drop it, silently.
+  try { sweepGoalState(resolveProjectStateRoot(workspaceOf(payload))); } catch { /* nothing to sweep */ }
   const base = readFileSync(join(PLUGIN_ROOT, 'context', 'session.md'), 'utf8').replaceAll('{{version}}', version);
   const routes = SKILL_ROUTES.map((r) => `- ${r.id}: ${r.when}`).join('\n');
   const moved = `LitFamily extensions, kept on the wjgoarxiv-skills shelf (each id loads a LitMuse stub that hands over to an installed copy or gives its one-skill install line, and builds nothing itself): ${Object.keys(MOVED).join(', ')}.`;

@@ -28,7 +28,7 @@ Create only the accepted files with `write_file`. Preserve user-owned collisions
 boundary and the chosen metadata style into `schema/wiki-rules.md` (start from `assets/wiki-rules-template.md`), a
 start page from `assets/home-template.md`, and append one bounded bootstrap receipt to `log/log.md`. Create no
 speculative category tree. Verify index links, containment and the changed-file list, then run `review-work` on the
-result. Use `lit-recap` or `lit-handoff` only for continuity.
+result. Use `lit adhd recap` or `lit-handoff` only for continuity.
 
 For the novice first run, ask the three onboarding questions from `SKILL.md` before proposing anything.
 

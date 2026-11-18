@@ -15,7 +15,7 @@ export const MAX_FRAMES = 3;
 export const MAX_HISTORY = 20;
 export const MAX_STACK_BYTES = 64 * 1024;
 export const STACK_DROP_MS = 24 * 60 * 60 * 1000;
-export const READ_ONLY_DISCIPLINES = Object.freeze(['lit-recap', 'lit-comprehend', 'lit-handoff', 'lit-adhd', 'lit-rewind']);
+export const READ_ONLY_DISCIPLINES = Object.freeze(['lit-comprehend', 'lit-handoff', 'lit-adhd', 'lit-rewind', 'ultra-brainstorm']);
 
 // Order in the main chain; a newcomer of a higher rank succeeds the frame below it.
 const CHAIN_RANK = Object.freeze({

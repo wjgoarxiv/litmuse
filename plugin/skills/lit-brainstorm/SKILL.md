@@ -1,6 +1,7 @@
 ---
 name: lit-brainstorm
 description: "Diverge on ideas before choosing: technique rounds, clustering, scored shortlist, hand-off."
+goal: never
 ---
 
 # lit-brainstorm
