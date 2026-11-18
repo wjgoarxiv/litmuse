@@ -37,6 +37,38 @@ running child agents, plus each session's liveness (PostToolUse says alive, Stop
 - **herdr panes.** It names a herdr pane session `<skill> · <pane>`.
 - **Updates.** It says `restart to <version>` when a newer LitMuse was installed after the session started.
 
+## The goal set at plan approval
+
+Muse keeps one goal per session. The model sets it with `create_goal` and closes it with `update_goal`, and you can end
+it yourself with `/goal clear`. LitMuse only asks for one when a plan earns it.
+
+A plan written by lit-plan carries a `## Done when` block with one test command (`- check: \`npm test\``). When the plan
+is saved, lit-plan runs `goal-propose.mjs`, which turns that block into a single objective such as
+``Every row in plans/flag.md is ticked and `npm test` exits 0 [lit:4c7a9a52]``. It refuses judgment words ("works",
+"잘 동작"), a push or publish as the only success, a command outside a short test allowlist and anything over 500
+characters, and it runs the check once to prove the objective is still false. The approval question then reads
+`Approve plan, start work and set goal: /goal <objective>? (yes / edit / no)`. When no goal is possible, it reads
+`Approve plan and start work? (yes / no)`, with one `No goal set: <reason>` line under it.
+
+Only the session that was asked can answer, within 30 minutes; a `yes` in another session starts nothing and shows `Approval not recorded for this session. Run: lit start plans/<f>.md`. After a one-shot `muse exec` run, start the plan with `lit start plans/<f>.md`, or resume that same session and type `yes`. An exact `yes` does both at once: the prompt hook starts start-work on the plan, the same start a typed
+`lit start plans/<f>.md` makes, and tells the model to set that objective. If the start is refused (another live
+session already runs start-work on the plan, or no row is open), nothing starts and no goal is armed, and the reply
+shows `Work not started and no goal set: <reason>`. `no` starts nothing. PreToolUse refuses any other objective with a `[lit:…]` tag, so no LitMuse goal exists without your yes. If
+you already have a goal of your own, LitMuse says so and leaves it alone. When every row is ticked, the Stop hook asks
+the model once to run the check and close the goal on exit 0; `lit cancel` closes it as blocked. The records live in
+`.litmuse/goal/` (the question, the armed answer and the owner), and SessionStart sweeps a question nobody answered.
+
+Read-only skills (lit-adhd, review-work, litresearch, the brainstorm skills and others) say `goal: never` in their
+frontmatter and never set one.
+
+## Companion skills on a lit route
+
+A `+` word after `lit` (`lit +viz plot the results`, `lit plan +research +ast`) puts a companion skill beside the route.
+LitMuse also adds one when the task text clearly asks for it (a chart, a diagram, a source survey, a code-shape search),
+reading past code fences, code spans and quotes. A plan holds at most three skills, the route first; the activation
+context lists them with why each is there, and a companion that became a LitFamily extension comes with its install
+line once.
+
 ## A short block in Muse's own rules file
 
 Muse keeps one user rules file of its own, `~/.config/muse/AGENTS.md` (`$XDG_CONFIG_HOME/muse/AGENTS.md` when that is

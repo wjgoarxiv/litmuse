@@ -37,7 +37,8 @@ Node.js 20 이상과, 한 번 로그인해 둔 Muse Code가 필요합니다.
 2. 모두 갖춰지면 `doctor`의 마지막 줄이 `LitMuse doctor: PASS`입니다.
 3. 프로젝트에서 `muse`로 Muse를 엽니다. `/skills`로 LitMuse 스킬을, `/plugins`로 플러그인을 확인합니다.
 4. 프롬프트를 `lit`으로 시작합니다. `lit`만 쓰면 lit-loop가 돌고, 뒤에 붙는 낱말이 경로를 고릅니다: `lit plan`, `lit review`, `lit research`, `lit debug`, `lit handoff`, `lit recap`, `lit korean`.
-5. 계획이 마음에 들면 `/start-work`로 한 줄씩 테스트와 함께 구현합니다. 끝내기 전에 `lit handoff`, 다음에는 `lit recap`이 어디까지 왔는지 읽어 줍니다.
+5. 계획이 마음에 들면 `/start-work`로 한 줄씩 테스트와 함께 구현합니다. 계획이 테스트 명령을 적어 두면 승인 질문이 Muse 목표도 함께 묻습니다(`Approve plan, start work and set goal: /goal …? (yes / edit / no)`). `yes` 한 번에 작업이 시작되고 그 목표가 걸리며, 모든 행이 체크되고 그 명령이 0으로 끝나면 목표가 닫힙니다. 테스트 명령이 없는 계획은 `Approve plan and start work? (yes / no)`로 묻습니다. 끝내기 전에 `lit handoff`, 다음에는 `lit adhd`가 지금 할 일을 알려 줍니다.
+6. `lit` 뒤에 `+viz`, `+research` 같은 `+` 낱말을 붙이면(`lit +viz 결과 그려 줘`) 경로 옆에 도우미 스킬이 붙습니다. 일이 분명히 그걸 원할 때는 LitMuse가 알아서 붙이고, 모두 합쳐 셋까지입니다.
 
 아무 폴더에서 실행합니다.
 
@@ -64,7 +65,7 @@ npx @litfamily/litmuse doctor
 
 <p align="center"><img src="./docs/assets/parity/lit-adhd-brief.png" width="960" alt="litmuse rewind로 출력한 lit-adhd 브리프의 터미널 카드. 세션 2개와 대기 0개를 알리는 무지개 헤드라인, todo-app에서 끝난 두 세션의 표, plans/todo-app.md의 1/2 로드맵 게이지, 계획 시작을 권하는 박스형 다음 단계." /></p>
 
-`lit-adhd`는 KPI 보드부터 보여 줍니다. 지금 할 일 하나와 그대로 입력할 말, 끝남·진행 중·나를 기다림·남음 개수와 전체 진행 막대, 10칸 막대가 붙은 마일스톤 표, 최근 끝낸 일과 남은 일, 커밋 안 된 변경이나 일주일째 멈춘 계획 같은 잊지 말 것이 한 화면에 담깁니다. `lit adhd 자세히`라고 하면 위 그림의 세션별 브리프가 붙습니다. 상태 뱃지가 달린 세션 카드와 종료 표, 박스형 권장 다음 단계가 터미널 색상 그대로 나오고, 내부 필드 이름은 새지 않습니다.
+`lit-adhd`는 "그래서 지금 뭘 하지?"에 여섯 줄쯤으로 답합니다. 마지막으로 본 뒤 무엇이 바뀌었는지 말하고, 할 일 하나와 그대로 입력할 말, 이유와 안 했을 때 생기는 일, 그 밖에 나를 기다리는 것, 읽지 못한 기록까지 밝힙니다. 할 일은 정해진 규칙표가 증명할 수 있는 기록(체크된 계획 행, 끝난 실행, 커밋)만 보고 고릅니다. 그래서 끝났다고 말만 한 세션은 끝난 것으로 치지 않고, push는 언제나 내가 답할 질문으로 남습니다. `lit adhd 자세히`라고 하면 막대와 마일스톤, 잊지 말 것이 담긴 KPI 보드와 위 그림의 세션별 브리프가 열립니다. `lit adhd recap`은 예전 lit-recap이 보여 주던 세션별 보기이고, 예전 이름 `lit recap`도 그대로 통하며 어디로 옮겼는지 한 줄 알려 줍니다.
 
 <p align="center"><img src="./docs/assets/parity/lit-pptx-deck.png" width="960" alt="lit-pptx 상태 덱. KPI 행과 웨이브별 스위트 증가 막대 차트." /></p>
 
@@ -86,7 +87,7 @@ npx @litfamily/litmuse doctor
 | --- | --- |
 | 한 줄을 받고 바로 일을 시작합니다 | 목표를 고정하고 떨어지는 테스트를 먼저 씁니다 |
 | 긴 세션에서 컨텍스트가 찹니다 | 컴팩션 전에 인계를 쓰고 뒤에 다시 읽습니다 |
-| 다음 세션은 빈자리에서 시작합니다 | `lit recap`이 인계를 읽고 다음 일을 가리킵니다 |
+| 다음 세션은 빈자리에서 시작합니다 | `lit adhd`가 최근 세션을 모두 읽고 다음 일 하나를 가리킵니다 |
 | 모델이 끝났다고 하면 끝납니다 | 계획에 맞춰 테스트와 실제 확인으로 검증합니다 |
 
 **스킬 33개**는 필요할 때 불러오는 밀도 높은 Muse 스킬이며, 각 스킬에 필요한 참고 문서와 스크립트가 그 스킬 폴더 안에 함께 들어 있습니다. 카탈로그에는 짧은 설명만 올라가므로 개인 스킬이 많은 환경에서도 자리를 지킵니다. 여기에 LitFamily 확장이 된 스킬의 짧은 스텁 아홉 개가 더해집니다([확장](#확장) 참고).
@@ -95,12 +96,12 @@ npx @litfamily/litmuse doctor
 | --- | --- | --- |
 | 작업 고리 | lit-loop, litgoal, litwork | 목표 고정, 떨어지는 테스트 먼저, 기록 남기기 |
 | 계획과 구현 | lit-plan, start-work, lit-code, debugging, refactor, lit-commit, lsp, lsp-setup | 계획서 작성, 행별 구현 |
-| 아이디어 다지기 | lit-brainstorm, deep-interview, lit-crucible | 넓히기, 묻기, 압박 테스트 |
+| 아이디어 다지기 | lit-brainstorm, ultra-brainstorm, deep-interview, lit-crucible | 넓히기, 아주 넓히기, 묻기, 압박 테스트 |
 | 검토와 정리 | review-work, comment-checker, lit-burnoff, lit-burnoff-file | 다시 보기, 잔재 지우기 |
 | 조사 | litresearch, autoresearch, autoconference, wikify, lit-comprehend | 병렬 탐색, 근거 추적 |
-| 팀 | lit-team | 하나의 패킷 뒤 자식 에이전트 |
+| 팀 | lit-team | 이 세션이 나누고, 맡기고, 합치고, 확인 |
 | 글 | lit-humanizer | 한국어와 영어 다듬기, 사실 유지 |
-| 이어 가기 | lit-recap, lit-handoff, lit-init, rules | 인계, 회고, 길잡이 |
+| 이어 가기 | lit-adhd, lit-handoff, lit-init, rules | 인계, 회고, 길잡이 |
 | 도구 | structural-search, browser-drive | 코드 모양 검색, 살아 있는 페이지 |
 
 스킬들은 내 컴퓨터에 이미 있는 프로그램을 씁니다: autoresearch에는 Python 3.10~3.14(더 새로운 `python3`는 건너뛰고 이 범위에서 가장 새로운 `python3.X`를 씀), browser-drive에는 Chrome 또는 Chromium, 그리고 ast-grep과 `lsp` 스킬이 부르는 언어 검사 도구. 빠진 것과 설치 명령은 `doctor`가 알려 주며, LitMuse가 전역으로 무언가를 설치하는 일은 없습니다.
@@ -185,7 +186,7 @@ Muse의 `/hud`는 켜고 끄는 고정 항목 목록이라서 플러그인 글�
 
 ### 자동 핸드오프
 
-긴 세션은 모델 컨텍스트를 채우고, Muse가 컴팩션하면 요약에서 세부 사항이 떨어져 나갑니다. 그래서 컴팩션 전에 PreCompact 훅이 인계 파일을 쓰고, 컴팩션 뒤에 SessionStart가 새 파일을 대화로 다시 읽어들입니다. 멈추기 전에 `lit handoff`, 돌아오면 `lit recap`을 쓰면 되고, 패킷에는 만든 것, 확인한 방법, 남은 일이 들어갑니다.
+긴 세션은 모델 컨텍스트를 채우고, Muse가 컴팩션하면 요약에서 세부 사항이 떨어져 나갑니다. 그래서 컴팩션 전에 PreCompact 훅이 인계 파일을 쓰고, 컴팩션 뒤에 SessionStart가 새 파일을 대화로 다시 읽어들입니다. 멈추기 전에 `lit handoff`, 돌아오면 `lit adhd recap`을 쓰면 되고, 패킷에는 만든 것, 확인한 방법, 남은 일이 들어갑니다.
 
 훅은 기록 한 줄로 답합니다.
 

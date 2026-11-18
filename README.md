@@ -37,7 +37,8 @@ You need Node.js 20 or newer and Muse Code, signed in once.
 2. `doctor` ends with `LitMuse doctor: PASS` when everything is in place.
 3. Open Muse in a project with `muse`. `/skills` shows the LitMuse skills and `/plugins` the plugin.
 4. Start a prompt with `lit`. Plain `lit` runs lit-loop; a word after it picks the route: `lit plan`, `lit review`, `lit research`, `lit debug`, `lit handoff`, `lit recap`, `lit korean`.
-5. Approve a plan, then type `/start-work` to build it row by row with tests. Before you stop, `lit handoff`; next time, `lit recap` reads where you were.
+5. Approve a plan, then type `/start-work` to build it row by row with tests. When the plan names its test command, the approval question also offers a Muse goal (`Approve plan, start work and set goal: /goal …? (yes / edit / no)`): one `yes` starts the work and sets that goal, which closes once every row is ticked and the command exits 0. A plan with no test command gets `Approve plan and start work? (yes / no)` instead. Before you stop, `lit handoff`; next time, `lit adhd` tells you what to do now.
+6. Add `+viz`, `+research` or another `+` word after `lit` (`lit +viz plot the results`) to put a companion skill beside the route; LitMuse also adds one on its own when the task clearly asks for it, at most three in all.
 
 Run from any folder:
 
@@ -64,7 +65,7 @@ Four real outputs rendered on a Mac during the quality parity round, each opened
 
 <p align="center"><img src="./docs/assets/parity/lit-adhd-brief.png" width="960" alt="Terminal card of litmuse rewind, the lit-adhd brief: a rainbow headline with 2 sessions and 0 waiting on you, a table of the two ended sessions in todo-app, the roadmap gauge for plans/todo-app.md at 1/2, and a boxed recommended next step to start the plan." /></p>
 
-`lit-adhd` opens with a KPI board: the one thing to do now and the exact text to type, done / in progress / waiting on you / left counts with an overall bar, and milestone rows with ten-cell bars. It also lists what you finished lately, what is still to do, and reminders such as uncommitted changes or a plan untouched for a week. `lit adhd detail` adds the per-session brief pictured above: session cards with status badges, an ended table and a boxed recommended step, in colour on a TTY with no internal field names leaking.
+`lit-adhd` answers "so what do I do now?" in about six lines. It says what changed since you last looked, gives the one thing to do with the exact text to type, says why and what it costs to skip it, lists what else waits on you, and owns up to what it could not read. A fixed rule table picks that one action from records it can prove (a ticked plan row, a finished run, a commit), so a session that only claims to be done does not count, and a push always comes back as a question for you. `lit adhd detail` opens the KPI board with bars, milestones and reminders, plus the per-session brief pictured above. `lit adhd recap` is the per-session view that lit-recap used to give; the old `lit recap` keeps working and says where it moved.
 
 <p align="center"><img src="./docs/assets/parity/lit-pptx-deck.png" width="960" alt="A lit-pptx status deck: KPI row and a column chart of suite growth per wave." /></p>
 
@@ -86,7 +87,7 @@ Muse still runs the session and picks the model; LitMuse adds the way of working
 | --- | --- |
 | Takes a line and gets to work | Pins the goal and writes the failing test first |
 | Fills its context over a long session | Writes the handoff before compaction, reads it back after |
-| Opens the next session blank | `lit recap` reads the handoff and names the next step |
+| Opens the next session blank | `lit adhd` reads every recent session and names the one next step |
 | Calls it done when the model says so | Checks the plan with tests and real-surface proof |
 
 **33 skills** load on demand, each a dense Muse skill with the references and scripts it needs inside its own folder. The catalog holds only their short descriptions, so they keep their place even next to a large personal skill collection. Nine short stubs stand in for the skills that became LitFamily extensions (see [Extensions](#extensions)).
@@ -95,12 +96,12 @@ Muse still runs the session and picks the model; LitMuse adds the way of working
 | --- | --- | --- |
 | Work loop | lit-loop, litgoal, litwork | Goal pinned, failing test first, record left |
 | Plan and build | lit-plan, start-work, lit-code, debugging, refactor, lit-commit, lsp, lsp-setup | Written plan, then row-by-row build |
-| Ideas first | lit-brainstorm, deep-interview, lit-crucible | Diverge, clarify, pressure-test |
+| Ideas first | lit-brainstorm, ultra-brainstorm, deep-interview, lit-crucible | Diverge, go very wide, clarify, pressure-test |
 | Review and cleanup | review-work, comment-checker, lit-burnoff, lit-burnoff-file | Second look, then residue stripped |
 | Research | litresearch, autoresearch, autoconference, wikify, lit-comprehend | Parallel searchers, traced claims |
-| Teams | lit-team | Child agents behind one packet |
+| Teams | lit-team | This session splits, distributes, merges and verifies |
 | Prose | lit-humanizer | Korean and English cleanup, facts kept |
-| Continuity | lit-recap, lit-handoff, lit-init, rules | Handoffs, recaps, orientation |
+| Continuity | lit-adhd, lit-handoff, lit-init, rules | Handoffs, recaps, orientation |
 | Tools | structural-search, browser-drive | Syntax-shaped search, live pages |
 
 The skills call programs already on your machine: Python 3.10 to 3.14 for autoresearch (a newer `python3` is passed over for the newest `python3.X` in that range), Chrome or Chromium for browser-drive, ast-grep and the language checkers the `lsp` skill drives. `doctor` lists what is missing and the command that installs it; LitMuse installs nothing globally.
@@ -185,7 +186,7 @@ The card reads the hook-kept state under `~/.local/state/litmuse/`, outside the 
 
 ### Automatic handoff
 
-A long session fills the model's context, and when Muse compacts it, detail drops out of the summary. So the PreCompact hook writes a handoff file before the compaction, and SessionStart reads the fresh file back into the conversation after it. Type `lit handoff` before you stop and `lit recap` when you return; the packet names what was built, how it was checked, and what is left.
+A long session fills the model's context, and when Muse compacts it, detail drops out of the summary. So the PreCompact hook writes a handoff file before the compaction, and SessionStart reads the fresh file back into the conversation after it. Type `lit handoff` before you stop and `lit adhd recap` when you return; the packet names what was built, how it was checked, and what is left.
 
 The hook answers with one recorded line:
 
