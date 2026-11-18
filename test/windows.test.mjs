@@ -163,3 +163,19 @@ test('doctor: a runtime is found by PATHEXT lookup on win32 and by the same look
   assert.equal(doctor.runtimeFound(chrome, win({ CHROME_PATH: 'C:\\anything' }, [])), true);
   assert.equal(doctor.runtimeFound(chrome, win({ Path: '' }, ['C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe'])), true);
 });
+
+test('browser-drive probe: win32 finds agent-browser by PATHEXT lookup, never through `command -v`, and skips the extensionless shell shim', async () => {
+  const probe = await import(join(ROOT, 'plugin', 'skills', 'browser-drive', 'scripts', 'capability-probe.mjs'));
+  const calls = [];
+  const runCommand = (command, args) => (calls.push([command, ...args]), { status: 0, stdout: 'agent-browser 0.34.0\r\n', stderr: '' });
+  const win = (have) => ({ platform: 'win32', path: 'C:\\npm-global', exists: (f) => have.some((h) => h.toLowerCase() === f.toLowerCase()), runCommand });
+  const found = probe.probeBrowserDriver(win(['C:\\npm-global\\agent-browser', 'C:\\npm-global\\agent-browser.cmd']));
+  assert.equal(found.status, 'available', found.detail);
+  assert.equal(found.command.toLowerCase(), 'c:\\npm-global\\agent-browser.cmd');
+  assert.deepEqual(calls, [[found.command, '--version']], 'no shell resolver ran');
+  calls.length = 0;
+  const shimOnly = probe.probeBrowserDriver(win(['C:\\npm-global\\agent-browser']));
+  assert.equal(shimOnly.status, 'unavailable');
+  assert.equal(shimOnly.blocker, probe.BROWSER_DRIVE_BLOCKER.unavailable);
+  assert.deepEqual(calls, []);
+});

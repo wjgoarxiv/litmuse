@@ -262,30 +262,44 @@ export function probeBrowserDriver(options) {
     let path;
     let runCommand = runBrowserCommand;
     let versionTimeoutMs = DEFAULT_VERSION_TIMEOUT_MS;
+    let platform = process.platform;
+    let exists;
     try {
       path = options.path;
       const configuredRunCommand = options.runCommand;
       if (configuredRunCommand !== undefined) runCommand = configuredRunCommand;
       versionTimeoutMs = options.versionTimeoutMs;
+      if (options.platform !== undefined) platform = options.platform;
+      exists = options.exists;
     } catch {
       return invalidProbeInput();
     }
-    if ((path !== undefined && typeof path !== "string") || typeof runCommand !== "function") return invalidProbeInput();
+    if ((path !== undefined && typeof path !== "string") || typeof runCommand !== "function" || typeof platform !== "string") {
+      return invalidProbeInput();
+    }
 
     const searchPath = typeof path === "string" ? path : (process.env.PATH ?? "");
     const env = { PATH: searchPath };
 
+    // `command -v` is a POSIX shell builtin; cmd.exe has none, so on Windows every run would answer
+    // "not on PATH". There the shared PATHEXT lookup stands in for it, which also passes over npm's
+    // extensionless shell shim that Windows cannot start.
     let resolved;
-    try {
-      resolved = runCommand("command", ["-v", DRIVER_COMMAND], {
-        encoding: "utf8",
-        env,
-        shell: true,
-        timeout: DEFAULT_VERSION_TIMEOUT_MS,
-        maxBuffer: MAX_OUTPUT_BYTES,
-      });
-    } catch {
-      resolved = null;
+    if (platform === "win32") {
+      const found = findOnPath(DRIVER_COMMAND, { env: { PATH: searchPath, PATHEXT: process.env.PATHEXT ?? "" }, platform, exists });
+      resolved = found === null ? { status: 1, stdout: "", stderr: "" } : { status: 0, stdout: `${found}\n`, stderr: "" };
+    } else {
+      try {
+        resolved = runCommand("command", ["-v", DRIVER_COMMAND], {
+          encoding: "utf8",
+          env,
+          shell: true,
+          timeout: DEFAULT_VERSION_TIMEOUT_MS,
+          maxBuffer: MAX_OUTPUT_BYTES,
+        });
+      } catch {
+        resolved = null;
+      }
     }
     if (resolved?.error?.code === BROWSER_PROCESS_CLEANUP_FAILED) {
       return result("unverified-identity", {
