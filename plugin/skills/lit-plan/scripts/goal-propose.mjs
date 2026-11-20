@@ -6,10 +6,14 @@
 // goal, or, when no goal is possible, the start-only question and the one `No goal set: <reason>` line. An unreadable
 // plan prints that reason alone. It never starts work or sets a goal; only the user's exact `yes` does both. The lit-plan write guard allows
 // this one command during a planning turn.
+// `node <skill-dir>/scripts/goal-propose.mjs --loop --check "<check>" <objective...>` is the lit-loop form: a run with no
+// plan asks one goal question once its failing check exists (the check must fail now; a check that already passes, cannot
+// run or is not allowlisted records nothing and prints only `No goal set: <reason>`). Its `yes` arms the goal and starts no
+// start-work.
 import { readFileSync } from 'node:fs';
 import { isAbsolute, relative, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
-import { GOAL_STATUS, compileCondition, conditionHash, consentKey, falsify, lintCondition, parseDoneWhen, writeGoalRecord } from '../../../hooks/lib/goal.mjs';
+import { GOAL_STATUS, buildLoopConsent, compileCondition, conditionHash, consentKey, falsify, lintCondition, parseDoneWhen, writeGoalRecord } from '../../../hooks/lib/goal.mjs';
 import { resolveProjectStateRoot } from '../../../hooks/lib/workflow-stack.mjs';
 
 export function proposeGoal({ cwd, planArg, now = Date.now(), timeoutMs, run, sessionId = null } = {}) {
@@ -44,7 +48,16 @@ export function proposeGoal({ cwd, planArg, now = Date.now(), timeoutMs, run, se
   return { line: GOAL_STATUS.asked(built.condition), consent };
 }
 
+export function proposeLoopGoal({ cwd, check, objective, now = Date.now(), timeoutMs, run, sessionId = null } = {}) {
+  const proposed = buildLoopConsent({ cwd, check, objective, now, timeoutMs, run, sessionId });
+  if (proposed.consent) writeGoalRecord(resolveProjectStateRoot(cwd), 'consent', proposed.consent);
+  return proposed;
+}
+
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
-  const { line } = proposeGoal({ cwd: process.cwd(), planArg: process.argv[2] });
+  const [first, ...rest] = process.argv.slice(2);
+  const { line } = first === '--loop' && rest[0] === '--check'
+    ? proposeLoopGoal({ cwd: process.cwd(), check: rest[1], objective: rest.slice(2).join(' ') })
+    : proposeGoal({ cwd: process.cwd(), planArg: first });
   process.stdout.write(`${line}\n`);
 }

@@ -7,7 +7,7 @@ import { applyStackEvent, readStack, writeStack, resolveProjectStateRoot, READ_O
 import { isGoPrompt, takeNextStep } from './lib/next-step.mjs';
 import { ROUTE_INTENTS } from './lib/routes.mjs';
 import { buildSkillPlan, matchedSkills, parseSkillHatch, skillPlanContext, skillPlanIds } from './lib/skill-plan.mjs';
-import { GOAL_STATUS, consentAnswer, consentIsLive, readGoalRecord, writeGoalRecord } from './lib/goal.mjs';
+import { GOAL_STATUS, buildLoopConsent, consentAnswer, consentIsLive, detectCheck, dropGoalRecord, normalizeLoopObjective, readGoalRecord, writeGoalRecord } from './lib/goal.mjs';
 import { readFileSync, writeFileSync, mkdirSync, readdirSync, statSync } from 'node:fs';
 import { resolve, join, dirname } from 'node:path';
 
@@ -224,9 +224,10 @@ function startRefusal(payload, plan) {
 // objective. When the start is refused, no goal is armed either.
 function goalAnswer(payload) {
   const answer = consentAnswer(payload.prompt);
-  if (!answer) return false;
   const root = resolveProjectStateRoot(workspaceOf(payload));
   const consent = readGoalRecord(root, 'consent');
+  if (consent?.kind === 'loop') return consentIsLive(consent) ? loopGoalAnswer(payload, root, consent, answer) : false;
+  if (!answer) return false;
   if (!consentIsLive(consent)) return false;
   // Only the session that was asked can answer. A yes typed elsewhere (or on a question no session was stamped on)
   // starts nothing, but says why and how to start the plan instead of passing silently.
@@ -283,6 +284,59 @@ function goalAnswer(payload) {
   }
   emitContext('UserPromptSubmit', lines.join('\n'));
   return true;
+}
+
+// The answer to a lit-loop's goal question. Only the session that was asked can answer, and the question lives for one
+// prompt: an exact `yes` arms the goal and starts no start-work (the loop goes on as it was), `no` sets nothing, and any
+// other prompt (`edit` is not an answer here) drops the question and is read as ordinary text.
+function loopGoalAnswer(payload, root, consent, answer) {
+  if (!consent.sessionId || consent.sessionId !== (payload.session_id ?? null)) return false;
+  const route = readSession(payload)?.route;
+  if (READ_ONLY_DISCIPLINES.includes(route)) return false;
+  dropGoalRecord(root, 'consent');
+  if (answer !== 'yes' && answer !== 'no') return false;
+  const head = banner('LIT CONTINUES', route ?? 'lit-loop');
+  if (answer === 'no') {
+    emitContext('UserPromptSubmit', [...head, `The user answered no to the lit-loop goal question, so no goal is set. Show this line as given: ${GOAL_STATUS.skipped('you said no')}, then go on with the lit-loop work.`].join('\n'));
+    return true;
+  }
+  writeGoalRecord(root, 'intent', { version: 1, condition: consent.condition, hash: consent.hash, id: consent.id, plan: null, check: consent.check, sessionId: payload.session_id ?? null, armedAt: new Date().toISOString() });
+  emitContext('UserPromptSubmit', [
+    ...head,
+    'The user answered yes to the lit-loop goal question: the goal is approved and the loop work goes on as it was; no start-work run starts.',
+    `Before the next step, set the goal: call get_goal. With no unfinished goal, call create_goal with objective exactly \`${consent.condition}\` and nothing else. With an unfinished goal already there, leave it untouched and show: ${GOAL_STATUS.yours} If create_goal is refused, show: ${GOAL_STATUS.notConfirmed(consent.condition)}`,
+    `When \`${consent.check}\` exits 0 and the objective is done, call update_goal with status complete and show: ${GOAL_STATUS.met(consent.id)}. On a BLOCKED stop, call update_goal with status blocked and show: ${GOAL_STATUS.cleared(consent.id, 'blocked')}.`,
+  ].join('\n'));
+  return true;
+}
+
+// A run route's first activation asks one goal question when the prompt names an objective, and no goal of this session is
+// open and no question is pending. With a test command the hook records the question itself (no test run here) and tells the
+// model to end its first reply with it: Muse shows no hook text, so this is advisory. Without one, the model asks it after
+// its RED check through goal-propose --loop, which dry-runs and refuses a check that already passes.
+const RUN_GOAL_ROUTES = new Set(['lit-loop', 'litwork']);
+function loopGoalNote(hit, payload) {
+  try {
+    if (!RUN_GOAL_ROUTES.has(hit.route) || hit.bare || hit.resume || hit.trailing || !safeId(payload.session_id)) return null;
+    const task = typeof hit.task === 'string' ? hit.task : String(payload.prompt ?? '').replace(/^\s*\/?(?:litmuse:)?(?:lit-loop|litwork)\b[\s:,.!?]*/iu, '');
+    const objective = normalizeLoopObjective(task);
+    if (!objective) return null;
+    const cwd = workspaceOf(payload);
+    const root = resolveProjectStateRoot(cwd);
+    const owner = readGoalRecord(root, 'owner');
+    if ((owner && !owner.closed && owner.sessionId === payload.session_id) || consentIsLive(readGoalRecord(root, 'consent'))) return null;
+    const check = detectCheck(cwd);
+    if (!check) {
+      const propose = join(PLUGIN_ROOT, 'skills', 'lit-plan', 'scripts', 'goal-propose.mjs');
+      return `Native goal: LitMuse can set a goal for this run. Once one failing check proves the objective (after the RED test), run \`node ${propose} --loop --check "<check>" <objective>\` and end that reply with the line it prints, asked once. Only the user's exact \`yes\` on a later prompt arms it, and you then call create_goal with that exact objective; do not call create_goal for this run before that. When it prints \`No goal set: <reason>\`, or no single check proves the objective, go on without a goal and keep the ledger authoritative. Never type or send /goal yourself.`;
+    }
+    const offer = buildLoopConsent({ cwd, check, objective, falsifyNow: false, sessionId: payload.session_id });
+    if (!offer.consent) return null;
+    writeGoalRecord(root, 'consent', offer.consent);
+    return `Native goal: LitMuse recorded one goal question for this run. End your first reply with exactly this line, as its last line and asked once: ${offer.line} Never type or send /goal yourself. Do not call create_goal for this run before the user's exact \`yes\` on a later prompt; the hook then gives you the objective. Until then keep the ledger authoritative.`;
+  } catch {
+    return null;
+  }
 }
 
 // `lit cancel` while this session owns an open LitMuse goal: close that goal only, never a goal the user set.
@@ -413,7 +467,9 @@ run((payload) => {
   writeSession(payload, { route: hit.route, turnId, activatedAt: Date.now(), stopHeldFor: null, pauseRequested });
   stackStart(payload, hit.route, runPlan ? { plan: runPlan } : undefined, hit.restart);
   recordRoute(payload, { route: hit.route, keyword: hit.keyword ?? null, kind: 'ignite', plan: runPlan, activatedAt: Date.now(), skills: skillPlanIds(skillPlan) });
+  const loopGoal = loopGoalNote(hit, payload);
   emitContext('UserPromptSubmit', activation(hit, payload)
+    + (loopGoal ? `\n${loopGoal}` : '')
     + (named ? `\nPlan: ${named}. The typed command is the approval: the work starts without a separate approval turn; work through its open rows in order.` : '')
     + (skillPlan ? `\n${skillPlanContext(skillPlan)}` : ''));
 });

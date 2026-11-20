@@ -58,6 +58,17 @@ you already have a goal of your own, LitMuse says so and leaves it alone. When e
 the model once to run the check and close the goal on exit 0; `lit cancel` closes it as blocked. The records live in
 `.litmuse/goal/` (the question, the armed answer and the owner), and SessionStart sweeps a question nobody answered.
 
+A lit-loop or litwork run with no plan gets one question of its own. When the project has a test command (`npm test`,
+`pytest`, `cargo test`, `go test ./...`) and the prompt names an objective, the prompt hook records the question at the
+run's first activation, without running any test, and tells the model to end its first reply with
+``Set goal for this lit-loop: /goal `npm test` exits 0 and this is done: <objective> [lit:4c7a9a52]? (yes / no)``. Muse shows no
+hook text, so the question depends on the model repeating it. An exact `yes` from the asking session, on the next prompt
+only, arms the goal and tells the model to set it with `create_goal`; it starts no start-work. `no`, `edit` and any other
+prompt drop the question. Without a test command the model asks after its failing check with
+`goal-propose.mjs --loop --check "<check>" <objective>`, which runs the check once and prints `No goal set: <reason>` when
+it already passes, cannot run or is not an allowlisted test command. No question is asked for a repeat, `lit goal`, a plan,
+a bare `lit`, or a session that already holds an open goal or a pending question.
+
 Read-only skills (lit-adhd, review-work, litresearch, the brainstorm skills and others) say `goal: never` in their
 frontmatter and never set one.
 

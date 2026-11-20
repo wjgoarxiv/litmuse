@@ -96,7 +96,7 @@ run((payload) => {
 // (The pattern lives inside the function: run() may call back before a module-level const below it is initialised.)
 function stampConsent(payload) {
   const command = String(toolInput(payload)?.command ?? '');
-  if (!payload.session_id || !/(?:^|\s)\S*goal-propose\.mjs\s+plans\/[A-Za-z0-9._-]+\.md\s*$/u.test(command)) return;
+  if (!payload.session_id || !/(?:^|\s)\S*goal-propose\.mjs"?\s+(?:plans\/[A-Za-z0-9._-]+\.md\s*$|--loop\s+--check\s)/u.test(command)) return;
   const root = resolveProjectStateRoot(workspaceOf(payload));
   const consent = readGoalRecord(root, 'consent');
   if (!consent || consent.sessionId || consent.answeredAt || Date.now() - Date.parse(consent.askedAt) > 2 * 60_000) return;

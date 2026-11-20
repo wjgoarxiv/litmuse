@@ -128,8 +128,8 @@ function isGoalPropose(command) {
   }
 }
 
-// A goal tagged `[lit:<id>]` exists only after the user's exact yes at plan approval: its objective must equal the armed
-// intent of this session. An untagged goal is the user's own business and passes.
+// A goal tagged `[lit:<id>]` exists only after the user's exact yes at plan approval or at a lit-loop's goal question: its
+// objective must equal the armed intent of this session. An untagged goal is the user's own business and passes.
 function litGoalRefusal(payload, input) {
   const objective = objectiveOf(input);
   if (!LIT_TAG.test(objective)) return null;
@@ -138,7 +138,7 @@ function litGoalRefusal(payload, input) {
     intent = readGoalRecord(resolveProjectStateRoot(workspaceOf(payload)), 'intent');
   } catch { /* unreadable reads as no intent */ }
   if (intent && !intent.consumedAt && intent.condition === objective && (!intent.sessionId || intent.sessionId === payload.session_id)) return null;
-  return 'LitMuse sets a [lit:…] goal only after the user typed yes to the plan-approval goal question, with that exact objective. Ask the question again (run goal-propose on the plan) instead of creating it.';
+  return 'LitMuse sets a [lit:…] goal only after the user typed yes to a LitMuse goal question (plan approval or a lit-loop), with that exact objective. Ask the question again (run goal-propose) instead of creating it.';
 }
 
 run((payload) => {

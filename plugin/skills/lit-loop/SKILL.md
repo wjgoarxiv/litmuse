@@ -93,6 +93,12 @@ Write criteria before editing. Each names a command or an observation on a surfa
 
 Durable path: create or reuse the record per `litgoal` (`read_skill` id `plugin:litmuse:litgoal` when the record is missing), every criterion `open`. litgoal also mirrors the objective into Muse's native goal (`get_goal` first, then `create_goal` when none matches); this loop leaves that tool's state to litgoal and updates the record and ledger itself. Ask the user to confirm only when a criterion rests on a guess about intent.
 
+Native goal for a loop with no plan: LitMuse asks one question per run and the user's exact `yes` arms it, the way a plan's approval does but without starting `start-work`.
+
+- When the project has a test command (`npm test`, `pytest`, `cargo test`, `go test ./...`) and the prompt names an objective, the prompt hook records the question at the loop's first activation and its context hands you the line. Muse shows no hook text, so end your first reply with exactly `Set goal for this lit-loop: /goal <condition>? (yes / no)`, once, with the condition the hook gave (`` `<check>` exits 0 and this is done: <objective> [lit:<id>] ``). Do not ask it again later.
+- Without a test command, run `node <skill-dir-of-lit-plan>/scripts/goal-propose.mjs --loop --check "<check>" <objective>` once a failing check proves the objective (after the RED step) and end that reply with the line it prints. The script runs the check once: a check that already passes, cannot run or is not an allowlisted test command prints `No goal set: <reason>` and records nothing, and you go on without a goal.
+- Only the user's exact `yes` (any case) on the next prompt arms it: the hook then tells you to call `get_goal` and, with no unfinished goal, `create_goal` with that exact objective (PreToolUse refuses any other `[lit:…]` objective), and to call `update_goal` with `complete` once the check exits 0 and the objective is done. `no` or any other prompt, including `edit`, drops the question. Never type `/goal` yourself and never call `create_goal` for this run before that `yes`; a goal the user set by hand stays untouched.
+
 For a goal with several units, write a dependency map before delegating:
 
 ```text

@@ -7,6 +7,8 @@
 // `<project state root>/.litmuse/goal/`:
 //
 //   consent.json  written by goal-propose.mjs: the objective (or none), its hash and the plan  (asked)
+//                 A lit-loop run with no plan asks one too (kind "loop", plan null, condition = its check exits 0 and the
+//                 objective is done); its `yes` arms the goal and starts no start-work.
 //   intent.json   written by the prompt hook when `yes` started the work and a goal is due    (armed)
 //   owner.json    written by PostToolUse after `create_goal` set that exact objective        (set by LitMuse)
 //
@@ -15,8 +17,9 @@
 // by hand is reported and left alone.
 import { spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { lstatSync, mkdirSync, readFileSync, renameSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, lstatSync, mkdirSync, readFileSync, renameSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { clip } from './redact.mjs';
 
 export const GOAL_DIR = join('.litmuse', 'goal');
 export const GOAL_MAX_CHARS = 500;
@@ -31,6 +34,7 @@ export const GOAL_STATUS = Object.freeze({
   declined: 'Nothing started and no goal set: you said no',
   notStarted: (why) => `Work not started and no goal set: ${why}`,
   notRecorded: (plan) => `Approval not recorded for this session. Run: lit start ${plan}`,
+  loopAsked: (cond) => `Set goal for this lit-loop: /goal ${cond}? (yes / no)`,
   skipped: (reason) => `No goal set: ${reason}`,
   set: (id) => `LitMuse goal set [lit:${id}]`,
   yours: 'Your own goal is active; LitMuse left it alone.',
@@ -92,6 +96,61 @@ export function lintCondition(condition, check) {
   if (OUTWARD_ONLY.test(String(check))) reasons.push('a push, publish or release is not a check of the work');
   if (!CHECK_ALLOWLIST.some((pattern) => pattern.test(String(check)))) reasons.push(`\`${check}\` is not an allowlisted test command`);
   return { ok: reasons.length === 0, reasons };
+}
+
+/** A lit-loop has no plan rows: its condition is the check exiting 0 together with the objective being done. */
+export function compileLoopCondition({ objective, check }) {
+  const id = goalId(`loop\u0000${objective}`, check);
+  const condition = `\`${check}\` exits 0 and this is done: ${objective} [lit:${id}]`;
+  if (condition.length > GOAL_MAX_CHARS) return { ok: false, reason: `the condition is over ${GOAL_MAX_CHARS} characters; shorten the objective` };
+  return { ok: true, condition, id };
+}
+
+/** The objective text of a run prompt as a goal may carry it: no slash lines, no credential, no backtick or `[lit:` tag, one line, 200 characters. */
+export function normalizeLoopObjective(value) {
+  if (typeof value !== 'string') return '';
+  const lines = value.split(/\r?\n/u).filter((line) => !line.trimStart().startsWith('/')).join(' ');
+  return clip(lines.replace(/\[lit:[^\]]*\]/giu, ' ').replace(/`/gu, "'"), 200);
+}
+
+/** The project's own test command, for the question the prompt hook asks; null when there is none. */
+export function detectCheck(cwd) {
+  try {
+    if (typeof JSON.parse(readFileSync(join(cwd, 'package.json'), 'utf8'))?.scripts?.test === 'string') return 'npm test';
+  } catch { /* no readable package.json */ }
+  for (const [file, check] of [['pytest.ini', 'pytest'], ['pyproject.toml', 'pytest'], ['Cargo.toml', 'cargo test'], ['go.mod', 'go test ./...']]) {
+    if (existsSync(join(cwd, file))) return check;
+  }
+  return null;
+}
+
+/** A lit-loop has no unticked rows to keep its goal false, so its check must fail right now. */
+export function falsifyLoop({ cwd, check, timeoutMs = FALSIFY_TIMEOUT_MS, run = spawnSync }) {
+  const [cmd, ...args] = check.split(/\s+/u);
+  const result = run(cmd, args, { cwd, encoding: 'utf8', timeout: timeoutMs, stdio: ['ignore', 'ignore', 'ignore'], shell: false });
+  if (result.error?.code === 'ETIMEDOUT' || result.signal === 'SIGTERM') return { ok: false, reason: `\`${check}\` did not finish within ${Math.round(timeoutMs / 1000)} s` };
+  if (result.error || result.status === 127) return { ok: false, reason: `\`${check}\` cannot run here` };
+  if (result.status === 0) return { ok: false, reason: `\`${check}\` already passes, so the goal would be met at once; write the failing test first` };
+  return { ok: true, exit: result.status };
+}
+
+/**
+ * The lit-loop question and its consent record (kind "loop", no plan), or the one `No goal set: <reason>` line.
+ * Pure: the caller writes the record. falsifyNow: false skips the dry run (the prompt hook cannot wait on a test run);
+ * the objective clause still keeps such a goal false until the work is done.
+ */
+export function buildLoopConsent({ cwd, check, objective, now = Date.now(), timeoutMs, run, falsifyNow = true, sessionId = null } = {}) {
+  const goal = normalizeLoopObjective(String(objective ?? ''));
+  const command = String(check ?? '').trim();
+  if (!goal) return { line: GOAL_STATUS.skipped('name what the loop should finish') };
+  const built = compileLoopCondition({ objective: goal, check: command });
+  if (!built.ok) return { line: GOAL_STATUS.skipped(built.reason) };
+  const lint = lintCondition(built.condition, command);
+  if (!lint.ok) return { line: GOAL_STATUS.skipped(lint.reasons.join('; ')) };
+  const dry = falsifyNow ? falsifyLoop({ cwd, check: command, ...(timeoutMs ? { timeoutMs } : {}), ...(run ? { run } : {}) }) : { ok: true };
+  if (!dry.ok) return { line: GOAL_STATUS.skipped(dry.reason) };
+  const consent = { version: 1, kind: 'loop', goal: true, condition: built.condition, hash: conditionHash(built.condition), id: built.id, plan: null, check: command, objective: goal, sessionId, askedAt: new Date(now).toISOString() };
+  return { line: GOAL_STATUS.loopAsked(built.condition), consent };
 }
 
 const openRows = (planText) => String(planText ?? '').split('\n').filter((line) => /^- \[ \] (?:\d+|F\d+)\. /u.test(line)).length;
