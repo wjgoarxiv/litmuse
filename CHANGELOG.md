@@ -1,7 +1,8 @@
 # Changelog
 
-## Unreleased
+## 0.1.17 — 2026-11-22
 
+- Both READMEs now open with a plain one-line pitch, a short before-and-after story and a "Two ways to use it" section: the easy way is your usual request with `lit` at the start or the end; the full workflow is a six-step table (explore, clarify, plan, build, review, hand off) with the line to type for each step, followed by the one install line.
 - Every goal question now comes with an answer guide under it, so a first-time user sees what to type and what each answer does. The question line itself and the accepted answers are unchanged. `goal-propose.mjs` prints the guide after a blank line, and the prompt hook passes it with the lit-loop question; it is a short Markdown block: a title, the goal, one row per answer (`yes` / `edit` / `no` for a plan with a goal, `yes` / `no` for start only and for a lit-loop) and `Type the word alone.` The model words it in your language and keeps the answer words in English. Muse shows no hook text, so the guide, like the question, depends on the model repeating it.
 - The hook code changed, so Muse asks you to approve the LitMuse hooks again after the update.
 
