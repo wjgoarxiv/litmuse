@@ -3,7 +3,7 @@
 <h1 align="center">LitMuse</h1>
 <p align="center"><strong>Keep the work lit.</strong></p>
 
-<p align="center">LitMuse gives Meta's Muse Code the habit of planning before it edits, checking what it built, and leaving a handoff, so the next session starts where this one stopped. One npm command installs it as a Muse plugin.</p>
+<p align="center">LitMuse is an add-on for Muse Code. It makes Muse check its own work before it says "done", and leaves a note so the next session starts where this one stopped.</p>
 
 <p align="center">
 <a href="https://www.npmjs.com/package/@litfamily/litmuse"><img src="https://img.shields.io/npm/v/@litfamily/litmuse?color=FF6337&amp;label=npm" alt="npm version" /></a>
@@ -11,11 +11,44 @@
 <a href="https://github.com/wjgoarxiv/litmuse/stargazers"><img src="https://img.shields.io/github/stars/wjgoarxiv/litmuse?style=flat" alt="GitHub stars" /></a>
 </p>
 
+You ask Muse for a feature. It writes the code and says it is finished, and a day later you find the tests
+never ran. You open a new session and explain the whole project again.
+
+With LitMuse you add `lit` to the same request. Muse first writes down what "finished" means for this task,
+adds a test that fails, makes it pass, and ends by telling you what it checked and what it could not. When you
+stop, type `lit handoff`. Muse saves a note, and in the next session `lit adhd` reads it and tells you where to
+pick up.
+
 <p align="center"><a href="#inside-one-lit-turn">How it works</a> &nbsp; <a href="#in-the-muse-app-too">Muse app</a> &nbsp; <a href="#install">Install</a> &nbsp; <a href="#quick-start">Quick start</a> &nbsp; <a href="#the-status-card">Status card</a> &nbsp; <a href="#automatic-handoff">Handoff</a> &nbsp; <a href="#safety">Safety</a> &nbsp; <a href="./README_ko-KR.md">한국어</a></p>
 
-> [!TIP]
-> One `npx` line installs LitMuse as a Muse plugin; then open Muse and start a prompt with `lit`, for example
-> `lit plan a tiny todo app`. [Quick start](#quick-start) has the lines.
+## Two ways to use it
+
+**The easy way.** Write your request as usual and put `lit` at the start or at the end:
+
+```text
+fix the date parsing bug in src/dates.js lit
+```
+
+Muse sets the goal, writes a failing test, fixes the bug, checks the result and tells you what it checked.
+Most tasks need nothing more.
+
+**The full workflow.** For a bigger job, go one step at a time. Each step leaves a file the next step reads,
+and you can skip any step you do not need.
+
+| Step | Type | What happens |
+| --- | --- | --- |
+| 1. Explore | `lit brainstorm <question>` | Many options, scored, cut to a short list |
+| 2. Clarify | `lit interview <idea>` | Muse asks questions until the goal is clear |
+| 3. Plan | `lit crucible <approach>` or `lit plan <task>` | Crucible attacks the approach first, then plans; lit-plan writes `plans/<slug>.md` and asks for your yes |
+| 4. Build | `yes` to the plan, or `/start-work` | Muse works through the plan row by row with tests; with no plan, `lit <task>` runs lit-loop |
+| 5. Review | `lit review` | A review in five lanes, findings first |
+| 6. Hand off | `lit handoff` | What was built, how it was checked and what is left, saved to a file |
+
+Install with one line, then open Muse in your project ([Quick start](#quick-start) has the full first run):
+
+```bash
+npx @litfamily/litmuse install
+```
 
 ## Pick your path
 

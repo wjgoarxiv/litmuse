@@ -3,7 +3,7 @@
 <h1 align="center">LitMuse</h1>
 <p align="center"><strong>Keep the work lit.</strong></p>
 
-<p align="center">LitMuse는 Meta의 Muse Code에 일하는 습관을 붙여 줍니다. 고치기 전에 계획하고, 만든 것을 확인하고, 끝낼 때 인계 메모를 남깁니다. 그래서 다음 세션이 이번 세션이 멈춘 자리에서 바로 이어집니다. npm 명령 하나로 Muse 플러그인으로 설치됩니다.</p>
+<p align="center">LitMuse는 Muse Code에 붙이는 추가 기능입니다. Muse가 "다 됐어요"라고 말하기 전에 자기 작업을 직접 확인하게 하고, 다음 세션이 이번에 멈춘 자리에서 시작하도록 기록을 남기게 합니다.</p>
 
 <p align="center">
 <a href="https://www.npmjs.com/package/@litfamily/litmuse"><img src="https://img.shields.io/npm/v/@litfamily/litmuse?color=FF6337&amp;label=npm" alt="npm version" /></a>
@@ -11,11 +11,38 @@
 <a href="https://github.com/wjgoarxiv/litmuse/stargazers"><img src="https://img.shields.io/github/stars/wjgoarxiv/litmuse?style=flat" alt="GitHub stars" /></a>
 </p>
 
+Muse에게 기능을 하나 부탁하면 코드를 쓰고 끝났다고 합니다. 그런데 다음 날 보니 테스트는 한 번도 돌지 않았습니다. 새 세션을 열면 프로젝트 설명을 처음부터 다시 해야 합니다.
+
+LitMuse를 쓰면 같은 요청에 `lit`만 붙이면 됩니다. Muse는 먼저 이 작업에서 "끝났다"가 무슨 뜻인지 적어 두고, 실패하는 테스트를 추가해 통과시킨 뒤, 무엇을 확인했고 무엇은 확인하지 못했는지 알려 줍니다. 작업을 멈출 때 `lit handoff`라고 치면 Muse가 기록을 남깁니다. 다음 세션에서 `lit adhd`를 치면 그 기록을 읽고 어디서 이어 가면 되는지 알려 줍니다.
+
 <p align="center"><a href="#lit-한-턴의-안쪽">동작 방식</a> &nbsp; <a href="#muse-앱에서도">Muse 앱</a> &nbsp; <a href="#설치">설치</a> &nbsp; <a href="#빠른-시작">빠른 시작</a> &nbsp; <a href="#상태-카드">상태 카드</a> &nbsp; <a href="#자동-핸드오프">핸드오프</a> &nbsp; <a href="#안전">안전</a> &nbsp; <a href="./README.md">English</a></p>
 
-> [!TIP]
-> `npx` 한 줄로 LitMuse를 Muse 플러그인으로 설치합니다. 그다음 Muse를 열고 프롬프트를 `lit`으로 시작하세요.
-> 예를 들면 `lit plan a tiny todo app`입니다. 실행할 줄은 [빠른 시작](#빠른-시작)에 있습니다.
+## 두 가지 사용법
+
+**간단하게.** 평소처럼 요청을 쓰고, 앞이나 끝에 `lit`을 붙입니다.
+
+```text
+src/dates.js의 날짜 파싱 버그 고쳐줘 lit
+```
+
+Muse가 목표를 정하고, 실패하는 테스트를 쓰고, 버그를 고치고, 결과를 확인한 뒤 무엇을 확인했는지 알려 줍니다. 웬만한 작업은 이것으로 충분합니다.
+
+**본격적으로.** 큰 작업은 한 단계씩 밟아 갑니다. 단계마다 남긴 파일을 다음 단계가 읽고, 필요 없는 단계는 건너뛰어도 됩니다.
+
+| 단계 | 입력 | 하는 일 |
+| --- | --- | --- |
+| 1. 넓게 보기 | `lit brainstorm <질문>` | 선택지를 많이 낸 뒤 점수를 매겨 몇 개로 추립니다 |
+| 2. 구체화 | `lit interview <아이디어>` | 목표가 분명해질 때까지 Muse가 질문합니다 |
+| 3. 계획 | `lit crucible <접근법>` 또는 `lit plan <작업>` | crucible은 접근법의 약점부터 파고든 뒤 계획으로 넘기고, lit-plan은 `plans/<slug>.md`에 단계를 적고 승인을 묻습니다 |
+| 4. 실행 | 계획에 `yes`, 또는 `/start-work` | 계획을 한 줄씩 테스트와 함께 진행합니다. 계획 없이 바로 하려면 `lit <작업>`이 lit-loop를 돌립니다 |
+| 5. 검토 | `lit review` | 다섯 갈래로 검토하고 발견한 문제부터 알려 줍니다 |
+| 6. 넘겨주기 | `lit handoff` | 만든 것, 확인한 방법, 남은 일을 파일로 남깁니다 |
+
+설치는 한 줄입니다. 그다음 프로젝트에서 Muse를 여세요(처음 써 보는 전체 과정은 [빠른 시작](#빠른-시작)에 있습니다).
+
+```bash
+npx @litfamily/litmuse install
+```
 
 ## 길 고르기
 
