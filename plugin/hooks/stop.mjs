@@ -40,7 +40,7 @@ function goalQuestionMissing(cwd, saved) {
   if (text === null || !/^##\s+Done when\s*$/imu.test(text) || /^goal:\s*never\s*$/mu.test(text)) return null;
   const consent = readGoalRecord(resolveProjectStateRoot(cwd), 'consent');
   if (consent && consent.plan === saved && Date.parse(consent.askedAt) >= statSync(join(cwd, saved)).mtimeMs - 1000) return null;
-  return `LitMuse lit-plan gate: ${saved} has a \`## Done when\` block but no goal question yet. Run \`node ${join(PLUGIN_ROOT, 'skills', 'lit-plan', 'scripts', 'goal-propose.mjs')} ${saved}\` once and put the one line it prints into the approval question, then end the turn.`;
+  return `LitMuse lit-plan gate: ${saved} has a \`## Done when\` block but no goal question yet. Run \`node ${join(PLUGIN_ROOT, 'skills', 'lit-plan', 'scripts', 'goal-propose.mjs')} ${saved}\` once and end the reply with what it prints (the approval question, then its answer guide), then end the turn.`;
 }
 
 // At turn end the goal LitMuse owns is checked the only way a 5 s hook can: when every row of its plan is ticked, the

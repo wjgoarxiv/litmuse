@@ -48,7 +48,11 @@ is saved, lit-plan runs `goal-propose.mjs`, which turns that block into a single
 "잘 동작"), a push or publish as the only success, a command outside a short test allowlist and anything over 500
 characters, and it runs the check once to prove the objective is still false. The approval question then reads
 `Approve plan, start work and set goal: /goal <objective>? (yes / edit / no)`. When no goal is possible, it reads
-`Approve plan and start work? (yes / no)`, with one `No goal set: <reason>` line under it.
+`Approve plan and start work? (yes / no)`, with one `No goal set: <reason>` line under it. Under either question the
+model renders an answer guide that goal-propose prints after a blank line: a title, the goal, one row per accepted answer
+saying what it does (`yes` starts the work and sets the goal, `edit` changes the plan or its check and asks again, `no`
+starts nothing) and `Type the word alone.` The model words it in your language; the answer words stay English because
+the prompt hook matches them exactly.
 
 Only the session that was asked can answer, within 30 minutes; a `yes` in another session starts nothing and shows `Approval not recorded for this session. Run: lit start plans/<f>.md`. After a one-shot `muse exec` run, start the plan with `lit start plans/<f>.md`, or resume that same session and type `yes`. An exact `yes` does both at once: the prompt hook starts start-work on the plan, the same start a typed
 `lit start plans/<f>.md` makes, and tells the model to set that objective. If the start is refused (another live
@@ -62,7 +66,8 @@ A lit-loop or litwork run with no plan gets one question of its own. When the pr
 `pytest`, `cargo test`, `go test ./...`) and the prompt names an objective, the prompt hook records the question at the
 run's first activation, without running any test, and tells the model to end its first reply with
 ``Set goal for this lit-loop: /goal `npm test` exits 0 and this is done: <objective> [lit:4c7a9a52]? (yes / no)``. Muse shows no
-hook text, so the question depends on the model repeating it. An exact `yes` from the asking session, on the next prompt
+hook text, so the question depends on the model repeating it, together with the answer guide the hook hands over (`yes`
+sets the goal and the loop goes on, `no` goes on without one). An exact `yes` from the asking session, on the next prompt
 only, arms the goal and tells the model to set it with `create_goal`; it starts no start-work. `no`, `edit` and any other
 prompt drop the question. Without a test command the model asks after its failing check with
 `goal-propose.mjs --loop --check "<check>" <objective>`, which runs the check once and prints `No goal set: <reason>` when

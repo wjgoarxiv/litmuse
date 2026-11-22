@@ -27,14 +27,36 @@ export const CONSENT_TTL_MS = 30 * 60 * 1000;
 export const FALSIFY_TIMEOUT_MS = 120_000;
 export const LIT_TAG = /\[lit:([0-9a-f]{8})\]\s*$/u;
 
+// The answers each goal question accepts, with what each one does. The question's `(yes / …)` suffix and the answer
+// guide under it are both built from this one list, so they cannot drift apart.
+export const GOAL_ANSWERS = Object.freeze({
+  plan: { title: 'approve plan · start work · set goal', answers: [['yes', 'Starts the work now and sets this goal'], ['edit', "Change the plan or the goal's check first, then you are asked again"], ['no', 'Nothing starts and no goal is set']] },
+  start: { title: 'approve plan · start work', answers: [['yes', 'Starts the work now, with no goal'], ['no', 'Nothing starts']] },
+  loop: { title: 'set goal for this lit-loop', answers: [['yes', 'Sets this goal; the loop goes on'], ['no', 'The loop goes on without a goal']] },
+});
+const choices = (kind) => `(${GOAL_ANSWERS[kind].answers.map(([word]) => word).join(' / ')})`;
+
+/**
+ * The answer guide the model renders under a goal question, as a Markdown block quote: Muse shows no hook text, so every
+ * goal question reaches the user inside a model-written reply. The model words the descriptions in the user's language;
+ * the answer words stay English because the prompt hook matches them exactly. A condition holding a backtick is fenced
+ * with double backticks.
+ */
+export function answerGuide(kind, cond) {
+  const { title, answers } = GOAL_ANSWERS[kind];
+  const goal = cond === undefined ? [] : [`> Goal: \`\`/goal ${cond}\`\``, '>'];
+  return [`> **▶ Answer: ${title}**`, '>', ...goal, '> | Type | What happens |', '> |---|---|',
+    ...answers.map(([word, effect]) => `> | **\`${word}\`** | ${effect} |`), '>', '> Type the word alone.'].join('\n');
+}
+
 // Fixed status lines, one per outcome. Hooks and the propose script print these and nothing else.
 export const GOAL_STATUS = Object.freeze({
-  asked: (cond) => `Approve plan, start work and set goal: /goal ${cond}? (yes / edit / no)`,
-  askedStart: 'Approve plan and start work? (yes / no)',
+  asked: (cond) => `Approve plan, start work and set goal: /goal ${cond}? ${choices('plan')}`,
+  askedStart: `Approve plan and start work? ${choices('start')}`,
   declined: 'Nothing started and no goal set: you said no',
   notStarted: (why) => `Work not started and no goal set: ${why}`,
   notRecorded: (plan) => `Approval not recorded for this session. Run: lit start ${plan}`,
-  loopAsked: (cond) => `Set goal for this lit-loop: /goal ${cond}? (yes / no)`,
+  loopAsked: (cond) => `Set goal for this lit-loop: /goal ${cond}? ${choices('loop')}`,
   skipped: (reason) => `No goal set: ${reason}`,
   set: (id) => `LitMuse goal set [lit:${id}]`,
   yours: 'Your own goal is active; LitMuse left it alone.',
@@ -150,7 +172,7 @@ export function buildLoopConsent({ cwd, check, objective, now = Date.now(), time
   const dry = falsifyNow ? falsifyLoop({ cwd, check: command, ...(timeoutMs ? { timeoutMs } : {}), ...(run ? { run } : {}) }) : { ok: true };
   if (!dry.ok) return { line: GOAL_STATUS.skipped(dry.reason) };
   const consent = { version: 1, kind: 'loop', goal: true, condition: built.condition, hash: conditionHash(built.condition), id: built.id, plan: null, check: command, objective: goal, sessionId, askedAt: new Date(now).toISOString() };
-  return { line: GOAL_STATUS.loopAsked(built.condition), consent };
+  return { line: GOAL_STATUS.loopAsked(built.condition), guide: answerGuide('loop', built.condition), consent };
 }
 
 const openRows = (planText) => String(planText ?? '').split('\n').filter((line) => /^- \[ \] (?:\d+|F\d+)\. /u.test(line)).length;

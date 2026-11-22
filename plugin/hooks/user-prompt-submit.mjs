@@ -333,7 +333,7 @@ function loopGoalNote(hit, payload) {
     const offer = buildLoopConsent({ cwd, check, objective, falsifyNow: false, sessionId: payload.session_id });
     if (!offer.consent) return null;
     writeGoalRecord(root, 'consent', offer.consent);
-    return `Native goal: LitMuse recorded one goal question for this run. End your first reply with exactly this line, as its last line and asked once: ${offer.line} Never type or send /goal yourself. Do not call create_goal for this run before the user's exact \`yes\` on a later prompt; the hook then gives you the objective. Until then keep the ledger authoritative.`;
+    return `Native goal: LitMuse recorded one goal question for this run. End your first reply with exactly this line, asked once, and under it this answer guide as Markdown, its descriptions in the user's language and the answer words in English:\n${offer.line}\n\n${offer.guide}\nNever type or send /goal yourself. Do not call create_goal for this run before the user's exact \`yes\` on a later prompt; the hook then gives you the objective. Until then keep the ledger authoritative.`;
   } catch {
     return null;
   }

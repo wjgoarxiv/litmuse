@@ -78,7 +78,7 @@ test('goal-propose --loop dry-runs the check: a failing one records the question
   writeFileSync(join(ws, 'scripts', 'green.mjs'), 'process.exit(0);\n');
   const cli = (...args) => spawnSync(process.execPath, [PROPOSE, ...args], { cwd: ws, encoding: 'utf8', env });
   const red = cli('--loop', '--check', 'node scripts/red.mjs', 'make', 'the', 'export', 'work');
-  assert.match(red.stdout, /^Set goal for this lit-loop: \/goal `node scripts\/red\.mjs` exits 0 and this is done: make the export work \[lit:[0-9a-f]{8}\]\? \(yes \/ no\)\n$/);
+  assert.match(red.stdout, /^Set goal for this lit-loop: \/goal `node scripts\/red\.mjs` exits 0 and this is done: make the export work \[lit:[0-9a-f]{8}\]\? \(yes \/ no\)\n\n> \*\*▶ Answer: set goal for this lit-loop\*\*\n/);
   assert.equal(readGoalRecord(ws, 'consent').kind, 'loop');
   const ws2 = project();
   mkdirSync(join(ws2, 'scripts'));
@@ -97,7 +97,7 @@ test('the first lit-loop or litwork activation with an objective and a test comm
   assert.ok(match, ctx);
   assert.equal(match[1], 'fix the parser');
   assert.match(ctx, /LIT IGNITED · lit-loop/);
-  assert.match(ctx, /End your first reply with exactly this line, as its last line and asked once: Set goal for this lit-loop/);
+  assert.match(ctx, /End your first reply with exactly this line, asked once, and under it this answer guide as Markdown[^\n]*:\nSet goal for this lit-loop/);
   assert.match(ctx, /Never type or send \/goal yourself\. Do not call create_goal for this run before the user's exact `yes`/);
   const consent = readGoalRecord(ws, 'consent');
   assert.equal(consent.kind, 'loop');
@@ -211,7 +211,7 @@ test('the model-run fallback: PostToolUse stamps the asking session on the quest
   prompt(ws, 'lit loop fix the parser', 'P1');
   const command = `node ${PROPOSE} --loop --check "node scripts/red.mjs" fix the parser`;
   const printed = spawnSync('sh', ['-c', command], { cwd: ws, encoding: 'utf8', env }).stdout;
-  assert.match(printed, /^Set goal for this lit-loop: \/goal `node scripts\/red\.mjs` exits 0 and this is done: fix the parser \[lit:[0-9a-f]{8}\]\? \(yes \/ no\)\n$/);
+  assert.match(printed, /^Set goal for this lit-loop: \/goal `node scripts\/red\.mjs` exits 0 and this is done: fix the parser \[lit:[0-9a-f]{8}\]\? \(yes \/ no\)\n\n> \*\*▶ Answer: set goal for this lit-loop\*\*\n/);
   assert.equal(readGoalRecord(ws, 'consent').sessionId, null);
   assert.equal(hook('post-tool-use', { hook_event_name: 'PostToolUse', session_id: 'P1', tool_name: 'bash', tool_input: { command } }, ws).code, 0);
   assert.equal(readGoalRecord(ws, 'consent').sessionId, 'P1');

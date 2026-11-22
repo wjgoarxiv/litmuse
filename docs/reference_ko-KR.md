@@ -48,7 +48,11 @@ lit-plan이 `goal-propose.mjs`를 돌려 이 블록을
 말("works", "잘 동작"), push나 publish만으로 된 성공, 짧은 테스트 허용 목록 밖의 명령, 500자를 넘는 문장은 거절하고,
 검사를 한 번 돌려 목표가 아직 참이 아님을 확인합니다. 그러면 승인 질문이
 `Approve plan, start work and set goal: /goal <목표>? (yes / edit / no)`가 됩니다. 목표를 걸 수 없으면
-`Approve plan and start work? (yes / no)`가 되고, 그 아래에 `No goal set: <이유>` 한 줄이 붙습니다.
+`Approve plan and start work? (yes / no)`가 되고, 그 아래에 `No goal set: <이유>` 한 줄이 붙습니다. 어느 질문이든
+그 아래에 답 안내가 붙습니다. goal-propose가 빈 줄 다음에 찍어 주는 짧은 블록으로, 제목과 목표, 답마다 무엇이
+일어나는지 적은 표(`yes`는 작업을 시작하고 목표를 겁니다, `edit`은 계획이나 검사를 고친 뒤 다시 묻습니다, `no`는
+아무것도 시작하지 않습니다), 그리고 `Type the word alone.` 한 줄입니다. 모델은 이 안내를 사용자의 언어로 옮기지만 답
+낱말은 영어 그대로 둡니다. 프롬프트 훅이 그 낱말을 정확히 맞춰 보기 때문입니다.
 
 답할 수 있는 건 질문을 받은 그 세션뿐이고, 30분 안이어야 합니다. 다른 세션에서 친 `yes`는 아무것도 시작하지 않고 `Approval not recorded for this session. Run: lit start plans/<f>.md` 한 줄을 보여 줍니다. 한 번 돌고 끝나는 `muse exec` 뒤에는 `lit start plans/<f>.md`로 계획을 시작하거나, 같은 세션을 다시 열어 `yes`라고 답하면 됩니다. 정확히 `yes`라고 답하면 두 가지가 한 번에 됩니다. 프롬프트 훅이 그 계획으로 start-work를 시작하고(직접
 `lit start plans/<f>.md`를 친 것과 같은 시작입니다) 모델에게 그 목표를 걸라고 말합니다. 시작이 거절되면(다른 살아 있는

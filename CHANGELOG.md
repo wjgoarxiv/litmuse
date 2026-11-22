@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+- Every goal question now comes with an answer guide under it, so a first-time user sees what to type and what each answer does. The question line itself and the accepted answers are unchanged. `goal-propose.mjs` prints the guide after a blank line, and the prompt hook passes it with the lit-loop question; it is a short Markdown block: a title, the goal, one row per answer (`yes` / `edit` / `no` for a plan with a goal, `yes` / `no` for start only and for a lit-loop) and `Type the word alone.` The model words it in your language and keeps the answer words in English. Muse shows no hook text, so the guide, like the question, depends on the model repeating it.
+- The hook code changed, so Muse asks you to approve the LitMuse hooks again after the update.
+
 ## 0.1.16 — 2026-11-21
 
 - A lit-loop or litwork run with no plan can now get a Muse goal too, asked once. When the project has a test command (`npm test`, `pytest`, `cargo test` or `go test ./...`) and the prompt names an objective, the prompt hook records one question at the run's first activation and tells the model to end its first reply with `Set goal for this lit-loop: /goal <check> exits 0 and this is done: <objective>? (yes / no)`. Muse shows no hook text, so that is the model's job and cannot be forced. An exact `yes` arms the goal, and the model sets it with `create_goal` the way a plan's goal is set, but starts no start-work; `no`, `edit` or any other prompt drops the question. With no test command the model asks after its failing check through `goal-propose.mjs --loop --check "<check>" <objective>`, which runs the check once and prints `No goal set: <reason>` when it already passes, cannot run or is not an allowlisted test command. A repeat of `lit`, `lit goal`, a plan, and a session that already holds an open goal or a pending question ask nothing.

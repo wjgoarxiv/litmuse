@@ -3,8 +3,8 @@
 // puts what it prints into the approval question. It compiles the plan's `## Done when` block into one Muse goal
 // objective, lints it, runs the check once to prove the objective is false now, and records the question in
 // `.litmuse/goal/consent.json` under the project's state root. It prints the question that starts the work and sets the
-// goal, or, when no goal is possible, the start-only question and the one `No goal set: <reason>` line. An unreadable
-// plan prints that reason alone. It never starts work or sets a goal; only the user's exact `yes` does both. The lit-plan write guard allows
+// goal, or, when no goal is possible, the start-only question and the one `No goal set: <reason>` line; a blank line and
+// the answer guide follow any question, for the model to render under it. An unreadable plan prints that reason alone. It never starts work or sets a goal; only the user's exact `yes` does both. The lit-plan write guard allows
 // this one command during a planning turn.
 // `node <skill-dir>/scripts/goal-propose.mjs --loop --check "<check>" <objective...>` is the lit-loop form: a run with no
 // plan asks one goal question once its failing check exists (the check must fail now; a check that already passes, cannot
@@ -13,7 +13,7 @@
 import { readFileSync } from 'node:fs';
 import { isAbsolute, relative, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
-import { GOAL_STATUS, buildLoopConsent, compileCondition, conditionHash, consentKey, falsify, lintCondition, parseDoneWhen, writeGoalRecord } from '../../../hooks/lib/goal.mjs';
+import { GOAL_STATUS, answerGuide, buildLoopConsent, compileCondition, conditionHash, consentKey, falsify, lintCondition, parseDoneWhen, writeGoalRecord } from '../../../hooks/lib/goal.mjs';
 import { resolveProjectStateRoot } from '../../../hooks/lib/workflow-stack.mjs';
 
 export function proposeGoal({ cwd, planArg, now = Date.now(), timeoutMs, run, sessionId = null } = {}) {
@@ -32,7 +32,7 @@ export function proposeGoal({ cwd, planArg, now = Date.now(), timeoutMs, run, se
     const consent = { version: 1, goal: false, plan, reason, sessionId, askedAt };
     consent.hash = conditionHash(consentKey(consent));
     writeGoalRecord(resolveProjectStateRoot(cwd), 'consent', consent);
-    return { line: `${GOAL_STATUS.askedStart}\n${GOAL_STATUS.skipped(reason)}`, consent };
+    return { line: `${GOAL_STATUS.askedStart}\n${GOAL_STATUS.skipped(reason)}`, guide: answerGuide('start'), consent };
   };
   if (/^goal:\s*never\s*$/mu.test(planText)) return startOnly('this plan is marked goal: never');
   const done = parseDoneWhen(planText);
@@ -45,7 +45,7 @@ export function proposeGoal({ cwd, planArg, now = Date.now(), timeoutMs, run, se
   if (!dry.ok) return startOnly(dry.reason);
   const consent = { version: 1, goal: true, condition: built.condition, hash: conditionHash(built.condition), id: built.id, plan, check: done.check, sessionId, askedAt };
   writeGoalRecord(resolveProjectStateRoot(cwd), 'consent', consent);
-  return { line: GOAL_STATUS.asked(built.condition), consent };
+  return { line: GOAL_STATUS.asked(built.condition), guide: answerGuide('plan', built.condition), consent };
 }
 
 export function proposeLoopGoal({ cwd, check, objective, now = Date.now(), timeoutMs, run, sessionId = null } = {}) {
@@ -56,8 +56,8 @@ export function proposeLoopGoal({ cwd, check, objective, now = Date.now(), timeo
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   const [first, ...rest] = process.argv.slice(2);
-  const { line } = first === '--loop' && rest[0] === '--check'
+  const { line, guide } = first === '--loop' && rest[0] === '--check'
     ? proposeLoopGoal({ cwd: process.cwd(), check: rest[1], objective: rest.slice(2).join(' ') })
     : proposeGoal({ cwd: process.cwd(), planArg: first });
-  process.stdout.write(`${line}\n`);
+  process.stdout.write(guide ? `${line}\n\n${guide}\n` : `${line}\n`);
 }
