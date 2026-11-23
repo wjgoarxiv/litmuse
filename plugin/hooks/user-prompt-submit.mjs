@@ -67,7 +67,7 @@ function stackCount(frame) {
 }
 
 function activation(hit, payload) {
-  const task = hit.trailing ? 'The task is the rest of the prompt before the closing `lit`.' : `The task is the rest of the prompt after the keyword${hit.keyword ? ` "${hit.keyword}"` : ''}.`;
+  const task = hit.trailing ? `The task is the rest of the prompt before the closing \`${hit.keyword ?? 'lit'}\`.` : `The task is the rest of the prompt after the keyword${hit.keyword ? ` "${hit.keyword}"` : ''}.`;
   const moved = movedActivation(hit.route);
   const lines = [
     ...banner('LIT IGNITED', hit.route),
@@ -98,7 +98,7 @@ function activation(hit, payload) {
     lines.push('Only when the user asks for detail (`lit adhd 자세히`, `lit adhd detail`) add `--detail`: it prints the KPI board (bars, milestones, done, left, reminders) with the per-session list under it. The collector draws every bar and count; never redraw, round or add to them. `' + rewind + ' --json` holds the same records, the board and the verdict.');
   }
   if (hit.trailing) {
-    lines.push('Soft-confirm: `lit` came last in the prompt. If the request reads like ordinary prose, say in one line that you are starting a lit-loop and carry on; a stray English `lit` is recoverable.');
+    lines.push(`Soft-confirm: \`${hit.keyword ?? 'lit'}\` came last in the prompt. If the request reads like ordinary prose, say in one line that you are starting a ${hit.route} and carry on; a stray English \`lit\` is recoverable.`);
   }
   if (hit.bare && !hit.restart) {
     lines.push('The prompt has no task text after the keyword. After loading the skill, ask the user in one line what to run (a task for lit-loop, or a route such as plan or review) and wait for the answer before any other tool.');
@@ -310,14 +310,14 @@ function loopGoalAnswer(payload, root, consent, answer) {
   return true;
 }
 
-// A run route's first activation asks one goal question when the prompt names an objective, and no goal of this session is
-// open and no question is pending. With a test command the hook records the question itself (no test run here) and tells the
+// A run route's first activation asks one goal question when the prompt names an objective (the words before a closing
+// activation word count as one), and no goal of this session is open and no question is pending. With a test command the hook records the question itself (no test run here) and tells the
 // model to end its first reply with it: Muse shows no hook text, so this is advisory. Without one, the model asks it after
 // its RED check through goal-propose --loop, which dry-runs and refuses a check that already passes.
 const RUN_GOAL_ROUTES = new Set(['lit-loop', 'litwork']);
 function loopGoalNote(hit, payload) {
   try {
-    if (!RUN_GOAL_ROUTES.has(hit.route) || hit.bare || hit.resume || hit.trailing || !safeId(payload.session_id)) return null;
+    if (!RUN_GOAL_ROUTES.has(hit.route) || hit.bare || hit.resume || !safeId(payload.session_id)) return null;
     const task = typeof hit.task === 'string' ? hit.task : String(payload.prompt ?? '').replace(/^\s*\/?(?:litmuse:)?(?:lit-loop|litwork)\b[\s:,.!?]*/iu, '');
     const objective = normalizeLoopObjective(task);
     if (!objective) return null;
@@ -439,7 +439,7 @@ run((payload) => {
   const turnId = payload.turn_id ?? null;
   const active = hit.restart ? null : liveRoute(previous);
   // start-work is always sent in full: its prompt carries the write grant and names the plan to run.
-  const continues = active && (hit.bare || hit.resume || hit.trailing || (hit.route === active && active !== 'start-work'));
+  const continues = active && (hit.bare || hit.resume || (hit.trailing && !hit.keyword) || (hit.route === active && active !== 'start-work'));
   if (continues) {
     // `lit continue` with a side frame on top closes the side and resumes the paused spine.
     const frame = hit.resume ? stackContinue(payload) : null;

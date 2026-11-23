@@ -167,16 +167,20 @@ export function detectRoute(prompt) {
 }
 
 // A standalone `lit` or `LIT` as the last word of the prompt ("Hello! lit") activates lit-loop with the earlier text as
-// the task, as it does in the sibling products. Only a word of its own counts: a `lit` inside a word (literal, split),
-// after a path or URL character (lit-plan.md, /x/lit/y), in quotes, in a code span or fence, or followed by more text
-// does not.
-const TRAILING_LIT = /(?:^|\s)(?:lit|LIT)\s*$/;
+// the task, as it does in the sibling products. A closing run word (`lit-loop`, `litwork`) runs that route the same way,
+// as it would at the start. Only a word of its own counts: a `lit` inside a word (literal, split), after a path or URL
+// character (lit-plan.md, /x/lit/y), in quotes, in a code span or fence, or followed by more text does not.
+const TRAILING_LIT = /(?:^|\s)(lit|LIT|lit-loop|LIT-LOOP|litwork|LITWORK)\s*$/;
 function detectTrailing(prompt) {
   const withoutFences = prompt.replace(/```[\s\S]*?```/g, ' ');
   if (withoutFences.includes('```')) return null;
   const text = withoutFences.replace(/`[^`\n]*`/g, ' ');
-  if (!TRAILING_LIT.test(text)) return null;
-  return { route: 'lit-loop', keyword: null, bare: false, resume: false, restart: false, trailing: true, task: prompt.replace(/(?:lit|LIT)\s*$/u, '') };
+  const word = TRAILING_LIT.exec(text)?.[1];
+  if (!word) return null;
+  const lower = word.toLowerCase();
+  const task = prompt.replace(/\S+\s*$/u, '');
+  if (lower === 'lit') return { route: 'lit-loop', keyword: null, bare: false, resume: false, restart: false, trailing: true, task };
+  return { route: lower, keyword: lower, bare: false, resume: false, restart: false, trailing: true, task };
 }
 
 function detectLeading(prompt) {

@@ -111,11 +111,11 @@ test('the first lit-loop or litwork activation with an objective and a test comm
   assert.match(prompt(project(), 'lit tidy the readme and fix the bug', 'L3'), /LIT IGNITED · lit-loop[\s\S]*Set goal for this lit-loop/, 'a plain `lit <task>` runs lit-loop');
 });
 
-test('no question for a repeat, litgoal, a plan, a bare lit, a trailing lit, or a goal already open or pending', () => {
+test('no question for a repeat, litgoal, a plan, a bare lit, or a goal already open or pending', () => {
   const ws = project();
   assert.match(prompt(ws, 'lit loop first', 'R1'), QUESTION);
   assert.doesNotMatch(prompt(ws, 'lit loop again', 'R1'), /Set goal for this lit-loop|Native goal/, 'a repeat is a continuation');
-  for (const text of ['lit goal ship it', 'lit plan the flag', 'lit', 'lit continue', 'tidy up the readme lit']) {
+  for (const text of ['lit goal ship it', 'lit plan the flag', 'lit', 'lit continue', 'LIT', 'lit resume']) {
     const other = project();
     const ctx = prompt(other, text, 'R2');
     assert.doesNotMatch(ctx, /Native goal|Set goal for this lit-loop/, text);
@@ -133,6 +133,43 @@ test('no question for a repeat, litgoal, a plan, a bare lit, a trailing lit, or 
   writeGoalRecord(pending, 'consent', planned.consent);
   assert.doesNotMatch(prompt(pending, 'lit loop fix it', 'R6'), /Native goal/, 'a pending question is never replaced');
   assert.equal(readGoalRecord(pending, 'consent').objective, 'earlier');
+});
+
+// The direct skill words at the start carry their task to the goal question, like `lit loop <task>` does.
+test('a leading lit-loop or litwork asks the goal question with the words after it', () => {
+  for (const [text, objective, route] of [
+    ['lit-loop fix the parser', 'fix the parser', 'lit-loop'],
+    ['lit-loop: 로그인 버튼 고쳐줘', '로그인 버튼 고쳐줘', 'lit-loop'],
+    ['LIT-LOOP fix the parser', 'fix the parser', 'lit-loop'],
+    ['litwork add a --json flag', 'add a --json flag', 'litwork'],
+  ]) {
+    const ws = project();
+    const ctx = prompt(ws, text, 'D1');
+    assert.match(ctx, new RegExp(`LIT IGNITED · ${route}`), text);
+    const match = QUESTION.exec(ctx);
+    assert.ok(match, `${text}\n${ctx}`);
+    assert.equal(match[1], objective, text);
+  }
+  for (const text of ['lit-loop', 'litwork']) assert.doesNotMatch(prompt(project(), text, 'D2'), /Native goal/, text);
+});
+
+// A request that ends with the activation word asks the goal question with the words before it, as a leading one does.
+test('a request that ends with lit, lit-loop or litwork asks the goal question with the words before it', () => {
+  for (const [text, objective, route] of [
+    ['fix the login button lit', 'fix the login button', 'lit-loop'],
+    ['로그인 버튼 고쳐줘 lit', '로그인 버튼 고쳐줘', 'lit-loop'],
+    ['로그인 버튼 고쳐줘. 부탁해 lit', '로그인 버튼 고쳐줘. 부탁해', 'lit-loop'],
+    ['로그인 버튼 고쳐줘 lit-loop', '로그인 버튼 고쳐줘', 'lit-loop'],
+    ['add a --json flag litwork', 'add a --json flag', 'litwork'],
+  ]) {
+    const ws = project();
+    const ctx = prompt(ws, text, 'T1');
+    assert.match(ctx, new RegExp(`LIT IGNITED · ${route}`), text);
+    const match = QUESTION.exec(ctx);
+    assert.ok(match, `${text}\n${ctx}`);
+    assert.equal(match[1], objective, text);
+    assert.equal(readGoalRecord(ws, 'consent').objective, objective, text);
+  }
 });
 
 test('without a test command the model is pointed at goal-propose --loop after its RED check, and nothing is recorded', () => {

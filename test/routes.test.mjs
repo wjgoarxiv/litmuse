@@ -105,6 +105,24 @@ test('a lit that is not a word of its own, or sits in code, quotes, a path or a 
   }
 });
 
+// A trailing run word routes the same as a leading one, with the words before it as the task.
+test('a trailing lit-loop or litwork routes to that run route with the words before it', () => {
+  for (const [prompt, route, task] of [
+    ['로그인 버튼 고쳐줘 lit-loop', 'lit-loop', '로그인 버튼 고쳐줘'],
+    ['fix the login button lit-loop', 'lit-loop', 'fix the login button'],
+    ['로그인 버튼 고쳐줘 litwork', 'litwork', '로그인 버튼 고쳐줘'],
+    ['add a --json flag  LITWORK', 'litwork', 'add a --json flag'],
+  ]) {
+    const hit = detectRoute(prompt);
+    assert.equal(hit?.route, route, prompt);
+    assert.equal(hit?.trailing, true, prompt);
+    assert.equal(hit?.task.trim(), task, prompt);
+  }
+  for (const prompt of ['what does lit-loop do?', 'see lit-loop.md', 'run `lit-loop`', 'say "litwork"', 'open /x/litwork', 'the Lit-Loop']) {
+    assert.equal(detectRoute(prompt), null, prompt);
+  }
+});
+
 test('a leading lit keeps its route words; the trailing form never overrides them', () => {
   assert.equal(detectRoute('lit plan a cache lit')?.route, 'lit-plan');
   assert.equal(detectRoute('lit plan a cache lit')?.trailing, undefined);
