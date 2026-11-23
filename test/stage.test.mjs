@@ -14,6 +14,8 @@ const HOOKS = join(dirname(fileURLToPath(import.meta.url)), '..', 'plugin', 'hoo
 function env() {
   const e = { ...process.env, XDG_STATE_HOME: mkdtempSync(join(tmpdir(), 'litmuse-stage-state-')) };
   delete e.HERDR_PANE_ID;
+  // The colour looks are asserted on purpose; a NO_COLOR shell must not turn them off.
+  delete e.NO_COLOR;
   return e;
 }
 const workspace = () => mkdtempSync(join(tmpdir(), 'litmuse-stage-ws-'));

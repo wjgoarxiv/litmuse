@@ -15,6 +15,7 @@ import { buildCard, renderCard } from '../lib/stage-card.mjs';
 import { styleCommand } from '../lib/style.mjs';
 import { runRewindCli } from '../plugin/lib/rewind/collect.mjs';
 import { extensionsCommand } from '../lib/extensions.mjs';
+import { colourDepth, litPill, markFor, pillWidth, termColumns } from '../lib/mark.mjs';
 
 const HELP = `LitMuse ${packageVersion()}: LitFamily workflows for Meta's Muse Code
 
@@ -103,10 +104,12 @@ async function main() {
   switch (command) {
     case 'install':
     case 'update':
+      print(markFor({ env }));
       return install({ env, flags, interactive, ask, print });
     case 'uninstall':
       return uninstall({ env, flags, interactive, print });
     case 'doctor':
+      if (!flags.json) print(markFor({ env }));
       return doctor({ env, flags, print });
     case 'models':
       return models({ env, flags, print });
@@ -122,7 +125,17 @@ async function main() {
     case 'status': {
       if (flags.card) {
         const card = buildCard({ cwd: process.cwd(), env });
-        print(flags.json ? JSON.stringify(card, null, 2) : renderCard(card));
+        if (flags.json) {
+          print(JSON.stringify(card, null, 2));
+          return 0;
+        }
+        // /lit-status has the model run this through bash and repeat it, so the mark and pill
+        // appear only when a person's terminal is attached.
+        const tty = process.stdout.isTTY === true;
+        const depth = colourDepth({ env, isTTY: tty });
+        const v = packageVersion();
+        if (tty) print(markFor({ env }));
+        print(renderCard(card, { badge: tty && depth === 'truecolor' ? { text: litPill(v, depth), width: pillWidth(v) } : null, cols: termColumns({ env }) }));
         return 0;
       }
       const st = stageState(paths(env));
