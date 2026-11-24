@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.19 — 2026-11-24
+
+- A lit-team lock folder that has no owner record yet is judged only after it is at least 5 seconds old, whatever stale window the caller passes. Before, a stale window of 0 could move aside a lock another process had just created, and that process then failed with `lock ownership receipt failed`.
+- Both READMEs explain the LIT mark (where it appears and what a terminal without colour, a pipe or a narrow window gets), that a request ending with `lit`, `lit-loop` or `litwork` works like one starting with it, and what to do when lit-team stops with `team state lock timed out`. The Korean reference now also describes the lit-loop goal question.
+
 ## 0.1.18 — 2026-11-24
 
 - `litmuse install`, `update`, `doctor` and `--help` now print the synthwave LIT mark above their output, and `litmuse status --card` in a truecolor terminal shows a gradient version pill on the stage card. Output to a pipe gets a plain one-line mark instead, and `doctor --json` and `status --card --json` get none.
