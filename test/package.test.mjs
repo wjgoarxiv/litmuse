@@ -50,3 +50,17 @@ test('no file in the pack is ignored by git', () => {
   const r = spawnSync('git', ['check-ignore', '--no-index', '--stdin'], { cwd: ROOT, input: pinned.join('\n'), encoding: 'utf8' });
   assert.equal(r.stdout.trim(), '', `ignored by git: ${r.stdout.trim()}`);
 });
+
+test('README demo loops: animated WebP files under 2.5 MiB, each page plays its own, the Korean copy stays out of the pack', () => {
+  const pinned = JSON.parse(readFileSync(join(ROOT, 'skills.lock.json'), 'utf8')).pack;
+  for (const [readme, film] of [['README.md', 'docs/assets/readme/demo.webp'], ['README_ko-KR.md', 'docs/assets/readme/demo-ko.webp']]) {
+    const bytes = readFileSync(join(ROOT, film));
+    assert.equal(bytes.subarray(0, 4).toString('latin1'), 'RIFF', `${film} is a RIFF container`);
+    assert.equal(bytes.subarray(8, 12).toString('latin1'), 'WEBP', `${film} is a WebP`);
+    assert.ok(bytes.includes(Buffer.from('ANIM')), `${film} is animated`);
+    assert.ok(bytes.length <= 2_621_440, `${film} stays within 2.5 MiB (${bytes.length} bytes)`);
+    assert.ok(readFileSync(join(ROOT, readme), 'utf8').includes(`<img src="./${film}" width="960" alt="`), `${readme} plays ${film}`);
+  }
+  assert.ok(pinned.includes('docs/assets/readme/demo.webp'), 'the English loop ships with the README');
+  assert.ok(!pinned.includes('docs/assets/readme/demo-ko.webp'), 'the Korean loop is for the GitHub page only');
+});

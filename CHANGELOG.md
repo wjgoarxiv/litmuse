@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- The README demo is a new silent loop of one request with the watched status card in its own pane (plan and goal counts, lanes, the celebration line, the sunset), replacing the old still of three commands; the Korean page has its own copy, kept out of the package. The Muse screen around the card is redrawn.
 - At a terminal, `litmuse install`, `update` and `uninstall` draw the plan, the questions, each finished step and the closing summary as cards. A question card names its step, says what Yes does and what No leaves alone, and marks the default: `y` or `n` answers at once, the arrow keys or Tab move, Enter takes the highlight, Esc answers nothing. The questions, their order, their defaults and the stored answers are unchanged, and Ctrl+C still ends with the same message and exit code 1.
 - A failed install shows what went wrong in a red card, with the remedy below it as text you can copy. The `muse plugins approve` lines stay one per line too.
 - `NO_COLOR` keeps the cards without colour; a locale without UTF-8 draws them in ASCII. `--yes`, `--dry-run`, `TERM=dumb`, `LITMUSE_AGENT_FILE`, a pipe, CI and a window under 40 columns or 12 rows print exactly what they printed before.

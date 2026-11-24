@@ -93,7 +93,11 @@ it does     loads lit-plan, reads the repo, writes plans/todo-app.md with ordere
 it ends     "Plan saved. Run /start-work when you are happy with it."
 ```
 
-<p align="center"><img src="./docs/assets/readme/demo.webp" width="960" alt="Terminal card of three real commands in a test project. muse --version prints Muse Code 1.4.14. litmuse status --card shows the lit-plan route active for 30s with plan 0/2 in plans/todo-app.md and next row 1, Add the shout flag. litmuse models lists muse-spark-1.3 (default) and muse-spark-1.2 with their effort levels." /></p>
+Muse draws no card of its own, so LitMuse's card runs in a second pane: `litmuse status --card --watch`. In the loop below one request goes through it. The route lights up, the plan and the goal show their counts, two lanes run, the plan rows get ticked, and at 3/3 the card prints one celebratory line.
+
+<p align="center"><img src="./docs/assets/readme/demo.webp" width="960" alt="A silent loop of Muse Code with a second pane running `litmuse status --card --watch`. After the prompt &quot;lit add a --shout flag that prints the greeting in capitals, with a test&quot;, the card shows lit-loop active, plan 0/3 and goal 0/1, two running lanes, lit-executor and lit-verifier, and the plan rows being ticked. At 3/3 it prints one celebratory line and the sun steps aside; fifteen minutes later the card idles under a dimmed sunset." /></p>
+
+<p align="center"><sub>The card is LitMuse's own output; the Muse screen around it is redrawn. The last scene is fifteen minutes later.</sub></p>
 
 Headless runs work the same way: `muse exec --json "lit plan a tiny todo app" < /dev/null`.
 
