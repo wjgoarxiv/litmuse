@@ -94,6 +94,7 @@ async function main() {
   }
   if (command === 'extensions') return extensionsCommand({ args, flags, env, print });
   if (flags.help || command === 'help') {
+    print(markFor({ env }));
     print(HELP);
     return 0;
   }
