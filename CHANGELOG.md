@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.20 — 2026-11-25
+
+- `litmuse status --card` shows a sunset beside the words in a truecolor terminal of 90 columns or more: a half-sunk sun, stars and a sea, drawn only in cells that hold no text. It is dim with no route, amber on `YOUR TURN` and rainbow for `lit-adhd`. The version pill runs orange to pink there, thread branches turn neon and the current stage is filled violet to cyan. Row count, words and widths are unchanged, and a pipe, `--json`, `NO_COLOR`, 256 or fewer colours, a light background (`COLORFGBG`) and narrower terminals print what they did before.
+- New: `litmuse status --card --watch` keeps the card open in a neon frame. The scene moves while your Muse session works and holds still when it stops; `LITMUSE_MOTION=off` keeps it still. `q` or Ctrl+C leaves and restores the terminal.
+- No hook or context file changed, so Muse asks for no new hook approval.
+
 ## 0.1.19 — 2026-11-24
 
 - A lit-team lock folder that has no owner record yet is judged only after it is at least 5 seconds old, whatever stale window the caller passes. Before, a stale window of 0 could move aside a lock another process had just created, and that process then failed with `lock ownership receipt failed`.
