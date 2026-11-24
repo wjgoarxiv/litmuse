@@ -32,6 +32,11 @@ fix the date parsing bug in src/dates.js lit
 Muse sets the goal, writes a failing test, fixes the bug, checks the result and tells you what it checked.
 Most tasks need nothing more.
 
+Both places work the same way. When `lit` comes last, the words before it are the task, so `fix the login redirect lit`
+gets the same goal question as `lit fix the login redirect`, with "fix the login redirect" as the objective. The two run
+words behave like this too: `fix the login redirect lit-loop` runs lit-loop and `add a --json flag litwork` runs
+litwork, just as they would at the start.
+
 **The full workflow.** For a bigger job, go one step at a time. Each step leaves a file the next step reads,
 and you can skip any step you do not need.
 
@@ -166,6 +171,8 @@ The [Quick start](#quick-start) line installs LitMuse at user scope, so it is av
 
 The bottom row of the picture covers why an update may ask again, what install leaves alone, and the one file it writes only after you agree ([the rules-file block](./docs/reference.md#a-short-block-in-muses-own-rules-file)). Muse re-arms the agent approvals whenever the plugin is updated, so after an update the installer asks once more for those. In `doctor`, each capability that still waits for approval appears as `APPROVAL NEEDED` together with the exact command.
 
+`install`, `update`, `doctor` and `--help` open with the synthwave LIT mark, so you can tell at a glance which tool is talking. It is drawn for the terminal it lands in: full colour in a truecolor or 256-colour terminal, the same picture without colour when colour is off (`NO_COLOR`, `TERM=dumb`, an 8-colour terminal), and the single line `LIT · muse code` when the output goes to a pipe, a log or the model's bash tool, or the window is narrower than 24 columns. `doctor --json` prints no mark.
+
 <details>
 <summary>Install switches</summary>
 
@@ -214,6 +221,8 @@ While a plan runs, the card names the route, the plan file, and the next open ro
 Ticking a row moves the count and the next-row pointer:
 
 <p align="center"><img src="./docs/assets/card/after.webp" width="960" alt="The same card after row 1 is ticked: plan 1/2 in plans/todo-app.md, next row 2, Write the tests." /></p>
+
+Run in a terminal, `litmuse status --card` also puts the mark above the card, and a truecolor terminal gets a gradient `🔥LIT v<version>` pill at the start of its first line. When `/lit-status` has the model run the card through its bash tool, or colour is off, the card keeps its plain `LIT ·` headline, and `--json` prints only the record.
 
 The card reads the hook-kept state under `~/.local/state/litmuse/`, outside the project. How it lists other sessions is in [the reference](./docs/reference.md#the-live-record-behind-the-card).
 
@@ -334,7 +343,7 @@ A prompt that starts with `lit` goes through four steps, and each one leaves som
 <details>
 <summary>The four steps, one by one</summary>
 
-1. **Route.** The prompt hook reads the word after `lit` and picks the route. `lit plan` goes to lit-plan, plain `lit` goes to lit-loop, and another `lit` while that route is still running carries it on.
+1. **Route.** The prompt hook reads the word after `lit` and picks the route. `lit plan` goes to lit-plan, plain `lit` goes to lit-loop, and another `lit` while that route is still running carries it on. A request that ends with `lit` goes to lit-loop with the words before it as the task, and one that ends with `lit-loop` or `litwork` goes to that route.
 2. **Load.** Muse loads the route's skill, which may hand parts of the work to child agents such as `litmuse/lit-verifier`.
 3. **Work.** During a planning turn the PreToolUse hook lets writes land only under `plans/` and `.litmuse/`.
 4. **Review.** The work counts as done when the tests pass and someone looked at the real surface; anything nobody could check is marked unverified. While plan rows are still open, the Stop hook keeps the turn going.
@@ -394,6 +403,8 @@ To update, run the install line again. To remove everything, run `uninstall` (ad
 **`doctor` warns about a personal skill.** It shares a name with a LitMuse skill or comes from another tool's plugin folder. For a clean run, switch off "Personal rules fallback" and "Personal skills fallback" in `/settings`; a headless run takes `muse exec --no-foreign-personal-context` (the interactive `muse` rejects that flag on 1.4.11).
 
 **`doctor` shows `INFO leftover`.** LitMuse ships no engine runtime any more; releases up to 0.1.11 cached them under `~/.local/share/litmuse/runtime/`, and `uninstall` never removed that folder. Nothing reads it now (an extension sets up its own engines), so delete it to free the space.
+
+**lit-team stops with `team state lock timed out`.** The lit-team script takes a short lock on the team folder while it updates the team file, and a process that crashed can leave that lock behind. The next command clears it on its own: a lock with no owner record that is older than 5 seconds (or the stale window, if that is longer), a lock whose process is gone, and a lock held for more than 10 minutes, even when its process number now belongs to another program. When the message still appears, it names the lock folder and its holder, `held by pid <n> for <s> s` or `with no owner record`. A live holder is a lit-team command still running in another session, so let it finish. If nothing is running, close the other Muse sessions on this project and delete the named `.lock` folder under `.litmuse/team/<team-id>/`.
 
 ## Reference
 

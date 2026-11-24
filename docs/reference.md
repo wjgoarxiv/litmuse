@@ -71,8 +71,9 @@ sets the goal and the loop goes on, `no` goes on without one). An exact `yes` fr
 only, arms the goal and tells the model to set it with `create_goal`; it starts no start-work. `no`, `edit` and any other
 prompt drop the question. Without a test command the model asks after its failing check with
 `goal-propose.mjs --loop --check "<check>" <objective>`, which runs the check once and prints `No goal set: <reason>` when
-it already passes, cannot run or is not an allowlisted test command. No question is asked for a repeat, `lit goal`, a plan,
-a bare `lit`, or a session that already holds an open goal or a pending question.
+it already passes, cannot run or is not an allowlisted test command. A request that ends with `lit`, `lit-loop` or `litwork` asks
+the same question, with the words before that word as the objective. No question is asked for a repeat, `lit goal`, a
+plan, a bare `lit`, `lit continue` or `lit resume`, or a session that already holds an open goal or a pending question.
 
 Read-only skills (lit-adhd, review-work, litresearch, the brainstorm skills and others) say `goal: never` in their
 frontmatter and never set one.

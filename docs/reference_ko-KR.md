@@ -62,6 +62,14 @@ lit-plan이 `goal-propose.mjs`를 돌려 이 블록을
 검사를 돌리고 0으로 끝나면 목표를 닫으라고 하며, `lit cancel`은 blocked로 닫습니다. 기록은 `.litmuse/goal/`에
 (질문, 답, 소유) 남고, 아무도 답하지 않은 질문은 SessionStart가 치웁니다.
 
+계획 없이 도는 lit-loop이나 litwork도 질문을 하나 받습니다. 프로젝트에 테스트 명령(`npm test`, `pytest`, `cargo test`,
+`go test ./...`)이 있고 프롬프트에 목표가 있으면, 프롬프트 훅이 첫 활성화 때 테스트는 돌리지 않고 질문만 기록한 뒤
+모델에게 첫 답을 ``Set goal for this lit-loop: /goal `npm test` exits 0 and this is done: <목표> [lit:4c7a9a52]? (yes / no)``
+줄로 끝내라고 합니다. Muse는 훅 글을 보여 주지 않으므로 질문은 모델이 옮겨 적어야 보입니다. 다음 프롬프트에서 같은 세션이
+정확히 `yes`라고 하면 목표가 걸리고 start-work는 시작하지 않으며, 다른 답은 질문을 버립니다. 요청이 `lit`, `lit-loop`,
+`litwork`로 끝나도 같은 질문을 하고, 그 단어 앞의 말이 목표가 됩니다. 같은 경로를 다시 부를 때, `lit goal`, 계획,
+`lit`만 친 경우, `lit continue`나 `lit resume`, 이미 열린 목표나 답을 기다리는 질문이 있는 세션에서는 묻지 않습니다.
+
 읽기만 하는 스킬(lit-adhd, review-work, litresearch, 브레인스토밍 스킬 등)은 frontmatter에 `goal: never`가 있어 목표를
 걸지 않습니다.
 

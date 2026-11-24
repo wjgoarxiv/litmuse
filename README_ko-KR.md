@@ -27,6 +27,8 @@ src/dates.js의 날짜 파싱 버그 고쳐줘 lit
 
 Muse가 목표를 정하고, 실패하는 테스트를 쓰고, 버그를 고치고, 결과를 확인한 뒤 무엇을 확인했는지 알려 줍니다. 웬만한 작업은 이것으로 충분합니다.
 
+앞에 붙이든 끝에 붙이든 똑같이 동작합니다. `lit`이 맨 끝에 오면 그 앞의 말이 할 일이 되므로, `로그인 버튼 고쳐줘 lit`도 `lit 로그인 버튼 고쳐줘`처럼 "로그인 버튼 고쳐줘"를 목표로 삼아 목표 질문을 합니다. 실행 단어 두 개도 마찬가지입니다. `로그인 버튼 고쳐줘 lit-loop`는 lit-loop을, `--json 플래그 추가해줘 litwork`는 litwork를 앞에 붙였을 때와 똑같이 실행합니다.
+
 **본격적으로.** 큰 작업은 한 단계씩 밟아 갑니다. 단계마다 남긴 파일을 다음 단계가 읽고, 필요 없는 단계는 건너뛰어도 됩니다.
 
 | 단계 | 입력 | 하는 일 |
@@ -160,6 +162,8 @@ npx @litfamily/litmuse doctor
 
 그림의 맨 아래 줄은 업데이트 뒤에 다시 묻는 이유, 설치가 손대지 않는 곳, 동의를 받은 뒤에만 쓰는 파일 하나([규칙 파일 블록](./docs/reference_ko-KR.md#muse-자체-규칙-파일의-짧은-블록))를 정리했습니다. Muse는 플러그인이 업데이트될 때마다 에이전트 승인을 다시 요구하므로, 업데이트 뒤에는 설치기가 그 부분만 한 번 더 묻습니다. `doctor`에서는 아직 승인을 기다리는 항목이 `APPROVAL NEEDED`와 실행할 명령으로 표시됩니다.
 
+`install`, `update`, `doctor`, `--help`는 맨 위에 신스웨이브 LIT 마크를 찍어서, 어느 도구가 말하는지 한눈에 보이게 합니다. 마크는 출력되는 터미널에 맞춰 그려집니다. truecolor나 256색 터미널에서는 컬러로, 색이 꺼져 있으면(`NO_COLOR`, `TERM=dumb`, 8색 터미널) 같은 그림이 색 없이 나옵니다. 출력이 파이프나 로그, 모델의 bash 도구로 가거나 창 폭이 24칸보다 좁으면 `LIT · muse code` 한 줄만 나옵니다. `doctor --json`에는 마크가 없습니다.
+
 <details>
 <summary>설치 옵션</summary>
 
@@ -208,6 +212,8 @@ Muse의 `/hud`는 켜고 끄는 고정 항목 목록이라서 플러그인 글�
 행에 체크하면 개수와 다음 행 표시가 바뀝니다.
 
 <p align="center"><img src="./docs/assets/card/after.webp" width="960" alt="1번 행을 체크한 뒤의 같은 카드. plans/todo-app.md 계획이 1/2가 되고 다음 행은 2. Write the tests입니다." /></p>
+
+터미널에서 `litmuse status --card`를 실행하면 카드 위에 마크가 붙고, truecolor 터미널이면 첫 줄 맨 앞에 그라데이션 `🔥LIT v<버전>` 알약도 붙습니다. `/lit-status`가 모델의 bash 도구로 카드를 돌릴 때나 색이 꺼져 있을 때는 원래의 `LIT ·` 머리줄이 그대로 남고, `--json`은 기록만 출력합니다.
 
 카드는 프로젝트 밖에 있는 `~/.local/state/litmuse/` 아래 훅 기록을 읽습니다. 다른 세션을 어떻게 보여 주는지는 [참고 자료](./docs/reference_ko-KR.md#카드-뒤의-실시간-기록)에 있습니다.
 
@@ -328,7 +334,7 @@ npx @litfamily/litmuse extensions prune-backups --older-than 30 --yes
 <details>
 <summary>네 단계를 하나씩</summary>
 
-1. **경로.** 프롬프트 훅이 `lit` 다음 단어를 읽고 경로를 고릅니다. `lit plan`은 lit-plan으로, 그냥 `lit`은 lit-loop으로 가고, 그 경로가 아직 도는 중에 다시 `lit`을 치면 하던 일을 이어 갑니다.
+1. **경로.** 프롬프트 훅이 `lit` 다음 단어를 읽고 경로를 고릅니다. `lit plan`은 lit-plan으로, 그냥 `lit`은 lit-loop으로 가고, 그 경로가 아직 도는 중에 다시 `lit`을 치면 하던 일을 이어 갑니다. 요청이 `lit`으로 끝나면 그 앞의 말을 할 일로 삼아 lit-loop으로 가고, `lit-loop`나 `litwork`로 끝나면 그 경로로 갑니다.
 2. **불러오기.** Muse가 그 경로의 스킬을 불러오고, 스킬은 일부를 `litmuse/lit-verifier` 같은 자식 에이전트에게 맡기기도 합니다.
 3. **작업.** 계획 턴에서는 PreToolUse 훅이 쓰기를 `plans/`와 `.litmuse/` 안으로만 받아 줍니다.
 4. **리뷰.** 테스트가 통과하고 실제 화면까지 확인해야 끝난 것으로 치고, 아무도 확인하지 못한 부분은 미확인으로 표시합니다. 계획 행이 남아 있는 동안에는 Stop 훅이 턴을 계속 이어 갑니다.
@@ -388,6 +394,8 @@ npx @litfamily/litmuse extensions prune-backups --older-than 30 --yes
 **`doctor`가 개인 스킬을 경고합니다.** 개인 스킬 이름이 LitMuse 스킬과 같거나 다른 도구의 플러그인 폴더에서 온 경우입니다. 깨끗한 실행이 필요하면 `/settings`에서 "Personal rules fallback"과 "Personal skills fallback"을 끄고, 헤드리스 실행은 `muse exec --no-foreign-personal-context`를 쓰세요(1.4.11의 대화형 `muse`는 이 플래그를 받지 않습니다).
 
 **`doctor`가 `INFO leftover`를 보여 줍니다.** LitMuse는 이제 엔진 런타임을 싣지 않습니다. 0.1.11까지의 릴리스는 엔진을 `~/.local/share/litmuse/runtime/`에 캐시했고 `uninstall`은 그 폴더를 지우지 않았습니다. 이제 그 폴더를 읽는 것은 없으므로(확장은 자기 엔진을 따로 준비합니다) 공간을 비우려면 지우세요.
+
+**lit-team이 `team state lock timed out`으로 멈춥니다.** lit-team 스크립트는 팀 파일을 고치는 동안 팀 폴더에 잠깐 잠금을 걸고, 도중에 죽은 프로세스는 그 잠금을 남길 수 있습니다. 남은 잠금은 다음 명령이 알아서 치웁니다. 주인 기록 없이 5초(stale 기간이 더 길면 그 기간)보다 오래된 잠금, 프로세스가 사라진 잠금, 10분 넘게 잡힌 잠금이 대상이고, 마지막 것은 그 프로세스 번호를 지금 다른 프로그램이 쓰고 있어도 치웁니다. 그래도 메시지가 나오면 잠금 폴더와 잡고 있는 쪽이 함께 적힙니다(`held by pid <n> for <s> s` 또는 `with no owner record`). 살아 있는 쪽은 다른 세션에서 아직 도는 lit-team 명령이니 끝나기를 기다리세요. 도는 것이 없다면 이 프로젝트의 다른 Muse 세션을 닫고, `.litmuse/team/<team-id>/` 아래 적힌 `.lock` 폴더를 지우면 됩니다.
 
 ## 참고 자료
 
