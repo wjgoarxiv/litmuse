@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased
+
+- At a terminal, `litmuse install`, `update` and `uninstall` draw the plan, the questions, each finished step and the closing summary as cards. A question card names its step, says what Yes does and what No leaves alone, and marks the default: `y` or `n` answers at once, the arrow keys or Tab move, Enter takes the highlight, Esc answers nothing. The questions, their order, their defaults and the stored answers are unchanged, and Ctrl+C still ends with the same message and exit code 1.
+- A failed install shows what went wrong in a red card, with the remedy below it as text you can copy. The `muse plugins approve` lines stay one per line too.
+- `NO_COLOR` keeps the cards without colour; a locale without UTF-8 draws them in ASCII. `--yes`, `--dry-run`, `TERM=dumb`, `LITMUSE_AGENT_FILE`, a pipe, CI and a window under 40 columns or 12 rows print exactly what they printed before.
+- No hook or context file changed, so Muse asks for no new hook approval.
+- The test suite runs in a throwaway home; before, a SessionStart test could claim the waiting first-session notice in the real `~/.local/share/litmuse`.
+
 ## 0.1.20 — 2026-11-25
 
 - `litmuse status --card` shows a sunset beside the words in a truecolor terminal of 90 columns or more: a half-sunk sun, stars and a sea, drawn only in cells that hold no text. It is dim with no route, amber on `YOUR TURN` and rainbow for `lit-adhd`. The version pill runs orange to pink there, thread branches turn neon and the current stage is filled violet to cyan. Row count, words and widths are unchanged, and a pipe, `--json`, `NO_COLOR`, 256 or fewer colours, a light background (`COLORFGBG`) and narrower terminals print what they did before.

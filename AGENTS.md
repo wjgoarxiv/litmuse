@@ -12,6 +12,8 @@ any family feature in Muse's own plugin idiom.
   `plugin/commands/*.md`, hooks `plugin/hooks/<event>.mjs` (one source file per hook id; shared code in
   `plugin/hooks/lib/`), session text `plugin/context/`.
 - `lib/` + `bin/litmuse.mjs` — the dependency-free installer, doctor, models, uninstall.
+- `lib/install-cards.mjs` — the install and uninstall cards on a person's terminal. Without cards (`cardsFor()` returns null) the
+  plain lines stay byte-identical (`test/install-cards.test.mjs`).
 - `lib/card-view.mjs` + `lib/sunset.mjs` — the status card on a person's terminal: the sunset scene and `--watch`. Muse draws
   no plugin text, so this is the only surface that can move. The scene may use only cells past the end of a row's
   words; a pipe, `--json`, NO_COLOR, 256 colours and under 90 columns stay byte-identical (`test/sunset.test.mjs`).

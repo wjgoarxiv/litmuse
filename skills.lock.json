@@ -723,6 +723,7 @@
     "lib/doctor.mjs",
     "lib/extensions.mjs",
     "lib/guard.mjs",
+    "lib/install-cards.mjs",
     "lib/install.mjs",
     "lib/managed-block.mjs",
     "lib/mark.mjs",

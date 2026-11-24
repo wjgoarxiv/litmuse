@@ -173,6 +173,8 @@ The bottom row of the picture covers why an update may ask again, what install l
 
 `install`, `update`, `doctor` and `--help` open with the synthwave LIT mark, so you can tell at a glance which tool is talking. It is drawn for the terminal it lands in: full colour in a truecolor or 256-colour terminal, the same picture without colour when colour is off (`NO_COLOR`, `TERM=dumb`, an 8-colour terminal), and the single line `LIT · muse code` when the output goes to a pipe, a log or the model's bash tool, or the window is narrower than 24 columns. `doctor --json` prints no mark.
 
+In a terminal window of at least 40 columns and 12 rows, the plan, the questions and the closing summary are drawn as cards. A question names its step (`LIT 1/2`), says in one sentence what Yes does and what No leaves alone, and marks the default: press `y` or `n`, or move with the arrow keys or `Tab` and press Enter. Esc answers nothing, and Ctrl+C stops the installer. `NO_COLOR` keeps the cards without colour and a locale without UTF-8 draws them in ASCII. With `--yes`, `--dry-run`, `TERM=dumb`, `LITMUSE_AGENT_FILE` set, a pipe or CI, the same text prints as plain lines.
+
 <details>
 <summary>Install switches</summary>
 

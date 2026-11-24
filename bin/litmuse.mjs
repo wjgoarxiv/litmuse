@@ -17,6 +17,7 @@ import { styleCommand } from '../lib/style.mjs';
 import { runRewindCli } from '../plugin/lib/rewind/collect.mjs';
 import { extensionsCommand } from '../lib/extensions.mjs';
 import { markFor } from '../lib/mark.mjs';
+import { cardsFor } from '../lib/install-cards.mjs';
 
 const HELP = `LitMuse ${packageVersion()}: LitFamily workflows for Meta's Muse Code
 
@@ -107,11 +108,13 @@ async function main() {
   }
   switch (command) {
     case 'install':
-    case 'update':
+    case 'update': {
       print(markFor({ env }));
-      return install({ env, flags, interactive, ask, print });
+      const cards = cardsFor({ env, flags });
+      return install({ env, flags, interactive, ask: cards?.ask ?? ask, print, cards });
+    }
     case 'uninstall':
-      return uninstall({ env, flags, interactive, print });
+      return uninstall({ env, flags, interactive, print, cards: cardsFor({ env, flags }) });
     case 'doctor':
       if (!flags.json) print(markFor({ env }));
       return doctor({ env, flags, print });
