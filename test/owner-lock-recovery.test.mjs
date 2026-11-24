@@ -55,6 +55,15 @@ test('a fresh lock folder with no owner record yet is waited on, and the error n
   assert.equal(existsSync(lockDir), true);
 }));
 
+// A folder another process created a moment ago has no owner record yet; even a stale window of 0 must not take it.
+test('a lock folder about a second old with no owner record is waited on even with a stale window of 0', () => withLock((lockDir) => {
+  mkdirSync(lockDir, { recursive: true });
+  const second = new Date(Date.now() - 1000);
+  utimesSync(lockDir, second, second);
+  assert.throws(() => acquireOwnerLock(lockDir, { timeoutMs: 100, staleMs: 0 }), /timed out \(with no owner record/u);
+  assert.equal(existsSync(lockDir), true);
+}));
+
 test('a live holder within its window is waited on, and the error names its pid and age', () => withLock((lockDir) => {
   owned(lockDir, { nonce: 'live-owner', pid: process.pid, acquired_at_ms: Date.now() });
   assert.throws(() => acquireOwnerLock(lockDir, { timeoutMs: 100 }), new RegExp(`held by pid ${process.pid} for \\d+ s`, 'u'));

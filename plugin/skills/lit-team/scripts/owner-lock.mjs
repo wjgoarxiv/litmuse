@@ -25,6 +25,9 @@ const MAX_OWNER_BYTES = 4096;
 // No team update holds the lock for more than a moment, so an owner older than this crashed even when its recorded pid
 // now belongs to another live process (pids are reused, often on WSL).
 const MAX_HOLD_MS = 10 * 60 * 1000;
+// A folder with no owner record may be one another process created a moment ago and is still writing; it is judged
+// only after this long, whatever stale window the caller passed.
+const OWNERLESS_GRACE_MS = 5_000;
 const sleepSync = (milliseconds) => Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, milliseconds);
 const monotonicNowMs = () => Number(process.hrtime.bigint()) / 1_000_000;
 
@@ -284,9 +287,9 @@ export const acquireOwnerLock = (lockDir, { timeoutMs = 500, staleMs = 30_000 } 
       const incumbent = readOwnerLock(lockDir);
       if (!incumbent && lockDirectory) {
         // A holder that died between creating the folder and writing its owner record left a lock nobody can judge;
-        // once it is older than the stale window it is moved aside and the acquisition retried.
+        // once it is older than the stale window (and the grace) it is moved aside and the acquisition retried.
         const folder = lstatSync(lockDir, { throwIfNoEntry: false });
-        if (folder && Date.now() - folder.mtimeMs >= staleAfter) {
+        if (folder && Date.now() - folder.mtimeMs >= Math.max(staleAfter, OWNERLESS_GRACE_MS)) {
           try {
             if (removeVerifiedPath(lockDir, lockDirectory, undefined, `${lockDir}.stale.ownerless.${randomUUID()}`,
               (quarantine) => !readOwnerLock(quarantine))) continue;
