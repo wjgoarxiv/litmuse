@@ -37,6 +37,22 @@ running child agents, plus each session's liveness (PostToolUse says alive, Stop
 - **herdr panes.** It names a herdr pane session `<skill> · <pane>`.
 - **Updates.** It says `restart to <version>` when a newer LitMuse was installed after the session started.
 
+### The sunset and `--watch`
+
+In a person's terminal the card carries a sunset scene in the cells its words leave free. It appears when stdout is a
+terminal, `COLORTERM` says truecolor, `NO_COLOR` is unset, `COLORFGBG` does not name a light background, and the
+terminal has at least 90 columns. Anything else, and every pipe and `--json`, prints the card without it. The sun sits
+on the lowest three rows in a run that leave it room. A finished plan or goal shows its `✨` line alone. Thread rows
+keep their words and widths; their branches turn neon and the current stage is filled violet to cyan. Gauges and pills
+get round ends only in Windows Terminal (`WT_SESSION`) and VS Code (`TERM_PROGRAM=vscode`), which draw those
+characters without a special font.
+
+`litmuse status --card --watch` uses the alternate screen and restores it on `q`, Esc, Ctrl+C, SIGTERM, SIGHUP or an
+error. It reads the record at most once a second and paints eight frames a second in between, sending only the rows
+that changed. It moves while a route is active, its session has not stopped since the record last changed, and either
+changed in the last 15 minutes; otherwise no frame is drawn. `LITMUSE_MOTION=off` (or `reduced`) holds it still. When
+stdout is not a terminal, `--watch` prints the card once.
+
 ## The goal set at plan approval
 
 Muse keeps one goal per session. The model sets it with `create_goal` and closes it with `update_goal`, and you can end

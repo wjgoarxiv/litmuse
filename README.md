@@ -212,17 +212,23 @@ Read the card from top to bottom. The first line names the workflow and how long
 
 At rest the card reports no active route:
 
-<p align="center"><img src="./docs/assets/card/idle.webp" width="960" alt="Terminal card of litmuse status --card with no route running: LIT, no active route in this workspace, plan 0/2 in plans/todo-app.md, next row 1, Add the shout flag." /></p>
+<p align="center"><img src="./docs/assets/card/idle.webp" width="960" alt="Terminal card of litmuse status --card with no route running: LIT, no active route in this workspace, plan 0/2 in plans/todo-app.md, next row 1, Add the shout flag. A dimmed half-sunk sun with stars and a sea sits to the right of the words." /></p>
 
 While a plan runs, the card names the route, the plan file, and the next open row:
 
-<p align="center"><img src="./docs/assets/card/working.webp" width="960" alt="Terminal card of litmuse status --card while lit-plan runs: LIT, lit-plan, active 30s, one lit-plan thread running, plan 0/2 in plans/todo-app.md, next row 1, Add the shout flag." /></p>
+<p align="center"><img src="./docs/assets/card/working.webp" width="960" alt="Terminal card of litmuse status --card while lit-plan runs: LIT, lit-plan, active 30s, one lit-plan thread running, plan 0/2 in plans/todo-app.md, next row 1, Add the shout flag. A bright sunset over a sea sits to the right of the words." /></p>
 
 Ticking a row moves the count and the next-row pointer:
 
 <p align="center"><img src="./docs/assets/card/after.webp" width="960" alt="The same card after row 1 is ticked: plan 1/2 in plans/todo-app.md, next row 2, Write the tests." /></p>
 
-Run in a terminal, `litmuse status --card` also puts the mark above the card, and a truecolor terminal gets a gradient `🔥LIT v<version>` pill at the start of its first line. When `/lit-status` has the model run the card through its bash tool, or colour is off, the card keeps its plain `LIT ·` headline, and `--json` prints only the record.
+Run in a terminal, `litmuse status --card` also puts the mark above the card, and a truecolor terminal gets a gradient `🔥LIT v<version>` pill at the start of its first line. A truecolor terminal of 90 columns or more also gets a sunset beside the words: a half-sunk sun with stars above it and a sea running out from it. It uses only cells that hold no text and adds no row, so on a card full of long rows it moves up or stays away. The sun is dim while no route runs, amber while the card says `YOUR TURN`, and rainbow during `lit-adhd`. When `/lit-status` has the model run the card through its bash tool, or colour is off, the card keeps its plain `LIT ·` headline, and `--json` prints only the record.
+
+To keep the card open beside your work, add `--watch`. It fills the terminal, puts a neon frame around the card and, while your Muse session is working, lets the sea flow, the stars twinkle and light run across the sun. When the session stops, or nothing has happened for 15 minutes, the picture holds still and only the words and times keep up. Press `q` or Ctrl+C and your terminal comes back as it was.
+
+<p align="center"><picture><source media="(prefers-reduced-motion: reduce)" srcset="./docs/assets/card/watch-still.webp" /><img src="./docs/assets/card/watch.webp" width="960" alt="Moving terminal card of litmuse status --card --watch while lit-plan runs: a neon frame from pink through violet to cyan around the card, with the sea flowing out from a half-sunk sun and stars twinkling above it." /></picture></p>
+
+This runs in your own shell, in a second window or pane, because Muse draws no plugin text inside its screen. `LITMUSE_MOTION=off` keeps the scene and stops the motion; `NO_COLOR`, fewer colours, or under 90 columns show the plain card, kept up to date.
 
 The card reads the hook-kept state under `~/.local/state/litmuse/`, outside the project. How it lists other sessions is in [the reference](./docs/reference.md#the-live-record-behind-the-card).
 

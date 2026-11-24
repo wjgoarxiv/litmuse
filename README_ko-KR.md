@@ -203,17 +203,23 @@ Muse의 `/hud`는 켜고 끄는 고정 항목 목록이라서 플러그인 글�
 
 쉴 때 카드는 활성 경로가 없다고 알립니다.
 
-<p align="center"><img src="./docs/assets/card/idle.webp" width="960" alt="실행 중인 경로가 없을 때의 litmuse status --card 터미널 카드. 이 워크스페이스에 활성 경로가 없고, plans/todo-app.md 계획은 0/2, 다음 행은 1. Add the shout flag입니다." /></p>
+<p align="center"><img src="./docs/assets/card/idle.webp" width="960" alt="실행 중인 경로가 없을 때의 litmuse status --card 터미널 카드. 이 워크스페이스에 활성 경로가 없고, plans/todo-app.md 계획은 0/2, 다음 행은 1. Add the shout flag입니다. 글 오른쪽에 어두운 반쯤 잠긴 해와 별, 바다가 있습니다." /></p>
 
 계획이 돌 때 카드는 경로와 계획 파일, 다음 행을 보여 줍니다.
 
-<p align="center"><img src="./docs/assets/card/working.webp" width="960" alt="lit-plan이 실행 중일 때의 litmuse status --card 터미널 카드. lit-plan이 30초째 활성이고 lit-plan 스레드 하나가 실행 중이며, plans/todo-app.md 계획은 0/2, 다음 행은 1. Add the shout flag입니다." /></p>
+<p align="center"><img src="./docs/assets/card/working.webp" width="960" alt="lit-plan이 실행 중일 때의 litmuse status --card 터미널 카드. lit-plan이 30초째 활성이고 lit-plan 스레드 하나가 실행 중이며, plans/todo-app.md 계획은 0/2, 다음 행은 1. Add the shout flag입니다. 글 오른쪽에 밝은 노을과 바다가 있습니다." /></p>
 
 행에 체크하면 개수와 다음 행 표시가 바뀝니다.
 
 <p align="center"><img src="./docs/assets/card/after.webp" width="960" alt="1번 행을 체크한 뒤의 같은 카드. plans/todo-app.md 계획이 1/2가 되고 다음 행은 2. Write the tests입니다." /></p>
 
-터미널에서 `litmuse status --card`를 실행하면 카드 위에 마크가 붙고, truecolor 터미널이면 첫 줄 맨 앞에 그라데이션 `🔥LIT v<버전>` 알약도 붙습니다. `/lit-status`가 모델의 bash 도구로 카드를 돌릴 때나 색이 꺼져 있을 때는 원래의 `LIT ·` 머리줄이 그대로 남고, `--json`은 기록만 출력합니다.
+터미널에서 `litmuse status --card`를 실행하면 카드 위에 마크가 붙고, truecolor 터미널이면 첫 줄 맨 앞에 그라데이션 `🔥LIT v<버전>` 알약도 붙습니다. 90칸 이상인 truecolor 터미널에서는 글 옆에 노을도 나옵니다. 반쯤 잠긴 해 위에 별이 있고, 해에서 바다가 퍼져 나갑니다. 글이 없는 칸에만 그리고 줄을 늘리지 않으므로, 긴 줄이 많으면 위로 옮겨 가거나 나오지 않습니다. 해는 활성 경로가 없으면 어둡고, 카드에 `YOUR TURN`이 뜨면 호박색, `lit-adhd` 때는 무지개색입니다. `/lit-status`가 모델의 bash 도구로 카드를 돌릴 때나 색이 꺼져 있을 때는 원래의 `LIT ·` 머리줄이 그대로 남고, `--json`은 기록만 출력합니다.
+
+카드를 작업 옆에 계속 띄워 두려면 `--watch`를 붙입니다. 카드가 터미널을 채우고 네온 테두리가 생기며, Muse 세션이 일하는 동안 바다가 흐르고 별이 반짝이고 해 위로 빛이 지나갑니다. 세션이 멈추거나 15분 동안 아무 일이 없으면 그림은 멈추고 글과 시간만 갱신됩니다. `q`나 Ctrl+C를 누르면 터미널이 원래대로 돌아옵니다.
+
+<p align="center"><picture><source media="(prefers-reduced-motion: reduce)" srcset="./docs/assets/card/watch-still.webp" /><img src="./docs/assets/card/watch.webp" width="960" alt="lit-plan이 실행 중일 때 움직이는 litmuse status --card --watch 터미널 카드. 분홍에서 보라, 하늘색으로 이어지는 네온 테두리 안에서 반쯤 잠긴 해로부터 바다가 흐르고 위에서 별이 반짝입니다." /></picture></p>
+
+Muse는 자기 화면 안에 플러그인 글을 그리지 않으므로, 이 카드는 다른 창이나 분할 창에 연 셸에서 실행합니다. `LITMUSE_MOTION=off`면 장면은 그대로 두고 움직임만 멈춥니다. `NO_COLOR`, 색이 적은 터미널, 90칸 미만에서는 계속 갱신되는 일반 카드를 보여 줍니다.
 
 카드는 프로젝트 밖에 있는 `~/.local/state/litmuse/` 아래 훅 기록을 읽습니다. 다른 세션을 어떻게 보여 주는지는 [참고 자료](./docs/reference_ko-KR.md#카드-뒤의-실시간-기록)에 있습니다.
 

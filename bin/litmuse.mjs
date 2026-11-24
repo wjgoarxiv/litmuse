@@ -11,11 +11,12 @@ import { paths } from '../lib/paths.mjs';
 import { installedPlugin, museVersion } from '../lib/muse.mjs';
 import { checkUpdate } from '../lib/update-check.mjs';
 import { agentFileState, configCommand, readAgentFileSetting } from '../lib/agent-file.mjs';
-import { buildCard, renderCard } from '../lib/stage-card.mjs';
+import { buildCard } from '../lib/stage-card.mjs';
+import { cardText, watchCard } from '../lib/card-view.mjs';
 import { styleCommand } from '../lib/style.mjs';
 import { runRewindCli } from '../plugin/lib/rewind/collect.mjs';
 import { extensionsCommand } from '../lib/extensions.mjs';
-import { colourDepth, litPill, markFor, pillWidth, termColumns } from '../lib/mark.mjs';
+import { markFor } from '../lib/mark.mjs';
 
 const HELP = `LitMuse ${packageVersion()}: LitFamily workflows for Meta's Muse Code
 
@@ -25,6 +26,7 @@ Commands
   install      Stage the plugin, install it into Muse at user scope, and offer the approvals
   doctor       Check install state, every approval, skill enrollment, catalog bytes and overlaps
   status       Short version of doctor plus an update check; --card shows the live LIT card for this folder
+               (add --watch to keep it open; q or Ctrl+C leaves)
   models       List the models and effort tiers your Muse catalog offers
   hud          Show the recommended /hud and /theme preset
   config       agentFile on|off: the short LitFamily block in Muse's user rules file (acts at once)
@@ -60,6 +62,7 @@ function parse(argv) {
     else if (a === '--no-agent-file') flags.noAgentFile = true;
     else if (a === '--discard-modified') flags.discardModified = true;
     else if (a === '--card') flags.card = true;
+    else if (a === '--watch') flags.watch = true;
     else if (a === '--scope') flags.scope = argv[++i];
     else if (a === '--from') flags.from = argv[++i];
     else if (a === '--family') flags.family = argv[++i];
@@ -130,13 +133,10 @@ async function main() {
           print(JSON.stringify(card, null, 2));
           return 0;
         }
-        // /lit-status has the model run this through bash and repeat it, so the mark and pill
-        // appear only when a person's terminal is attached.
-        const tty = process.stdout.isTTY === true;
-        const depth = colourDepth({ env, isTTY: tty });
-        const v = packageVersion();
-        if (tty) print(markFor({ env }));
-        print(renderCard(card, { badge: tty && depth === 'truecolor' ? { text: litPill(v, depth), width: pillWidth(v) } : null, cols: termColumns({ env }) }));
+        // /lit-status has the model run this through bash and repeat it, so the mark, the pill and the
+        // scene appear only when a person's terminal is attached; --watch needs one too.
+        if (flags.watch && process.stdout.isTTY && env.TERM !== 'dumb') return watchCard({ env, version: packageVersion() });
+        print(cardText(card, { env, version: packageVersion() }));
         return 0;
       }
       const st = stageState(paths(env));
