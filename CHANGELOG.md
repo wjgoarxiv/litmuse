@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.18 — 2026-11-24
+
+- `litmuse install`, `update`, `doctor` and `--help` now print the synthwave LIT mark above their output, and `litmuse status --card` in a truecolor terminal shows a gradient version pill on the stage card. Output to a pipe gets a plain one-line mark instead, and `doctor --json` and `status --card --json` get none.
+- A request that ends with `lit` (`로그인 버튼 고쳐줘 lit`, `… 부탁해 lit`) now gets the lit-loop goal question, with the words before `lit` as the objective. A closing `lit-loop` or `litwork` runs that route the same way it does at the start. `lit`, `lit continue` and `lit resume` alone still ask nothing.
+- A lit-team state lock left by a crashed process no longer blocks the team forever: a lock with no readable owner record, a takeover claim a crashed contender left behind, and a lock held for more than ten minutes (even when its pid now belongs to another process) are reclaimed. A timeout now names the lock path and its holder.
+- The hook code changed, so Muse asks you to approve the LitMuse hooks again after the update.
+
 ## 0.1.17 — 2026-11-22
 
 - Both READMEs now open with a plain one-line pitch, a short before-and-after story and a "Two ways to use it" section: the easy way is your usual request with `lit` at the start or the end; the full workflow is a six-step table (explore, clarify, plan, build, review, hand off) with the line to type for each step, followed by the one install line.
