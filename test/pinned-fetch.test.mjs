@@ -1,6 +1,7 @@
 // DNS-rebinding parity: resolve once for the hop check, then connect only to the
 // approved address. A name that answers public and then private must not move the
 // connection; TLS still verifies the certificate for the name.
+import './home.mjs';
 import assert from 'node:assert/strict';
 import { EventEmitter } from 'node:events';
 import { Readable } from 'node:stream';

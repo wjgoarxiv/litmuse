@@ -1,6 +1,7 @@
 // lit-adhd and its alias lit-rewind: every typed route reaches lit-adhd through the real hook,
 // near-miss words do not, a brief leaves the workflow stack alone, `go` reads this session's
 // next-step record, and the skill is enrolled on every surface that lists skills.
+import './home.mjs';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';

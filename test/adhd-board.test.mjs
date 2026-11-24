@@ -1,6 +1,7 @@
 // lit-adhd v2: the KPI board. The collector computes buckets, counts, bars, percentages and
 // reminders and prints the board itself, so the model only shows it. Fixture: two plans (one
 // fully ticked, one half), a session waiting on the user, uncommitted changes, one stale plan.
+import './home.mjs';
 import assert from 'node:assert/strict';
 import { mkdirSync, mkdtempSync, rmSync, utimesSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';

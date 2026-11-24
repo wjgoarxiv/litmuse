@@ -1,6 +1,7 @@
 // The lit-adhd record collector: gauges count cells by code and never guess a total, redaction
 // masks credential shapes and environment values, Muse transcripts are found by the cwd they
 // record and read head-and-tail under one budget, and the next step follows its fixed priority.
+import './home.mjs';
 import assert from 'node:assert/strict';
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, utimesSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';

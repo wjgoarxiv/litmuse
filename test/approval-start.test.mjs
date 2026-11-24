@@ -1,5 +1,6 @@
 // R1: the plan-approval `yes` approves the plan, starts start-work on it and arms its goal in one step; with no goal
 // possible it still starts the work; a refused start arms nothing.
+import './home.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';

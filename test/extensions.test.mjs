@@ -1,6 +1,7 @@
 // The nine file-making skills are LitFamily extensions on the wjgoarxiv-skills shelf. LitMuse says so twice: in the
 // install/update output, and once in the first Muse session after it (through the SessionStart context, because Muse
 // logs a hook systemMessage without showing it). An upgrade also names the engine folder an earlier LitMuse left behind.
+import './home.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';

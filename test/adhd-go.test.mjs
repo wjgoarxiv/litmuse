@@ -2,6 +2,7 @@
 // recommended step is current. S1 lanes hold `go`; S2 another session's run never says `go`; S3 the
 // `go` line sits only on a step `go` executes; S4 the HANDOFF Next item is the first open one of the
 // newest handoff and yields to live signals; S5 the hook re-checks the recorded step before acting.
+import './home.mjs';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, utimesSync, writeFileSync } from 'node:fs';

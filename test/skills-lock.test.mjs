@@ -2,6 +2,7 @@
 // (per-skill hashes, sizes and file counts, and the pack list); `policy` and `budgets` are hand-owned and kept
 // across syncs. One test says the lock is current, one says every skill sits inside its budget, and the rest pin
 // how sync:lock treats budgets.
+import './home.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, rmSync, existsSync } from 'node:fs';

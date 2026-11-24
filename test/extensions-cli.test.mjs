@@ -1,5 +1,6 @@
 // `litmuse extensions <verb>`: the stubs' manual lines done in code, against the fake muse in a throwaway HOME.
 // Each test builds a small wjgoarxiv-skills shelf of its own and never reaches the network.
+import './home.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';

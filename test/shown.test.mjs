@@ -1,6 +1,7 @@
 // The install output prints the LitFamily extensions notice. A second run that would print the same text leaves it out,
 // because the user has read it; the record is append-only, lives in LitMuse's own data folder, and a missing, corrupt or
 // linked record means the notice is printed as before.
+import './home.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { existsSync, mkdirSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';

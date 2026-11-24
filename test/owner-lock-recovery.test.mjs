@@ -1,5 +1,6 @@
 // The lit-team state lock must never block forever when a holder or a contender died mid-write, or when the recorded
 // pid now names another live process. A fresh lock with no owner record yet is still waited on.
+import './home.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { existsSync, mkdirSync, mkdtempSync, rmSync, utimesSync, writeFileSync } from 'node:fs';

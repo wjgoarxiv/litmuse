@@ -3,6 +3,7 @@
 // `lit continue` closes the side frame and resumes the paused spine at its stage, read-only
 // routes change nothing, `lit new` starts clean, two sessions keep separate stacks, and `go`
 // consumes this session's next-step record or stays ordinary text.
+import './home.mjs';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';

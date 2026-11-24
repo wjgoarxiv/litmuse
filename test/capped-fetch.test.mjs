@@ -1,5 +1,6 @@
 // Bounded response bodies: a chunked response must trip the size limit while it is
 // still streaming, not after the whole body has been buffered into the heap.
+import './home.mjs';
 import assert from 'node:assert/strict';
 import test from 'node:test';
 

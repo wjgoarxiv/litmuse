@@ -1,3 +1,4 @@
+import './home.mjs';
 import { EventEmitter } from 'node:events';
 import { Readable } from 'node:stream';
 import test from 'node:test';

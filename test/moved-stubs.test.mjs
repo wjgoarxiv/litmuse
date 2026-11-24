@@ -2,6 +2,7 @@
 // the one repository where a user picks only the skills they want. Each moved id keeps a same-name stub, so its route,
 // its catalog entry, its doctor row and every lit keyword still land somewhere: the stub hands over to an installed
 // copy or gives the one-skill `muse skills install` line, and builds nothing itself.
+import './home.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';

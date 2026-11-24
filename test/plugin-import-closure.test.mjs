@@ -1,4 +1,5 @@
 // The installed plugin bundle holds plugin/ only, so no module under plugin/ may import a file outside it.
+import './home.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, readdirSync, statSync } from 'node:fs';

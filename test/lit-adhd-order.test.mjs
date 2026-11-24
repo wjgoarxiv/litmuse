@@ -1,5 +1,6 @@
 // lit-adhd counts the other lanes at work before it offers this session's own resume or run: the session
 // that started the lanes must not be told to continue while they work. A pending approval stays offered.
+import './home.mjs';
 import assert from 'node:assert/strict';
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';

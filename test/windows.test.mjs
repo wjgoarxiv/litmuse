@@ -1,5 +1,6 @@
 // Windows hardening. Real Windows is not available to the suite, so the win32 branches take the platform,
 // environment and filesystem probe as injected values; the POSIX paths run for real.
+import './home.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { chmodSync, mkdtempSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';

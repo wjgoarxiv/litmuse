@@ -1,3 +1,4 @@
+import './home.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { detectRoute, SKILL_ROUTES, KEYWORD_ROUTES } from '../plugin/hooks/lib/routes.mjs';

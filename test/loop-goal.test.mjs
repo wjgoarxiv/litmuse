@@ -1,5 +1,6 @@
 // A run route (lit-loop, litwork) with no plan gets one native goal question of its own. The question is advisory:
 // Muse shows no hook text, so the model is told to end its first reply with it, and only the exact `yes` arms the goal.
+import './home.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';

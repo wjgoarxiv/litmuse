@@ -1,5 +1,6 @@
 // The goal question carries an answer guide under it, so a first-time user knows what to type and what each answer does.
 // Muse shows no hook text: every surface here is a model-written reply, so the guide is Markdown the model renders.
+import './home.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';

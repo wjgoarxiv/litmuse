@@ -1,5 +1,6 @@
 // Muse shows no hook message to the user, so the ignition line has to be the model's own first output. The prompt hook
 // leads its context with that exact line, once, and the re-entry notes do the same with the continue line.
+import './home.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';

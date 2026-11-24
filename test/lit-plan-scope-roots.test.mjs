@@ -1,6 +1,7 @@
 // lit-plan's `Scope roots:` rule: a todo that names an absolute path outside the project needs a
 // `Scope roots: <path> (<actions>)` line, so start-work's envelope covers it before the work starts.
 // `check-plan.mjs --check` names each uncovered folder; fenced blocks and inline-code commands do not count.
+import './home.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';

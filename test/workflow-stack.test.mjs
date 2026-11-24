@@ -3,6 +3,7 @@
 // chain finishes it, asking for a skill again resumes its frame, read-only disciplines leave the
 // stack alone, `lit continue` after a side frame resumes the paused spine, and the per-session
 // store refuses links and oversized files.
+import './home.mjs';
 import assert from 'node:assert/strict';
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
