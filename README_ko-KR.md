@@ -1,4 +1,4 @@
-<p align="center"><picture><source media="(prefers-reduced-motion: reduce)" srcset="./docs/assets/cover-motion-still.webp" /><img src="./docs/assets/cover-motion.webp" width="100%" alt="LitFamily 모션 커버: 일곱 로봇 패널이 차례로 켜지고, 여섯 번째 칸의 LitMuse 로봇이 라임색 바이저와 테두리를 밝힌 뒤 LITFAMILY와 KEEP THE WORK LIT. 문구가 밝아지는 영상" /></picture></p>
+<p align="center"><picture><source media="(prefers-reduced-motion: reduce)" srcset="./docs/assets/cover-motion-still.webp" /><img src="./docs/assets/cover-motion.webp" width="100%" alt="LitFamily 모션 커버: 노을빛 터미널 화면입니다. 위쪽에는 litmuse status --card --watch 명령과 review-work 경로의 카드가 있고, 가운데는 픽셀 글자 LITFAMILY와 줄무늬 해가 채우며 일곱 제품 이름 줄에서 LITMUSE가 켜지고, 아래에서는 셸 프롬프트가 기다립니다." /></picture></p>
 
 <h1 align="center">LitMuse</h1>
 <p align="center"><strong>Keep the work lit.</strong></p>
@@ -429,7 +429,7 @@ npx @litfamily/litmuse extensions prune-backups --older-than 30 --yes
 
 ## 패밀리
 
-LitMuse는 LitFamily 패키지 일곱 개 가운데 하나이고, 표지의 로봇 일곱이 그 일곱 패키지입니다. 패키지마다 코딩 에이전트 하나에 같은 작업 방식을 들여오며 각자 따로 설치되어 동작하므로, 쓰는 에이전트에 맞는 하나만 설치하면 됩니다.
+LitMuse는 LitFamily 패키지 일곱 개 가운데 하나이고, 표지의 제품 이름 줄이 그 일곱 패키지를 모두 보여 줍니다. 패키지마다 코딩 에이전트 하나에 같은 작업 방식을 들여오며 각자 따로 설치되어 동작하므로, 쓰는 에이전트에 맞는 하나만 설치하면 됩니다.
 
 ## 라이선스
 

@@ -1,4 +1,4 @@
-<p align="center"><picture><source media="(prefers-reduced-motion: reduce)" srcset="./docs/assets/cover-motion-still.webp" /><img src="./docs/assets/cover-motion.webp" width="100%" alt="LitFamily motion cover: seven armored robots power on one by one, the LitMuse robot in the sixth bay wakes with a lime visor and a lit frame, then LITFAMILY and KEEP THE WORK LIT. light up." /></picture></p>
+<p align="center"><picture><source media="(prefers-reduced-motion: reduce)" srcset="./docs/assets/cover-motion-still.webp" /><img src="./docs/assets/cover-motion.webp" width="100%" alt="LitFamily motion cover: a terminal in a sunset look. The command litmuse status --card --watch and its card for a review-work route sit at the top, a pixel LITFAMILY wordmark and a striped half-sunk sun fill the middle with the row of seven product names lighting LITMUSE, and a shell prompt waits at the bottom." /></picture></p>
 
 <h1 align="center">LitMuse</h1>
 <p align="center"><strong>Keep the work lit.</strong></p>
@@ -438,7 +438,7 @@ The installer writes to `~/.local/share/litmuse/` and, through the `muse` CLI, t
 
 ## Family
 
-LitMuse is one of the seven LitFamily packages, and the seven armored robots on the cover stand for them. Each package brings the same way of working to one coding agent and installs and runs on its own, so you only need the one for the agent you use.
+LitMuse is one of the seven LitFamily packages, and the row of product names on the cover lists all seven. Each package brings the same way of working to one coding agent and installs and runs on its own, so you only need the one for the agent you use.
 
 ## License
 
