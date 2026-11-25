@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.1.21 — 2026-11-25
 
 - The README cover is a new loop: a terminal in the sunset look with the watched status card, a pixel LITFAMILY wordmark and a striped half-sunk sun, in place of the seven robot panels. The still for reduced motion is its first frame; the packed files are smaller.
 - The README demo is a new silent loop of one request with the watched status card in its own pane (plan and goal counts, lanes, the celebration line, the sunset), replacing the old still of three commands; the Korean page has its own copy, kept out of the package. The Muse screen around the card is redrawn.
