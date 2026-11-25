@@ -168,7 +168,7 @@ Muse 안에는 카드를 그릴 자리가 없어서 LitMuse의 카드는 둘째 
 
 `install`, `update`, `doctor`, `--help`는 맨 위에 신스웨이브 LIT 마크를 찍어서, 어느 도구가 말하는지 한눈에 보이게 합니다. 마크는 출력되는 터미널에 맞춰 그려집니다. truecolor나 256색 터미널에서는 컬러로, 색이 꺼져 있으면(`NO_COLOR`, `TERM=dumb`, 8색 터미널) 같은 그림이 색 없이 나옵니다. 출력이 파이프나 로그, 모델의 bash 도구로 가거나 창 폭이 24칸보다 좁으면 `LIT · muse code` 한 줄만 나옵니다. `doctor --json`에는 마크가 없습니다.
 
-40칸 12줄 이상인 터미널 창에서는 설치 계획, 질문, 마지막 요약이 카드로 나옵니다. 질문 카드는 몇 번째 질문인지(`LIT 1/2`) 알려 주고, 예라고 하면 무엇을 하고 아니요라고 하면 무엇을 그대로 두는지 한 문장으로 말하며, 기본값을 표시합니다. `y`나 `n`을 누르면 바로 답이 되고, 화살표 키나 `Tab`으로 옮긴 뒤 Enter를 눌러도 됩니다. Esc는 아무 답도 하지 않고, Ctrl+C는 설치를 멈춥니다. `NO_COLOR`를 설정하면 색 없는 카드가, UTF-8이 아닌 로캘에서는 ASCII 카드가 나옵니다. `--yes`, `--dry-run`, `TERM=dumb`, `LITMUSE_AGENT_FILE`을 쓰거나 파이프, CI에서 실행하면 같은 내용이 일반 텍스트로 나옵니다.
+40칸 12줄 이상인 터미널 창에서는 설치 계획, 질문, 진행 상황, 마지막 요약이 카드로 나옵니다. 질문 카드는 몇 번째 질문인지(`LIT 1/2`) 알려 주고, 예라고 하면 무엇을 하고 아니요라고 하면 무엇을 그대로 두는지 한 문장으로 말하며, 기본값을 표시합니다. `y`나 `n`을 누르면 바로 답이 되고, 화살표 키나 `Tab`으로 옮긴 뒤 Enter를 눌러도 됩니다. 승인 질문에서 `l`을 누르면 답하기 전에 훅과 에이전트를 모두 볼 수 있습니다. Esc는 아무 답도 하지 않고, Ctrl+C는 설치를 멈춥니다. `NO_COLOR`를 설정하면 색 없는 카드가, UTF-8이 아닌 로캘에서는 ASCII 카드가 나옵니다. `--yes`, `--dry-run`, `TERM=dumb`, `LITMUSE_AGENT_FILE`을 쓰거나 파이프, CI에서 실행하면 같은 내용이 일반 텍스트로 나옵니다.
 
 <details>
 <summary>설치 옵션</summary>
@@ -205,27 +205,27 @@ Meta Muse Code용 LitFamily 플러그인인 LitMuse를 설치해 줘.
 
 Muse의 `/hud`는 켜고 끄는 고정 항목 목록이라서 플러그인 글은 올릴 수 없습니다. 그래서 LitMuse는 경로, 계획 진행, 지금 돌고 있는 자식 에이전트를 담은 자체 실시간 기록을 두고, `/lit-status`와 `litmuse status --card`로 보여 줍니다. 카드 주변 터미널 모양의 추천 `/hud`와 테마 프리셋은 [docs/hud-preset.md](./docs/hud-preset.md)에 있습니다.
 
-카드는 위에서 아래로 읽습니다. 첫 줄은 워크플로 이름과 실행 시간을 적고, 활성 경로가 없으면 없다고 적습니다. 둘째 줄은 계획 파일 이름과 체크한 행 수, 전체 행 수, 다음으로 풀 행을 적고, 레인 줄은 실행 중인 도구와 경과 시간, 끝난 레인을 적습니다.
+어두운 truecolor 터미널이 64칸 이상이면 카드에 테두리가 생깁니다. 위쪽 테두리 왼쪽에는 워크플로 이름, 오른쪽에는 상태(`RED ●`, `YOUR TURN ●`, `DONE ✓`, `idle`)가 있습니다. 그 아래로 단계가 이어지고 지금 단계는 알약으로 보이며, 다음 줄에 계획이나 목표의 게이지와 다음 행, 방금 끝난 도구가 나옵니다. 스레드와 자식 에이전트는 한 줄씩 게이지나 시간을 달고, 그 밑에 쓰기로 한 스킬이 있습니다. 아래쪽 테두리에는 컨텍스트가 찬 정도, git 브랜치, 계획 파일, 실행 시간이 적힙니다. 기록이 없는 항목은 나오지 않습니다. 다른 터미널에서는 글로만 된 카드가 나옵니다. 워크플로와 실행 시간, 체크한 행과 전체 행과 다음 행, 레인을 적습니다.
 
 쉴 때 카드는 활성 경로가 없다고 알립니다.
 
-<p align="center"><img src="./docs/assets/card/idle.webp" width="960" alt="실행 중인 경로가 없을 때의 litmuse status --card 터미널 카드. 이 워크스페이스에 활성 경로가 없고, plans/todo-app.md 계획은 0/2, 다음 행은 1. Add the shout flag입니다. 글 오른쪽에 어두운 반쯤 잠긴 해와 별, 바다가 있습니다." /></p>
+<p align="center"><img src="./docs/assets/card/idle.webp" width="960" alt="실행 중인 경로가 없을 때의 litmuse status --card 테두리 카드. 어두운 색으로 LIT, ready, READY, 게이지가 달린 task 0/2, 다음 행 1. Add the shout flag, 아래 테두리의 main 브랜치와 계획 파일, 어두운 반쯤 잠긴 해가 보입니다." /></p>
 
 계획이 돌 때 카드는 경로와 계획 파일, 다음 행을 보여 줍니다.
 
-<p align="center"><img src="./docs/assets/card/working.webp" width="960" alt="lit-plan이 실행 중일 때의 litmuse status --card 터미널 카드. lit-plan이 30초째 활성이고 lit-plan 스레드 하나가 실행 중이며, plans/todo-app.md 계획은 0/2, 다음 행은 1. Add the shout flag입니다. 글 오른쪽에 밝은 노을과 바다가 있습니다." /></p>
+<p align="center"><img src="./docs/assets/card/working.webp" width="960" alt="lit-plan이 실행 중일 때의 litmuse status --card 테두리 카드. 위 테두리에 PLAN, 단계 줄에는 plan이 알약으로 있고, 게이지가 달린 task 0/2, 다음 행 1. Add the shout flag, 실행 중인 lit-plan 스레드, lit-plan 스킬 칩, 밝은 노을이 보입니다." /></p>
 
 행에 체크하면 개수와 다음 행 표시가 바뀝니다.
 
-<p align="center"><img src="./docs/assets/card/after.webp" width="960" alt="1번 행을 체크한 뒤의 같은 카드. plans/todo-app.md 계획이 1/2가 되고 다음 행은 2. Write the tests입니다." /></p>
+<p align="center"><img src="./docs/assets/card/after.webp" width="960" alt="1번 행을 체크한 뒤의 같은 카드. task 1/2 게이지가 반쯤 차고 다음 행은 2. Write the tests입니다." /></p>
 
-터미널에서 `litmuse status --card`를 실행하면 카드 위에 마크가 붙고, truecolor 터미널이면 첫 줄 맨 앞에 그라데이션 `🔥LIT v<버전>` 알약도 붙습니다. 90칸 이상인 truecolor 터미널에서는 글 옆에 노을도 나옵니다. 반쯤 잠긴 해 위에 별이 있고, 해에서 바다가 퍼져 나갑니다. 글이 없는 칸에만 그리고 줄을 늘리지 않으므로, 긴 줄이 많으면 위로 옮겨 가거나 나오지 않습니다. 해는 활성 경로가 없으면 어둡고, 카드에 `YOUR TURN`이 뜨면 호박색, `lit-adhd` 때는 무지개색입니다. `/lit-status`가 모델의 bash 도구로 카드를 돌릴 때나 색이 꺼져 있을 때는 원래의 `LIT ·` 머리줄이 그대로 남고, `--json`은 기록만 출력합니다.
+터미널에서 `litmuse status --card`를 실행하면 카드 위에 마크도 붙습니다. 테두리 카드에서는 반쯤 잠긴 해와 그 위의 별, 해에서 퍼지는 바다가 글이 없는 칸을 채우고, 자리가 없으면 카드가 한두 줄 늘어납니다. 해는 활성 경로가 없으면 어둡고, 카드가 사용자를 기다리면 호박색, `lit-adhd` 때는 무지개색입니다. 터미널이나 설치된 아이콘 글꼴이 둥근 끝을 그릴 수 있으면 알약과 게이지가 모두 둥글고, 아니면 모두 네모입니다. `LITMUSE_GLYPHS=round`나 `basic`으로 직접 정할 수 있습니다. `/lit-status`가 모델의 bash 도구로 카드를 돌릴 때나 색이 꺼져 있을 때는 원래의 `LIT ·` 머리줄이 그대로 남고, `--json`은 기록만 출력합니다.
 
-카드를 작업 옆에 계속 띄워 두려면 `--watch`를 붙입니다. 카드가 터미널을 채우고 네온 테두리가 생기며, Muse 세션이 일하는 동안 바다가 흐르고 별이 반짝이고 해 위로 빛이 지나갑니다. 세션이 멈추거나 15분 동안 아무 일이 없으면 그림은 멈추고 글과 시간만 갱신됩니다. `q`나 Ctrl+C를 누르면 터미널이 원래대로 돌아옵니다.
+카드를 작업 옆에 계속 띄워 두려면 `--watch`를 붙입니다. 카드가 터미널을 차지하고, Muse 세션이 일하는 동안 바다가 흐르고 별이 반짝이고 해와 알약 위로 빛이 지나갑니다. 세션이 멈추거나 15분 동안 아무 일이 없으면 그림은 멈추고 글과 시간만 갱신됩니다. `q`나 Ctrl+C를 누르면 터미널이 원래대로 돌아옵니다.
 
-<p align="center"><picture><source media="(prefers-reduced-motion: reduce)" srcset="./docs/assets/card/watch-still.webp" /><img src="./docs/assets/card/watch.webp" width="960" alt="lit-plan이 실행 중일 때 움직이는 litmuse status --card --watch 터미널 카드. 분홍에서 보라, 하늘색으로 이어지는 네온 테두리 안에서 반쯤 잠긴 해로부터 바다가 흐르고 위에서 별이 반짝입니다." /></picture></p>
+<p align="center"><picture><source media="(prefers-reduced-motion: reduce)" srcset="./docs/assets/card/watch-still.webp" /><img src="./docs/assets/card/watch.webp" width="960" alt="lit-plan이 실행 중일 때 움직이는 litmuse status --card --watch 테두리 카드. 분홍에서 보라, 하늘색으로 이어지는 네온 테두리 안에서 plan 알약과 스킬 칩 위로 빛이 지나가고, 반쯤 잠긴 해에서 바다가 흐르며 별이 반짝입니다." /></picture></p>
 
-Muse는 자기 화면 안에 플러그인 글을 그리지 않으므로, 이 카드는 다른 창이나 분할 창에 연 셸에서 실행합니다. `LITMUSE_MOTION=off`면 장면은 그대로 두고 움직임만 멈춥니다. `NO_COLOR`, 색이 적은 터미널, 90칸 미만에서는 계속 갱신되는 일반 카드를 보여 줍니다.
+Muse는 자기 화면 안에 플러그인 글을 그리지 않으므로, 이 카드는 다른 창이나 분할 창에 연 셸에서 실행합니다. `LITMUSE_MOTION=off`면 장면은 그대로 두고 움직임만 멈춥니다. `NO_COLOR`, 색이 적은 터미널, 밝은 배경, 64칸 미만에서는 계속 갱신되는 일반 카드를 보여 줍니다.
 
 카드는 프로젝트 밖에 있는 `~/.local/state/litmuse/` 아래 훅 기록을 읽습니다. 다른 세션을 어떻게 보여 주는지는 [참고 자료](./docs/reference_ko-KR.md#카드-뒤의-실시간-기록)에 있습니다.
 

@@ -39,13 +39,30 @@ running child agents, plus each session's liveness (PostToolUse says alive, Stop
 
 ### The sunset and `--watch`
 
-In a person's terminal the card carries a sunset scene in the cells its words leave free. It appears when stdout is a
-terminal, `COLORTERM` says truecolor, `NO_COLOR` is unset, `COLORFGBG` does not name a light background, and the
-terminal has at least 90 columns. Anything else, and every pipe and `--json`, prints the card without it. The sun sits
-on the lowest three rows in a run that leave it room. A finished plan or goal shows its `✨` line alone. Thread rows
-keep their words and widths; their branches turn neon and the current stage is filled violet to cyan. Gauges and pills
-get round ends only in Windows Terminal (`WT_SESSION`) and VS Code (`TERM_PROGRAM=vscode`), which draw those
-characters without a special font.
+In a person's terminal the card is framed and carries a sunset scene in the cells its words leave free. That needs
+stdout to be a terminal, `COLORTERM` to say truecolor, `NO_COLOR` to be unset, `COLORFGBG` not to name a light
+background, and at least 64 columns. Anything else, and every pipe and `--json`, prints the plain card. The sun sits on
+the lowest three rows in a run that leave it room, and the card grows when no rows do. A pane too short for the card
+loses rows from the bottom of its body.
+
+Where each part comes from:
+
+| part | source |
+| --- | --- |
+| state, stage map, count | the workflow stack the hooks keep in `.litmuse/workflow-stack/` |
+| task and criterion gauges | the plan's ticked rows, `.litmuse/goals/` |
+| lanes and their clocks | SubagentStart and SubagentStop, in the stage record |
+| skill chips | the route and the skill plan of the prompt that started it, in the stage record |
+| last tool | the session's ledger, written after each call, for 15 minutes; a call still running is not recorded |
+| `ctx ~12%` | Muse's estimate of its last prompt, in its session log, over the model catalog's window when every listed model has the same one; tokens alone otherwise |
+| branch | `.git/HEAD` |
+
+Muse keeps its 5-hour and weekly limits in no file, so the card does not show them.
+
+Round ends on pills and gauges are decided once, in this order: `LITMUSE_GLYPHS` (`round` or `nerd`; `basic` or
+`square`); Windows Terminal, VS Code, WezTerm, Ghostty and kitty draw them; over SSH they are off; otherwise on when an
+icon (Nerd) font file is in the system's font folders. Only file names are read, at most 4000 of them, three folders
+deep. The installer's cards follow the same rule.
 
 `litmuse status --card --watch` uses the alternate screen and restores it on `q`, Esc, Ctrl+C, SIGTERM, SIGHUP or an
 error. It reads the record at most once a second and paints eight frames a second in between, sending only the rows

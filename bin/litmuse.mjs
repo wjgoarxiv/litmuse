@@ -109,8 +109,8 @@ async function main() {
   switch (command) {
     case 'install':
     case 'update': {
-      print(markFor({ env }));
       const cards = cardsFor({ env, flags });
+      if (!cards) print(markFor({ env }));
       return install({ env, flags, interactive, ask: cards?.ask ?? ask, print, cards });
     }
     case 'uninstall':

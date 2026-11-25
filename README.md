@@ -177,7 +177,7 @@ The bottom row of the picture covers why an update may ask again, what install l
 
 `install`, `update`, `doctor` and `--help` open with the synthwave LIT mark, so you can tell at a glance which tool is talking. It is drawn for the terminal it lands in: full colour in a truecolor or 256-colour terminal, the same picture without colour when colour is off (`NO_COLOR`, `TERM=dumb`, an 8-colour terminal), and the single line `LIT · muse code` when the output goes to a pipe, a log or the model's bash tool, or the window is narrower than 24 columns. `doctor --json` prints no mark.
 
-In a terminal window of at least 40 columns and 12 rows, the plan, the questions and the closing summary are drawn as cards. A question names its step (`LIT 1/2`), says in one sentence what Yes does and what No leaves alone, and marks the default: press `y` or `n`, or move with the arrow keys or `Tab` and press Enter. Esc answers nothing, and Ctrl+C stops the installer. `NO_COLOR` keeps the cards without colour and a locale without UTF-8 draws them in ASCII. With `--yes`, `--dry-run`, `TERM=dumb`, `LITMUSE_AGENT_FILE` set, a pipe or CI, the same text prints as plain lines.
+In a terminal window of at least 40 columns and 12 rows, the plan, the questions, the work and the closing summary are drawn as cards. A question names its step (`LIT 1/2`), says in one sentence what Yes does and what No leaves alone, and marks the default: press `y` or `n`, or move with the arrow keys or `Tab` and press Enter. In the approvals question, `l` prints all the hooks and agents before you answer. Esc answers nothing, and Ctrl+C stops the installer. `NO_COLOR` keeps the cards without colour and a locale without UTF-8 draws them in ASCII. With `--yes`, `--dry-run`, `TERM=dumb`, `LITMUSE_AGENT_FILE` set, a pipe or CI, the same text prints as plain lines.
 
 <details>
 <summary>Install switches</summary>
@@ -214,27 +214,27 @@ Use only the official npm package @litfamily/litmuse. Show me your plan and wait
 
 Muse's `/hud` is a fixed list of on/off fields, so plugins add nothing to it. LitMuse keeps its own live record of the route, the plan progress and the child agents running right now, and `/lit-status` and `litmuse status --card` show it. The recommended `/hud` and theme preset for the terminal chrome around the card lives in [docs/hud-preset.md](./docs/hud-preset.md).
 
-Read the card from top to bottom. The first line names the workflow and how long it has run, or says no route is active in this workspace; a second line names the plan file with ticked and total rows and the next open row. A lanes line names each running tool with its elapsed time, then each finished lane.
+In a dark truecolor terminal of 64 columns or more the card is framed. The top edge names the workflow and, on the right, its state (`RED ●`, `YOUR TURN ●`, `DONE ✓`, `idle`). Under it come the stages of the run with the current one as a pill, then the plan or goal with a gauge and the next open row, then the tool that finished last. Each thread and child agent has a row with its own gauge or clock, and the planned skills stand under them. The bottom edge holds how full the context is, the git branch, the plan file and how long the run has lasted. A part LitMuse has no record for is left out. Elsewhere the card is plain text: the workflow and its time, the plan with its ticked and total rows and the next open row, and the lanes.
 
-At rest the card reports no active route:
+At rest the card is dim and says there is no active route:
 
-<p align="center"><img src="./docs/assets/card/idle.webp" width="960" alt="Terminal card of litmuse status --card with no route running: LIT, no active route in this workspace, plan 0/2 in plans/todo-app.md, next row 1, Add the shout flag. A dimmed half-sunk sun with stars and a sea sits to the right of the words." /></p>
+<p align="center"><img src="./docs/assets/card/idle.webp" width="960" alt="Framed terminal card of litmuse status --card with no route running, dimmed: LIT, ready, READY, task 0/2 with a gauge, next 1. Add the shout flag, the branch main and the plan file on the bottom edge, and a dim half-sunk sun." /></p>
 
-While a plan runs, the card names the route, the plan file, and the next open row:
+While a plan runs, the card names the route, its stage, and the next open row:
 
-<p align="center"><img src="./docs/assets/card/working.webp" width="960" alt="Terminal card of litmuse status --card while lit-plan runs: LIT, lit-plan, active 30s, one lit-plan thread running, plan 0/2 in plans/todo-app.md, next row 1, Add the shout flag. A bright sunset over a sea sits to the right of the words." /></p>
+<p align="center"><img src="./docs/assets/card/working.webp" width="960" alt="Framed terminal card of litmuse status --card while lit-plan runs: the state PLAN on the top edge, the stage map with plan as a pill, task 0/2 with a gauge, next 1. Add the shout flag, one lit-plan thread running, the lit-plan skill chip, and a bright sunset." /></p>
 
 Ticking a row moves the count and the next-row pointer:
 
-<p align="center"><img src="./docs/assets/card/after.webp" width="960" alt="The same card after row 1 is ticked: plan 1/2 in plans/todo-app.md, next row 2, Write the tests." /></p>
+<p align="center"><img src="./docs/assets/card/after.webp" width="960" alt="The same card after row 1 is ticked: task 1/2 with a half-filled gauge, next 2. Write the tests." /></p>
 
-Run in a terminal, `litmuse status --card` also puts the mark above the card, and a truecolor terminal gets a gradient `🔥LIT v<version>` pill at the start of its first line. A truecolor terminal of 90 columns or more also gets a sunset beside the words: a half-sunk sun with stars above it and a sea running out from it. It uses only cells that hold no text and adds no row, so on a card full of long rows it moves up or stays away. The sun is dim while no route runs, amber while the card says `YOUR TURN`, and rainbow during `lit-adhd`. When `/lit-status` has the model run the card through its bash tool, or colour is off, the card keeps its plain `LIT ·` headline, and `--json` prints only the record.
+Run in a terminal, `litmuse status --card` also puts the mark above the card. In the framed card a half-sunk sun with stars above it and a sea running out from it fills cells that hold no text; a card with no room for it grows a row or two. The sun is dim while no route runs, amber while the card waits for you, and rainbow during `lit-adhd`. Pills and gauges have round ends when your terminal or an installed icon font can draw them, and are square everywhere otherwise; `LITMUSE_GLYPHS=round` or `basic` decides it. When `/lit-status` has the model run the card through its bash tool, or colour is off, the card keeps its plain `LIT ·` headline, and `--json` prints only the record.
 
-To keep the card open beside your work, add `--watch`. It fills the terminal, puts a neon frame around the card and, while your Muse session is working, lets the sea flow, the stars twinkle and light run across the sun. When the session stops, or nothing has happened for 15 minutes, the picture holds still and only the words and times keep up. Press `q` or Ctrl+C and your terminal comes back as it was.
+To keep the card open beside your work, add `--watch`. It takes over the terminal and, while your Muse session is working, lets the sea flow, the stars twinkle and light run across the sun and the pills. When the session stops, or nothing has happened for 15 minutes, the picture holds still and only the words and times keep up. Press `q` or Ctrl+C and your terminal comes back as it was.
 
-<p align="center"><picture><source media="(prefers-reduced-motion: reduce)" srcset="./docs/assets/card/watch-still.webp" /><img src="./docs/assets/card/watch.webp" width="960" alt="Moving terminal card of litmuse status --card --watch while lit-plan runs: a neon frame from pink through violet to cyan around the card, with the sea flowing out from a half-sunk sun and stars twinkling above it." /></picture></p>
+<p align="center"><picture><source media="(prefers-reduced-motion: reduce)" srcset="./docs/assets/card/watch-still.webp" /><img src="./docs/assets/card/watch.webp" width="960" alt="Moving framed card of litmuse status --card --watch while lit-plan runs: a neon frame from pink through violet to cyan, light running across the plan pill and the skill chip, a sea flowing out from a half-sunk sun and stars twinkling above it." /></picture></p>
 
-This runs in your own shell, in a second window or pane, because Muse draws no plugin text inside its screen. `LITMUSE_MOTION=off` keeps the scene and stops the motion; `NO_COLOR`, fewer colours, or under 90 columns show the plain card, kept up to date.
+This runs in your own shell, in a second window or pane, because Muse draws no plugin text inside its screen. `LITMUSE_MOTION=off` keeps the scene and stops the motion; `NO_COLOR`, fewer colours, a light background, or under 64 columns show the plain card, kept up to date.
 
 The card reads the hook-kept state under `~/.local/state/litmuse/`, outside the project. How it lists other sessions is in [the reference](./docs/reference.md#the-live-record-behind-the-card).
 

@@ -14,9 +14,11 @@ any family feature in Muse's own plugin idiom.
 - `lib/` + `bin/litmuse.mjs` — the dependency-free installer, doctor, models, uninstall.
 - `lib/install-cards.mjs` — the install and uninstall cards on a person's terminal. Without cards (`cardsFor()` returns null) the
   plain lines stay byte-identical (`test/install-cards.test.mjs`).
-- `lib/card-view.mjs` + `lib/sunset.mjs` — the status card on a person's terminal: the sunset scene and `--watch`. Muse draws
-  no plugin text, so this is the only surface that can move. The scene may use only cells past the end of a row's
-  words; a pipe, `--json`, NO_COLOR, 256 colours and under 90 columns stay byte-identical (`test/sunset.test.mjs`).
+- `lib/card-view.mjs`, `lib/framed-card.mjs`, `lib/card-facts.mjs`, `lib/sunset.mjs` — the status card on a person's terminal: the
+  framed card, what it reads, the sunset scene and `--watch`. Muse draws no plugin text, so this is the only surface that
+  can move. The scene may use only cells that hold no text, and a part with no record is left out; a pipe, `--json`, NO_COLOR,
+  256 colours, a light background and under 64 columns stay byte-identical (`test/framed-card.test.mjs`, `test/sunset.test.mjs`).
+- `lib/glyphs.mjs` — the one rule for round or square ends; the card and the installer cards both ask it.
 - `test/` — `node --test`; `test/fixtures/fake-muse.mjs` stands in for the host, so tests never touch the real
   `~/.config/muse` or `~/.local/share/muse`.
 - `scripts/` — version lockstep, legacy-token scan, and `qa-muse-surface.mjs` (real `muse` in a throwaway HOME).

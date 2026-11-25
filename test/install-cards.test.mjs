@@ -16,7 +16,9 @@ import { expectedApprovals } from '../lib/approvals.mjs';
 import { displayWidth } from '../plugin/lib/rewind/gauge.mjs';
 import { FAKE_MUSE, ROOT, collect, museCalls, sandbox, setMuseState } from './helpers.mjs';
 
-const TERM = { TERM: 'xterm-256color', COLORTERM: 'truecolor', LANG: 'en_US.UTF-8' };
+const TERM = { TERM: 'xterm-256color', COLORTERM: 'truecolor', LANG: 'en_US.UTF-8', LITMUSE_GLYPHS: 'basic' };
+const ROUND = { ...TERM, LITMUSE_GLYPHS: 'round' };
+const CAPS = /[\ue0b4\ue0b6]/u;
 const CARD = { tag: 'LIT 1/2', title: 'Approvals', note: 'Approves them; No leaves them off.', yes: 'approve them', no: 'not now' };
 const KEY = { left: '\x1b[D', right: '\x1b[C', tab: '\t', enter: '\r', esc: '\x1b', ctrlC: '\x03', ctrlD: '\x04', ctrlZ: '\x1a' };
 const strip = (s) => s.replace(/\x1b\[[0-9;?]*[A-Za-z]/g, '').replace(/\r/g, '');
@@ -120,7 +122,7 @@ test('a signal gives the terminal back and is passed on; Ctrl+Z suspends and SIG
 });
 
 test('every card and panel row fits its window and keeps the sentence, both buttons and the way out', async () => {
-  const long = { ...CARD, note: 'Approves the 21 LitMuse hooks and agents listed above in Muse now; No leaves them off and prints the commands to approve them later.' };
+  const long = { ...CARD, note: 'Muse runs plugin hooks and agents only after you approve them. Yes approves these 21 (10 hooks, 11 agents) now; No prints the commands for later.', list: { hint: 'l list all 21', heading: '', lines: [] } };
   for (const columns of [40, 60, 80, 120]) {
     for (const rows of [12, 16, 24, 40]) {
       const w = window_({ columns, rows });
@@ -129,7 +131,7 @@ test('every card and panel row fits its window and keeps the sentence, both butt
       assert.ok(card.length < rows, `${columns}x${rows}: ${card.length} rows`);
       for (const line of card) assert.ok(displayWidth(line) < columns, `${columns}x${rows}: ${line}`);
       const words = card.join(' ').replace(/[│╭╮╰╯─]/g, ' ').replace(/ +/g, ' ');
-      for (const part of [long.note, 'Yes', 'No', 'Ctrl+C']) assert.ok(words.includes(part), `${columns}x${rows}: ${part}`);
+      for (const part of [long.note, 'Yes', 'No', 'l list all 21', 'Ctrl+C stop']) assert.ok(words.includes(part), `${columns}x${rows}: ${part}`);
     }
     const w = window_({ columns });
     const path = `/home/someone/${'folder/'.repeat(20)}receipt.json`;
@@ -143,6 +145,144 @@ test('a resize while the card is open draws it for the new window', async () => 
   const w = window_({ columns: 100 });
   await press(w, [() => { w.stdout.columns = 50; w.stdout.emit('resize'); }, 'y']);
   for (const line of w.lastCard()) assert.ok(displayWidth(line) < 50, line);
+});
+
+const LIST = { hint: 'l list all 3', heading: '3 capabilities are waiting', lines: ['  litmuse:hook:stop  (Stop hook)', '  two', '  three'] };
+
+test('l prints the whole list above the card before any answer, and the card comes back', async () => {
+  const w = window_();
+  const { answer } = await press(w, ['l', 'n'], { card: { ...CARD, list: LIST } });
+  assert.equal(answer, false);
+  const screen = w.screen();
+  assert.match(screen, / 3 capabilities are waiting\n {3}litmuse:hook:stop \(Stop hook\)\n {3}two\n {3}three\n\n ╭─/);
+  assert.match(w.lastCard().join('\n'), /l list all 3/);
+  const none = window_();
+  assert.equal((await press(none, ['l'])).waiting, true, 'a card with no list ignores the key');
+  none.stdin.write('n');
+});
+
+// What a person has on screen after the bytes, as rows.
+function rowsOf(bytes) {
+  const rows = [[]];
+  let [y, x] = [0, 0];
+  for (const [, n, kind, ch] of bytes.matchAll(/\x1b\[([0-9;?]*)([A-Za-z])|([^])/gu)) {
+    if (kind === 'A') y -= Number(n || 1);
+    else if (kind === 'J') rows.splice(y + 1, Infinity, ...[]), rows[y].splice(x);
+    else if (kind === 'K') rows[y].splice(x);
+    else if (kind) continue;
+    else if (ch === '\r') x = 0;
+    else if (ch === '\n') { y += 1; x = 0; rows[y] ??= []; }
+    else if (ch) { rows[y][x] = ch; x += 1; if (displayWidth(ch) === 2) { rows[y][x] = ''; x += 1; } }
+  }
+  return rows.map((row) => Array.from(row, (ch) => ch ?? ' ').join('').trimEnd());
+}
+
+const FORMS = { round: ROUND, square: TERM, c256: { ...ROUND, COLORTERM: '' }, c16: { ...ROUND, COLORTERM: '', TERM: 'xterm' }, none: { ...ROUND, NO_COLOR: '1' }, ascii: { ...ROUND, LANG: 'C' }, light: { ...ROUND, COLORFGBG: '0;15' } };
+
+test('both forms of every card fit every window, with edges in column and caps only in the round form', async () => {
+  for (const [form, env] of Object.entries(FORMS)) {
+    for (const columns of [40, 60, 80, 100, 120]) {
+      for (const rows of [12, 16, 24, 60]) {
+        const w = window_({ columns, rows, env });
+        await press(w, ['y'], { card: { ...CARD, list: LIST } });
+        w.cards.panel({ title: 'A title that is really quite long for this window', sections: [{ head: 'Installed', rows: [{ label: 'Receipt', value: '/a/b '.repeat(40) }, { mark: 'warn', label: 'A label longer than its column is', value: '한글 '.repeat(30) }] }] });
+        const work = w.cards.work('Installing', 'Install steps', [['Backups', 'save your Muse settings'], ['Bundle', 'copy the plugin bundle']]);
+        work.next();
+        work.fail();
+        const drawn = [...w.lastCard(), ...rowsOf(w.raw())];
+        const width = Math.min(columns - 2, 100);
+        for (const line of drawn) {
+          assert.ok(displayWidth(line) < columns, `${form} ${columns}: ${line}`);
+          if (/^ [╭│╰+|]/.test(line)) assert.equal(displayWidth(line), width + 1, `${form} ${columns}x${rows}: ${line}`);
+        }
+        assert.equal(CAPS.test(w.raw()), form === 'round', `${form} ${columns}`);
+        assert.doesNotMatch(strip(w.raw()), /[░▒▓▯▌▐▄▀]/u);
+      }
+    }
+  }
+});
+
+test('a title that does not fit its edge becomes the first row of the card, at the exact width', () => {
+  // Width 58: the edge holds a title of 58 - 9 - 5 (the pill) cells.
+  for (const [size, rows] of [[44, 1], [45, 2]]) {
+    const w = window_({ columns: 60 });
+    w.cards.panel({ title: 'x'.repeat(size), sections: [{ rows: [{ value: 'v' }] }] });
+    const card = strip(w.raw()).trimEnd().split('\n');
+    assert.equal(card[0].includes('x'), rows === 1, `${size}`);
+    assert.equal(card[1].includes('x'), rows === 2);
+    for (const line of card) assert.equal(displayWidth(line), 59);
+  }
+});
+
+test('the two forms hold the same text once the caps are gone, and every round fill has both caps', async () => {
+  const shown = async (env) => {
+    const w = window_({ env });
+    await press(w, [KEY.left, 'y']);
+    return w.raw();
+  };
+  const [round, square] = [await shown(ROUND), await shown(TERM)];
+  assert.equal(strip(round).replace(/[]/gu, ' '), strip(square));
+  for (const line of round.split('\n').filter((l) => /48;2;/.test(l))) {
+    const fills = line.match(/\x1b\[38;2;[0-9;]*m\x1b\[0m(?:\x1b\[[0-9;]*48;2;[0-9;]*m[^\x1b]*\x1b\[0m)+\x1b\[38;2;[0-9;]*m/gu) ?? [];
+    assert.equal(fills.join('').match(/48;2;/g)?.length, line.match(/48;2;/g).length, line);
+  }
+});
+
+test('the lit button is an outline around a filled chip; the other is dim, and both are three rows', async () => {
+  const w = window_({ columns: 100, env: ROUND });
+  await press(w, ['x', KEY.left, KEY.enter]);
+  const card = w.lastCard().map((line) => line.replace('', '(').replace('', ')'));
+  const at = card.findIndex((line) => line.includes('❯ Yes'));
+  assert.match(card[at - 1], /│ ╭─{19}╮ {2}╭─{19}╮ /);
+  assert.match(card[at].replace('', '(').replace('', ')'), /│ │ \(❯ Yes {10}\) │ {2}│ {4}No \(default\) {3}│ /);
+  assert.match(card[at + 1], /│ ╰─{19}╯ {2}╰─{19}╯ /);
+});
+
+test('one blank row between blocks, folds stand together, and every value starts in column 24', async () => {
+  const { env } = sandbox();
+  const w = window_({ columns: 100, rows: 60, env: { ...ROUND, HOME: env.HOME } });
+  const yes = { ...w.cards, ask: async (q, o) => { const p = w.cards.ask(q, o); await wait(15); w.stdin.write('y'); return p; } };
+  assert.equal(await install({ env, flags: {}, interactive: true, ask: yes.ask, print: () => {}, cards: yes }), 0);
+  const rows = rowsOf(w.raw());
+  assert.doesNotMatch(rows.join('\n').replace(/^\n/, ''), /\n\n\n/);
+  const folds = rows.filter((row) => /^ ✓ /.test(row));
+  assert.deepEqual(folds.map((row) => row.slice(3, 23).trim()), ['Install steps', 'Approvals', 'Approved', 'Rules file']);
+  for (const row of folds) assert.ok(row[23] === ' ' && row[24] !== ' ', row);
+  const at = rows.indexOf(folds[0]);
+  assert.deepEqual(rows.slice(at - 1, at + 5).map((row) => row === ''), [true, false, false, false, false, true]);
+  const closing = rows.slice(rows.findIndex((row) => / is installed ─/.test(row)));
+  for (const row of closing.filter((r) => /^ │ [✓·!] /.test(r))) assert.ok(row[23] === ' ' && row[24] !== ' ' && row[5] !== ' ', row);
+  assert.deepEqual(closing.filter((row) => /^ │ [A-Z]/.test(row)).map((row) => row.slice(3).replace(/ *│$/, '')), ['Installed', 'Next']);
+  assert.ok(!rows.join('\n').includes(`${env.HOME}/`), 'paths in cards start with ~');
+});
+
+test('the mark is centred over the cards and sized for the window', () => {
+  for (const [columns, rows, size] of [[100, 60, 76], [100, 40, 44], [100, 24, 24], [60, 60, 44], [40, 60, 24]]) {
+    const w = window_({ columns, rows });
+    w.cards.intro('Installs into a folder. One fact.');
+    const lines = strip(w.raw()).split('\n');
+    const widest = Math.max(...lines.slice(0, -2).map((l) => displayWidth(l.trimStart() === '' ? '' : l)));
+    const card = Math.min(columns - 2, 100);
+    assert.ok(Math.abs(widest - (1 + Math.floor((card - size) / 2) + size)) <= 2, `${columns}x${rows}: ${widest}`);
+    assert.equal(lines.at(-3), '');
+    assert.match(lines.at(-2), /^ Installs into/);
+  }
+});
+
+test('a failed step leaves the work card on screen with the step marked, and a red card after it', async () => {
+  const { env, home } = sandbox();
+  const bin = join(home, 'muse-invalid.mjs');
+  writeFileSync(bin, `#!/usr/bin/env node
+if (process.argv[3] === 'validate') { console.log(JSON.stringify({ valid: false, diagnostics: [{ code: 'bad', message: 'for the test' }] })); process.exit(0); }
+await import(${JSON.stringify(pathToFileURL(FAKE_MUSE).href)});
+`, { mode: 0o755 });
+  const { w, cards } = installer([], { env: ROUND });
+  const printed = collect();
+  assert.equal(await install({ env: { ...env, LITMUSE_MUSE_BIN: bin }, flags: {}, interactive: true, ask: cards.ask, print: printed.print, cards }), 1);
+  const rows = rowsOf(w.raw()).join('\n');
+  assert.match(rows, /✓ Bundle [^]*✗ Validate [^]*· Muse [^]*INSTALL STOPPED[^]*Stage +Validate[^]*Reason +muse plugins validate rejected/);
+  assert.match(printed.text(), /bad: for the test/);
+  assert.ok(w.raw().includes('38;2;255;85;119m╭'), 'red border');
 });
 
 test('colour follows the terminal, and a locale without UTF-8 gets ASCII', async () => {
@@ -160,7 +300,7 @@ test('colour follows the terminal, and a locale without UTF-8 gets ASCII', async
   assert.doesNotMatch(c16, /[34]8;[25];/);
   const none = await shown({ ...TERM, NO_COLOR: '1' });
   assert.doesNotMatch(none, /\x1b\[[0-9;]*m/);
-  assert.match(none, /╭─\[LIT 1\/2\][^]*╔/);
+  assert.match(none, /╭─ \[LIT 1\/2\] · Approvals[^]*╔/);
   const ascii = await shown({ ...TERM, LANG: 'C', NO_COLOR: '1' });
   assert.doesNotMatch(ascii, /[^\x00-\x7f]/);
   assert.match(ascii, /> Yes/);
@@ -199,17 +339,18 @@ test('a card install asks the same two questions in the same order and stores th
   const printed = collect();
   assert.equal(await install({ env, flags: {}, interactive: true, ask: cards.ask, print: printed.print, cards }), 0);
   assert.deepEqual(asked.map((a) => [a.card.tag, a.card.title, a.defaultYes ?? false]), [['LIT 1/2', 'Approvals', false], ['LIT 2/2', 'Rules file', true]]);
-  assert.match(asked[0].card.note, new RegExp(`the ${total} LitMuse hooks and agents`));
+  assert.match(asked[0].card.note, new RegExp(`these ${total} \\(\\d+ hooks, \\d+ agents\\) now`));
+  assert.equal(asked[0].card.list.hint, `l list all ${total}`);
+  for (const a of expectedApprovals()) assert.ok(asked[0].card.list.lines.some((line) => line.includes(a.id)), `${a.id} can be read before answering`);
   assert.match(asked[1].card.note, /Your own text stays as it is/);
   assert.equal(readAgentFileSetting(env).stored, 'off');
   assert.equal(museCalls(env).filter((c) => c.includes('approve')).length, 0);
   const screen = w.screen();
   for (const a of expectedApprovals()) {
-    assert.ok(screen.includes(a.id), a.id);
-    assert.ok(screen.split('\n').includes(`    muse plugins approve ${a.id}`), `${a.id} command on one line`);
+    assert.ok(screen.split('\n').includes(`     muse plugins approve ${a.id}`), `${a.id} command on one line`);
   }
-  assert.match(screen, /Muse runs plugin hooks and agents only after you approve them/);
-  assert.match(screen, new RegExp(`! installed, approval needed for ${total} capabilities`));
+  assert.match(asked[0].card.note, /Muse runs plugin hooks and agents only after you approve them/);
+  assert.match(screen, new RegExp(`! Approvals +${total} \\(\\d+ hooks, \\d+ agents\\) still to approve`));
   assert.equal(printed.text(), '');
 });
 
@@ -217,8 +358,8 @@ test('Yes approves exactly what was listed, and a reinstall asks only what is le
   const { env } = sandbox();
   const first = installer([true, true]);
   await install({ env, flags: {}, interactive: true, ask: first.cards.ask, print: () => {}, cards: first.cards });
-  assert.match(first.w.screen(), /✓ Approved +\d+ LitMuse capabilities/);
-  assert.match(first.w.screen(), /LitMuse [\d.]+ is ready/);
+  assert.match(first.w.screen(), /✓ Approved +\d+ \(\d+ hooks, \d+ agents\)/);
+  assert.match(first.w.screen(), /LitMuse [\d.]+ is installed[^]*✓ Approvals +every hook and agent is approved/);
   assert.match(first.w.screen(), /✓ Rules file +created\s/);
 
   // An update re-arms approvals; the block is already there, so only one question is left.
@@ -237,8 +378,7 @@ await import(${JSON.stringify(pathToFileURL(FAKE_MUSE).href)});
   const { w, cards } = installer([true, false]);
   await install({ env: { ...env, LITMUSE_MUSE_BIN: bin }, flags: {}, interactive: true, ask: cards.ask, print: () => {}, cards });
   assert.match(w.screen(), /✗ Approve +litmuse:hook:stop: refused for the test/);
-  assert.match(w.screen(), /1 are still waiting:\n +litmuse:hook:stop/);
-  assert.match(w.screen(), /! installed, approval needed for 1 capabilities/);
+  assert.match(w.screen(), /! Approvals +1 \(1 hook\) still to approve[^]*\n {5}muse plugins approve litmuse:hook:stop\n/);
 });
 
 test('with one question left out, the other counts 1/1', async () => {
@@ -253,14 +393,13 @@ test('a refused install closes with a failure panel, and its remedy stays copyab
   const { w, cards } = installer([]);
   const printed = collect();
   assert.equal(await install({ env: { ...env, LITMUSE_MUSE_BIN: join(home, 'no-muse'), PATH: home }, flags: {}, interactive: true, print: printed.print, cards }), 1);
-  assert.match(w.screen(), /install stopped/);
-  assert.match(w.screen(), /✗ muse was not found on PATH/);
+  assert.match(w.screen(), /INSTALL STOPPED[^]*✗ Stage +Check[^]*✗ Reason +muse was not found on PATH/);
 
   setMuseState(env, { installed: true, source: join(ROOT, 'plugin') });
   const other = installer([]);
   const notes = collect();
   assert.equal(await install({ env, flags: {}, interactive: true, print: notes.print, cards: other.cards }), 1);
-  assert.match(other.w.screen(), /✗ Muse already has LitMuse/);
+  assert.match(other.w.screen(), /✗ Reason +Muse already has LitMuse/);
   assert.match(notes.text(), /muse plugins remove litmuse[^]*No files written\./);
 });
 
