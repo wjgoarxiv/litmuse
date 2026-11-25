@@ -1,4 +1,4 @@
-<p align="center"><picture><source media="(prefers-reduced-motion: reduce)" srcset="./docs/assets/cover-motion-still.webp" /><img src="./docs/assets/cover-motion.webp" width="100%" alt="LitFamily 모션 커버: 노을빛 터미널 화면입니다. 위쪽에는 litmuse status --card --watch 명령과 review-work 경로의 카드가 있고, 가운데는 픽셀 글자 LITFAMILY와 줄무늬 해가 채우며 일곱 제품 이름 줄에서 LITMUSE가 켜지고, 아래에서는 셸 프롬프트가 기다립니다." /></picture></p>
+<p align="center"><picture><source media="(prefers-reduced-motion: reduce)" srcset="./docs/assets/cover-motion-still.webp" /><img src="./docs/assets/cover-motion.webp" width="100%" alt="LitFamily 모션 커버: 노을빛 터미널 화면입니다. litmuse status --card가 그린 start-work 경로의 모서리가 둥근 카드가 단계 지도, 작업 게이지, 스킬 알약, 레인과 함께 화면을 두르고, 가운데는 픽셀 글자 LITFAMILY와 줄무늬 해가 채우며 일곱 제품 이름 줄에서 LITMUSE가 켜지고, 아래에서는 셸 프롬프트에 그 명령이 놓여 있습니다." /></picture></p>
 
 <h1 align="center">LitMuse</h1>
 <p align="center"><strong>Keep the work lit.</strong></p>
@@ -84,9 +84,9 @@ npx @litfamily/litmuse doctor
 마무리    "계획을 저장했습니다. 괜찮으면 /start-work를 실행하세요."
 ```
 
-Muse 안에는 카드를 그릴 자리가 없어서 LitMuse의 카드는 둘째 창에서 돕니다: `litmuse status --card --watch`. 아래 영상은 요청 하나가 카드를 지나가는 모습입니다. 경로가 켜지고, 계획과 목표가 개수를 보여 주고, 레인 두 개가 돌고, 계획 행이 하나씩 체크되며, 3/3이 되면 카드가 축하 한 줄을 찍습니다.
+Muse 안에는 카드를 그릴 자리가 없어서 LitMuse의 카드는 둘째 창에서 돕니다: `litmuse status --card --watch`. 아래 영상은 요청 하나가 카드를 지나가는 모습입니다. 경로가 켜지고, 계획과 목표가 개수를 보여 주고, 레인 두 개가 돌고, 계획 행이 하나씩 체크되며, 3/3이 되면 `DONE ✓`가 카드 윗줄에 놓입니다.
 
-<p align="center"><img src="./docs/assets/readme/demo-ko.webp" width="960" alt="Muse Code 옆 창에서 `litmuse status --card --watch`를 돌리는 무음 반복 영상입니다. 프롬프트 &quot;lit add a --shout flag that prints the greeting in capitals, with a test&quot; 뒤에 카드는 lit-loop 활성, 계획 0/3, 목표 0/1, 실행 중인 lit-executor와 lit-verifier 두 레인, 하나씩 체크되는 계획 행을 보여 줍니다. 3/3이 되면 축하 한 줄을 찍고 해가 비켜서며, 15분 뒤 카드는 어두워진 노을 아래서 쉽니다." /></p>
+<p align="center"><img src="./docs/assets/readme/demo-ko.webp" width="960" alt="Muse Code 옆 창에서 `litmuse status --card --watch`를 돌리는 무음 반복 영상입니다. 프롬프트 &quot;lit add a --shout flag that prints the greeting in capitals, with a test&quot; 뒤에 카드는 lit-loop 활성, 계획 0/3, 목표 0/1, 실행 중인 lit-executor와 lit-verifier 두 레인, 하나씩 체크되는 계획 행을 보여 줍니다. 3/3이 되면 DONE ✓가 카드 윗줄에 놓이고, 15분 뒤 카드는 어두워진 노을 아래서 쉽니다." /></p>
 
 <p align="center"><sub>카드는 LitMuse가 직접 만든 출력이고, 그 주변의 Muse 화면은 다시 그린 것입니다. 마지막 장면은 15분 뒤입니다.</sub></p>
 

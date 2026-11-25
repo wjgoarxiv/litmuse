@@ -1,4 +1,4 @@
-<p align="center"><picture><source media="(prefers-reduced-motion: reduce)" srcset="./docs/assets/cover-motion-still.webp" /><img src="./docs/assets/cover-motion.webp" width="100%" alt="LitFamily motion cover: a terminal in a sunset look. The command litmuse status --card --watch and its card for a review-work route sit at the top, a pixel LITFAMILY wordmark and a striped half-sunk sun fill the middle with the row of seven product names lighting LITMUSE, and a shell prompt waits at the bottom." /></picture></p>
+<p align="center"><picture><source media="(prefers-reduced-motion: reduce)" srcset="./docs/assets/cover-motion-still.webp" /><img src="./docs/assets/cover-motion.webp" width="100%" alt="LitFamily motion cover: a terminal in a sunset look. The round-cornered card of litmuse status --card for a start-work route frames the screen with its stage map, task gauge, skill pills and lanes, a pixel LITFAMILY wordmark and a striped half-sunk sun fill the middle, the row of seven product names lights LITMUSE, and a shell prompt holds the command at the bottom." /></picture></p>
 
 <h1 align="center">LitMuse</h1>
 <p align="center"><strong>Keep the work lit.</strong></p>
@@ -93,9 +93,9 @@ it does     loads lit-plan, reads the repo, writes plans/todo-app.md with ordere
 it ends     "Plan saved. Run /start-work when you are happy with it."
 ```
 
-Muse draws no card of its own, so LitMuse's card runs in a second pane: `litmuse status --card --watch`. In the loop below one request goes through it. The route lights up, the plan and the goal show their counts, two lanes run, the plan rows get ticked, and at 3/3 the card prints one celebratory line.
+Muse draws no card of its own, so LitMuse's card runs in a second pane: `litmuse status --card --watch`. In the loop below one request goes through it. The route lights up, the plan and the goal show their counts, two lanes run, the plan rows get ticked, and at 3/3 `DONE ✓` sits on the card's top edge.
 
-<p align="center"><img src="./docs/assets/readme/demo.webp" width="960" alt="A silent loop of Muse Code with a second pane running `litmuse status --card --watch`. After the prompt &quot;lit add a --shout flag that prints the greeting in capitals, with a test&quot;, the card shows lit-loop active, plan 0/3 and goal 0/1, two running lanes, lit-executor and lit-verifier, and the plan rows being ticked. At 3/3 it prints one celebratory line and the sun steps aside; fifteen minutes later the card idles under a dimmed sunset." /></p>
+<p align="center"><img src="./docs/assets/readme/demo.webp" width="960" alt="A silent loop of Muse Code with a second pane running `litmuse status --card --watch`. After the prompt &quot;lit add a --shout flag that prints the greeting in capitals, with a test&quot;, the card shows lit-loop active, plan 0/3 and goal 0/1, two running lanes, lit-executor and lit-verifier, and the plan rows being ticked. At 3/3 DONE ✓ sits on the card's top edge; fifteen minutes later the card idles under a dimmed sunset." /></p>
 
 <p align="center"><sub>The card is LitMuse's own output; the Muse screen around it is redrawn. The last scene is fifteen minutes later.</sub></p>
 

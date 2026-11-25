@@ -1,17 +1,13 @@
 # Changelog
 
-## Unreleased
+## 0.1.21 — 2026-11-25
 
 - `litmuse status --card` and `--watch` draw a framed card in a dark truecolor terminal of 64 columns or more (it was 90): workflow and state on the top edge, a stage map with the current stage as a pill, the plan or goal with a gauge and the next row, the tool that finished last, aligned rows for threads and child agents, skill chips, and context, git branch, plan file and time on the bottom edge. A part with no record is left out. The version moved from the pill to the bottom edge, and a finished plan shows `DONE ✓` there in place of the `✨` line. `--json`, a pipe, `NO_COLOR`, 256 or fewer colours, a light background and narrower terminals print what they did before.
 - The context figure is Muse's own estimate of its last prompt, as a share of the model catalog's window when every listed model has the same one.
 - One rule decides round or square ends for the card and the installer: `LITMUSE_GLYPHS` (`round` or `basic`), then the terminal, then, off SSH, whether an icon font is installed. The card no longer shows `[ ]` gauges.
 - `litmuse install` centres the mark over its cards, shows the work in one card that folds to a single row, and closes with one card of what was installed and what comes next. The approvals question shows a count; `l` prints every hook and agent before you answer. A failed install names the stage, the reason and the next step. The questions, their order, their defaults and the stored answers are unchanged, and the plain lines of `--yes`, `--dry-run`, a pipe, CI and small windows are too.
-- No hook or context file changed, so Muse asks for no new hook approval.
-
-## 0.1.21 — 2026-11-25
-
 - The README cover is a new loop: a terminal in the sunset look with the watched status card, a pixel LITFAMILY wordmark and a striped half-sunk sun, in place of the seven robot panels. The still for reduced motion is its first frame; the packed files are smaller.
-- The README demo is a new silent loop of one request with the watched status card in its own pane (plan and goal counts, lanes, the celebration line, the sunset), replacing the old still of three commands; the Korean page has its own copy, kept out of the package. The Muse screen around the card is redrawn.
+- The README demo is a new silent loop of one request with the watched status card in its own pane (plan and goal counts, lanes, `DONE ✓`, the sunset), replacing the old still of three commands; the Korean page has its own copy, kept out of the package. The Muse screen around the card is redrawn.
 - At a terminal, `litmuse install`, `update` and `uninstall` draw the plan, the questions, each finished step and the closing summary as cards. A question card names its step, says what Yes does and what No leaves alone, and marks the default: `y` or `n` answers at once, the arrow keys or Tab move, Enter takes the highlight, Esc answers nothing. The questions, their order, their defaults and the stored answers are unchanged, and Ctrl+C still ends with the same message and exit code 1.
 - A failed install shows what went wrong in a red card, with the remedy below it as text you can copy. The `muse plugins approve` lines stay one per line too.
 - `NO_COLOR` keeps the cards without colour; a locale without UTF-8 draws them in ASCII. `--yes`, `--dry-run`, `TERM=dumb`, `LITMUSE_AGENT_FILE`, a pipe, CI and a window under 40 columns or 12 rows print exactly what they printed before.
