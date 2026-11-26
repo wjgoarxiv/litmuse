@@ -18,7 +18,10 @@ any family feature in Muse's own plugin idiom.
   framed card, what it reads, the sunset scene and `--watch`. Muse draws no plugin text, so this is the only surface that
   can move. The scene may use only cells that hold no text, and a part with no record is left out; a pipe, `--json`, NO_COLOR,
   256 colours, a light background and under 64 columns stay byte-identical (`test/framed-card.test.mjs`, `test/sunset.test.mjs`).
-- `lib/glyphs.mjs` — the one rule for round or square ends; the card and the installer cards both ask it.
+- `lib/glyphs.mjs` — the one rule for round or square ends (environment, saved `--glyphs` choice, auto) and the `ROUND_ENDS:`
+  line; the card and the installer cards both ask it. `lib/icon-font.mjs` is the opt-in font of `--round`.
+- `lib/flags.mjs`, `lib/agent-guide.mjs` — every flag the CLI takes (an unknown one exits 2) and the `install --agent` guide.
+  `test/agent-guide.test.mjs` binds the guide, the flags, the installer's questions and both README prompts.
 - `test/` — `node --test`; `test/fixtures/fake-muse.mjs` stands in for the host, so tests never touch the real
   `~/.config/muse` or `~/.local/share/muse`.
 - `scripts/` — version lockstep, legacy-token scan, and `qa-muse-surface.mjs` (real `muse` in a throwaway HOME).
@@ -135,7 +138,11 @@ Re-checked on 1.4.23 (2026-11-18), offline, binary strings and `--help` only:
 
 - The installer writes only under `$XDG_DATA_HOME/litmuse` and through the `muse` CLI, plus one marked block in Muse's
   own user rules file (`lib/agent-file.mjs`: consent first, add-then-remove returns the original bytes, a backup
-  goes to `$XDG_DATA_HOME/litmuse/backups`; `test/agent-file.test.mjs` pins it). Never write `~/.claude`,
+  goes to `$XDG_DATA_HOME/litmuse/backups`; `test/agent-file.test.mjs` pins it) and, with `--round` only, the icon font:
+  exactly `SymbolsNerdFontMono-Regular.ttf` and `SymbolsNerdFontMono-LICENSE.txt` in `~/Library/Fonts` (macOS) or
+  `${XDG_DATA_HOME:-~/.local/share}/fonts` (Linux), from the pinned archive, never over an existing file
+  (`assertFontPath` in `lib/guard.mjs`; `test/icon-font.test.mjs` pins it). `--yes` never approves and never asks;
+  only `--approve` approves without a question. Never write `~/.claude`,
   `~/.codex`, or Muse's credential file; `lib/guard.mjs` and the install tests enforce it. The block text is
   `lib/agent-file-block.md` (≤ 1 200 bytes, names only LitMuse and Muse); it is not a hook or context file, so
   changing it needs no `sync:digests` and no hook re-approval.

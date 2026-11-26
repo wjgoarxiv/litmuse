@@ -1,5 +1,14 @@
 # Changelog
 
+## Unreleased
+
+- `litmuse install --agent` (or `--agent`) prints an install guide for coding agents. It writes nothing, starts nothing and needs no Muse. `--help`, the first line of an install without a person, and the plan card point to it; the README prompts carry the same steps.
+- `install --yes` never waits for an answer, at a terminal too. Approvals stay with you: the commands are printed, and only `--approve` approves without a question.
+- An unknown flag, a missing value or a wrong value ends the run with exit code 2 before anything is written.
+- `install --round` adds the symbols-only Nerd Font to your own font folder when no icon font is here (macOS, Linux). `--glyphs auto|round|square` saves the ends of pills and gauges; `round` holds over SSH. `LITMUSE_GLYPHS` takes `auto` too and still wins. `uninstall` removes the font files LitMuse added and left unchanged.
+- `install`, `update` and `doctor` end with one `ROUND_ENDS:` line (`shown`, `ready`, `check` or `square` with a reason and a fix), and the install says to restart Muse.
+- No hook or context file changed, so Muse asks for no new hook approval.
+
 ## 0.1.21 — 2026-11-25
 
 - `litmuse status --card` and `--watch` draw a framed card in a dark truecolor terminal of 64 columns or more (it was 90): workflow and state on the top edge, a stage map with the current stage as a pill, the plan or goal with a gauge and the next row, the tool that finished last, aligned rows for threads and child agents, skill chips, and context, git branch, plan file and time on the bottom edge. A part with no record is left out. The version moved from the pill to the bottom edge, and a finished plan shows `DONE ✓` there in place of the `✨` line. `--json`, a pipe, `NO_COLOR`, 256 or fewer colours, a light background and narrower terminals print what they did before.

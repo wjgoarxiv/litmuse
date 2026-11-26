@@ -59,9 +59,10 @@ Where each part comes from:
 
 Muse keeps its 5-hour and weekly limits in no file, so the card does not show them.
 
-Round ends on pills and gauges are decided once, in this order: `LITMUSE_GLYPHS` (`round` or `nerd`; `basic` or
-`square`); Windows Terminal, VS Code, WezTerm, Ghostty and kitty draw them; over SSH they are off; otherwise on when an
-icon (Nerd) font file is in the system's font folders. Only file names are read, at most 4000 of them, three folders
+Round ends on pills and gauges are decided once, in this order: `LITMUSE_GLYPHS` (`auto`; `round` or `nerd`; `basic`
+or `square`); the choice saved by `install --glyphs` in `config.json`, over SSH too; then, on `auto`, Windows Terminal,
+VS Code, WezTerm, Ghostty and kitty draw them; over SSH they are off; otherwise on when an icon (Nerd) font file is in the
+system's font folders. Only file names are read, at most 4000 of them, three folders
 deep. The installer's cards follow the same rule.
 
 `litmuse status --card --watch` uses the alternate screen and restores it on `q`, Esc, Ctrl+C, SIGTERM, SIGHUP or an

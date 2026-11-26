@@ -58,8 +58,8 @@ Muse의 `/hud`는 고정 항목만 보여 주므로, 훅이 따로 실시간 기
 
 Muse는 5시간, 주간 한도를 파일로 남기지 않으므로 카드에는 없습니다.
 
-알약과 게이지의 둥근 끝은 이 순서로 한 번 정합니다. `LITMUSE_GLYPHS`(`round`나 `nerd`, `basic`이나 `square`)가 먼저이고,
-Windows Terminal, VS Code, WezTerm, Ghostty, kitty면 켜고, SSH면 끄고, 그 밖에는 시스템 글꼴 폴더에 아이콘(Nerd) 글꼴
+알약과 게이지의 둥근 끝은 이 순서로 한 번 정합니다. `LITMUSE_GLYPHS`(`auto`, `round`나 `nerd`, `basic`이나 `square`)가 먼저이고,
+다음은 `install --glyphs`로 `config.json`에 저장한 선택이며 SSH에서도 유지됩니다. `auto`일 때는 Windows Terminal, VS Code, WezTerm, Ghostty, kitty면 켜고, SSH면 끄고, 그 밖에는 시스템 글꼴 폴더에 아이콘(Nerd) 글꼴
 파일이 있을 때 켭니다. 파일 이름만 최대 4000개, 세 단계 폴더까지 읽습니다. 설치 카드도 같은 규칙을 씁니다.
 
 `litmuse status --card --watch`는 대체 화면을 쓰고 `q`, Esc, Ctrl+C, SIGTERM, SIGHUP이나 오류로 끝날 때 원래 화면을

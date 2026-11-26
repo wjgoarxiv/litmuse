@@ -162,7 +162,7 @@ Muse 안에는 카드를 그릴 자리가 없어서 LitMuse의 카드는 둘째 
 1. **미리 보기**는 쓸 위치를 모두 보여 주고 아무것도 쓰지 않습니다. `--dry-run`이면 여기서 끝납니다.
 2. **준비**는 바꿀 Muse 파일을 백업하고, 플러그인을 LitMuse 폴더인 `~/.local/share/litmuse/bundle`에 복사합니다.
 3. **Muse에 설치**는 `muse plugins install`을 user 범위로 실행하고, `muse` CLI가 Muse 플러그인 저장소에 플러그인을 기록합니다. 스킬과 명령은 이때부터 바로 동작합니다.
-4. **승인**은 Muse가 사용자 승인 뒤에만 실행하는 21개(훅 10, 에이전트 11)를 다룹니다. 설치기는 한 번에 승인할지 딱 한 번 묻고, 예라고 답하면 그 답이 Muse 설정에 남습니다. 아니라고 답하면 나중에 실행할 `muse plugins approve ...` 줄을 출력합니다.
+4. **승인**은 Muse가 사용자 승인 뒤에만 실행하는 21개(훅 10, 에이전트 11)를 다룹니다. 설치기는 한 번에 승인할지 딱 한 번 묻고, 예라고 답하면 그 답이 Muse 설정에 남습니다. 아니라고 답하거나 `--yes`로 실행하면 나중에 실행할 `muse plugins approve ...` 줄을 출력합니다.
 
 그림의 맨 아래 줄은 업데이트 뒤에 다시 묻는 이유, 설치가 손대지 않는 곳, 동의를 받은 뒤에만 쓰는 파일 하나([규칙 파일 블록](./docs/reference_ko-KR.md#muse-자체-규칙-파일의-짧은-블록))를 정리했습니다. Muse는 플러그인이 업데이트될 때마다 에이전트 승인을 다시 요구하므로, 업데이트 뒤에는 설치기가 그 부분만 한 번 더 묻습니다. `doctor`에서는 아직 승인을 기다리는 항목이 `APPROVAL NEEDED`와 실행할 명령으로 표시됩니다.
 
@@ -174,9 +174,14 @@ Muse 안에는 카드를 그릴 자리가 없어서 LitMuse의 카드는 둘째 
 <summary>설치 옵션</summary>
 
 - **`--dry-run`**: 미리 보기만 하고 아무것도 쓰지 않습니다.
-- **`--yes`**: 터미널이 붙지 않은 에이전트나 CI 셸에서 설치를 허용합니다. 그런 셸에서는 기본으로 미리 보기만 합니다.
+- **`--yes`**: 에이전트나 CI 셸에서 질문 없이 설치합니다. 터미널이 없는 셸은 이 옵션이 없으면 미리 보기만 합니다. 규칙 파일 블록은 들어가고(`--no-agent-file`이면 그 실행에서만 빠지고, `config agentFile off`면 계속 빠짐), 승인은 사용자 몫으로 남아 명령만 출력됩니다.
 - **`--approve`**: 질문 없이 승인까지 진행하는 스크립트용입니다.
 - **`--scope project`**: 한 프로젝트에만 설치합니다.
+- **`--round`**: 아이콘 글꼴이 없을 때 둥근 끝이 들어 있는 글꼴을 추가합니다([둥근 끝](#둥근-끝)).
+- **`--glyphs auto|round|square`**: 원하는 끝 모양을 저장합니다. 나중에 그냥 설치해도 선택이 유지됩니다.
+- **`--agent`**: 코딩 에이전트용 설치 안내만 출력하고 끝납니다.
+
+설치기가 모르는 옵션이 있으면 아무것도 쓰지 않고 종료 코드 2로 끝납니다.
 
 </details>
 
@@ -186,15 +191,29 @@ Muse 안에는 카드를 그릴 자리가 없어서 LitMuse의 카드는 둘째 
 아무 폴더에서 연 코딩 에이전트에 아래를 붙여 넣으세요.
 
 ```text
-Meta Muse Code용 LitFamily 플러그인인 LitMuse를 설치해 줘.
-공식 npm 패키지 @litfamily/litmuse만 써. 무엇이든 바꾸기 전에 계획을 보여 주고 내 승인을 기다려.
-1. Node.js 20 이상과 muse가 PATH에 있는지 확인해 (`muse --version`).
-2. 미리 보기: npx @litfamily/litmuse install --dry-run
-3. 설치: npx @litfamily/litmuse install --yes
-   플러그인이 설치되고 승인 명령 21줄이 출력돼. 승인하기 전에 나에게 묻고, 내가 좋다고 하면
-   npx @litfamily/litmuse install --yes --approve 를 실행해.
-4. 확인: npx @litfamily/litmuse doctor 를 실행하고 마지막 줄을 알려 줘.
-5. 무엇이 쓰였는지("Written:" 목록)와 설치기가 거부한 것이 있으면 알려 줘.
+Meta Muse Code용 LitFamily 플러그인인 LitMuse를 설치해 줘. "npx --yes @litfamily/litmuse@latest install --agent"를 실행하면 같은 단계가 나와.
+공식 npm 패키지 @litfamily/litmuse만 쓰고 다른 출처는 더하지 마. 훅 승인, 신뢰, 로그인은 나 대신 하지 마.
+1. Node.js 20 이상과 muse가 PATH에 있는지 확인해 (muse --version).
+2. 미리 보기: npx --yes @litfamily/litmuse@latest install --dry-run --round
+   무엇이 바뀌는지 보여 줘.
+3. 기본값과 함께 나에게 물어봐.
+   - 모두 기본값으로 할까? (예)
+   - Muse 사용자 규칙 파일에 짧은 LitFamily 블록을 넣을까? (예, 넣지 않으려면 아래의 모든 install, update 명령에 --no-agent-file 추가, 한 번의 실행에만 적용돼)
+   - LitMuse 훅과 에이전트를 승인할까? (아니요, muse plugins approve 명령은 내가 직접 실행해)
+   - 모든 프로젝트에 설치할까? (예, 지금 프로젝트에만 하려면 --scope project 추가)
+   - 상태 카드의 끝은 둥글게 할까, 네모로 할까? (auto, 정하려면 --glyphs round 또는 --glyphs square 추가)
+   아이콘 글꼴도 알려 줘: --round는 아이콘 글꼴이 없을 때만 SymbolsNerdFontMono-Regular.ttf와 라이선스 파일을 macOS는 ~/Library/Fonts, Linux는 ${XDG_DATA_HOME:-~/.local/share}/fonts 에 추가해. Windows에서는 추가하지 않아.
+   내가 보게 될 화면도 알려 줘: 상태 카드야. 옵션 없이 쓸 수 있고, 내 터미널에서 npx --yes @litfamily/litmuse@latest status --card 를 실행하면 돼.
+4. 내가 좋다고 하면 설치: npx --yes @litfamily/litmuse@latest install --yes --round
+   나중에 업데이트: npx --yes @litfamily/litmuse@latest update --yes --round
+5. 확인: 설치 출력에 ROUND_ENDS: 로 시작하는 줄이 있어야 해. 그다음 npx --yes @litfamily/litmuse@latest doctor 를 실행해.
+   "LitMuse doctor: PASS"면 통과야. 내가 승인하기 전에는 "approvals needed"와 종료 코드 1이 정상이야. FAIL로 시작하는 줄이 있으면 실패한 단계니까 그 줄을 보여 주고 멈춰.
+6. 상태 카드를 볼 터미널에서 이것을 보여 주고 양쪽 끝이 둥근지 물어봐:  LIT 
+   둥글면: npx --yes @litfamily/litmuse@latest install --yes --glyphs round
+   네모 상자나 물음표면: npx --yes @litfamily/litmuse@latest install --yes --glyphs square
+   둥근 끝을 쓰려면 내가 터미널 글꼴을 전체 Nerd Font로 바꾸거나 Symbols Nerd Font Mono를 대체 글꼴로 추가할게 (iTerm2는 Non-ASCII Font, VS Code는 terminal.integrated.fontFamily, kitty는 symbol_map). Terminal.app에는 대체 글꼴 설정이 없어서 글꼴 자체를 전체 Nerd Font로 바꿔야 해.
+   SSH나 휴대폰이거나 답이 없으면 그대로 둬. 되돌리기: npx --yes @litfamily/litmuse@latest install --yes --glyphs auto
+7. "Written:" 목록, 거부한 것, 출력된 muse plugins approve 명령을 보여 줘. 그 명령을 실행하고, Muse를 끄고 다시 시작하고, 로그인하고, 폴더나 Git 저장소를 신뢰하는 일은 나만 해.
 ```
 
 </details>
@@ -219,13 +238,19 @@ Muse의 `/hud`는 켜고 끄는 고정 항목 목록이라서 플러그인 글�
 
 <p align="center"><img src="./docs/assets/card/after.webp" width="960" alt="1번 행을 체크한 뒤의 같은 카드. task 1/2 게이지가 반쯤 차고 다음 행은 2. Write the tests입니다." /></p>
 
-터미널에서 `litmuse status --card`를 실행하면 카드 위에 마크도 붙습니다. 테두리 카드에서는 반쯤 잠긴 해와 그 위의 별, 해에서 퍼지는 바다가 글이 없는 칸을 채우고, 자리가 없으면 카드가 한두 줄 늘어납니다. 해는 활성 경로가 없으면 어둡고, 카드가 사용자를 기다리면 호박색, `lit-adhd` 때는 무지개색입니다. 터미널이나 설치된 아이콘 글꼴이 둥근 끝을 그릴 수 있으면 알약과 게이지가 모두 둥글고, 아니면 모두 네모입니다. `LITMUSE_GLYPHS=round`나 `basic`으로 직접 정할 수 있습니다. `/lit-status`가 모델의 bash 도구로 카드를 돌릴 때나 색이 꺼져 있을 때는 원래의 `LIT ·` 머리줄이 그대로 남고, `--json`은 기록만 출력합니다.
+터미널에서 `litmuse status --card`를 실행하면 카드 위에 마크도 붙습니다. 테두리 카드에서는 반쯤 잠긴 해와 그 위의 별, 해에서 퍼지는 바다가 글이 없는 칸을 채우고, 자리가 없으면 카드가 한두 줄 늘어납니다. 해는 활성 경로가 없으면 어둡고, 카드가 사용자를 기다리면 호박색, `lit-adhd` 때는 무지개색입니다. 터미널이나 설치된 아이콘 글꼴이 둥근 끝을 그릴 수 있으면 알약과 게이지가 모두 둥글고, 아니면 모두 네모입니다. 고르는 방법은 [둥근 끝](#둥근-끝)에 있습니다. `/lit-status`가 모델의 bash 도구로 카드를 돌릴 때나 색이 꺼져 있을 때는 원래의 `LIT ·` 머리줄이 그대로 남고, `--json`은 기록만 출력합니다.
 
 카드를 작업 옆에 계속 띄워 두려면 `--watch`를 붙입니다. 카드가 터미널을 차지하고, Muse 세션이 일하는 동안 바다가 흐르고 별이 반짝이고 해와 알약 위로 빛이 지나갑니다. 세션이 멈추거나 15분 동안 아무 일이 없으면 그림은 멈추고 글과 시간만 갱신됩니다. `q`나 Ctrl+C를 누르면 터미널이 원래대로 돌아옵니다.
 
 <p align="center"><picture><source media="(prefers-reduced-motion: reduce)" srcset="./docs/assets/card/watch-still.webp" /><img src="./docs/assets/card/watch.webp" width="960" alt="lit-plan이 실행 중일 때 움직이는 litmuse status --card --watch 테두리 카드. 분홍에서 보라, 하늘색으로 이어지는 네온 테두리 안에서 plan 알약과 스킬 칩 위로 빛이 지나가고, 반쯤 잠긴 해에서 바다가 흐르며 별이 반짝입니다." /></picture></p>
 
 Muse는 자기 화면 안에 플러그인 글을 그리지 않으므로, 이 카드는 다른 창이나 분할 창에 연 셸에서 실행합니다. `LITMUSE_MOTION=off`면 장면은 그대로 두고 움직임만 멈춥니다. `NO_COLOR`, 색이 적은 터미널, 밝은 배경, 64칸 미만에서는 계속 갱신되는 일반 카드를 보여 줍니다.
+
+#### 둥근 끝
+
+둥근 끝은 아이콘 글꼴 글자 두 개라서, 직접 그려 주는 터미널이나 그 글자가 있는 글꼴이 필요합니다. `npx --yes @litfamily/litmuse@latest install --yes --round`는 아이콘 글꼴이 없을 때 기호 전용 Nerd Font(`SymbolsNerdFontMono-Regular.ttf`와 라이선스)를 사용자 글꼴 폴더에 추가합니다. macOS는 `~/Library/Fonts`, Linux는 `${XDG_DATA_HOME:-~/.local/share}/fonts`입니다. 글꼴이 설치됐다고 터미널이 그 글꼴을 쓰는 것은 아닙니다. 터미널 글꼴을 전체 Nerd Font로 바꾸거나 Symbols Nerd Font Mono를 대체 글꼴로 추가하세요(iTerm2는 Non-ASCII Font, VS Code는 `terminal.integrated.fontFamily`, kitty는 `symbol_map`). Terminal.app에는 대체 글꼴 설정이 없어 글꼴 자체를 전체 Nerd Font로 바꿔야 합니다.
+
+`install`, `update`, `doctor`는 `ROUND_ENDS:` 한 줄로 끝납니다. `shown`은 `--glyphs round`로 둥근 끝을 확인한 상태, `ready`는 터미널이 직접 그리는 상태, `check`는 아이콘 글꼴이 있어서 눈으로 확인할 차례인 상태이고, `square`에는 이유와 해결 방법 하나가 붙습니다. `--glyphs round`는 SSH에서도 유지되고, 네모 상자가 보이면 `--glyphs square`, 되돌리려면 `--glyphs auto`를 씁니다. `LITMUSE_GLYPHS`(`auto`, `round`, `square`)는 그 실행에서 가장 먼저 적용됩니다.
 
 카드는 프로젝트 밖에 있는 `~/.local/state/litmuse/` 아래 훅 기록을 읽습니다. 다른 세션을 어떻게 보여 주는지는 [참고 자료](./docs/reference_ko-KR.md#카드-뒤의-실시간-기록)에 있습니다.
 
@@ -389,13 +414,13 @@ npx @litfamily/litmuse extensions prune-backups --older-than 30 --yes
 
 ## 업데이트와 제거
 
-업데이트하려면 설치 명령을 다시 실행하세요. 전부 지우려면 `uninstall`을 실행하고(미리 보려면 `--dry-run`), 규칙 파일의 블록도 함께 빠집니다. 프로젝트 안의 계획과 `.litmuse/` 폴더는 그대로 남습니다.
+업데이트하려면 설치 명령을 다시 실행하세요. 고른 끝 모양은 유지됩니다. 전부 지우려면 `uninstall`을 실행하고(미리 보려면 `--dry-run`), 규칙 파일의 블록도 함께 빠집니다. `--round`로 추가한 아이콘 글꼴도 그대로라면 지워지며, 그러면 다른 제품의 끝이 네모로 보일 수 있습니다. 프로젝트 안의 계획과 `.litmuse/` 폴더는 그대로 남습니다.
 
 | 작업 | 명령 |
 | --- | --- |
 | 설치 | `npx @litfamily/litmuse install` |
 | 미리 보기 | `npx @litfamily/litmuse install --dry-run` |
-| 업데이트 | `npx @litfamily/litmuse install` |
+| 업데이트 | `npx @litfamily/litmuse@latest update` |
 | 확인 | `npx @litfamily/litmuse doctor` |
 | 제거 | `npx @litfamily/litmuse uninstall` |
 
@@ -415,13 +440,14 @@ npx @litfamily/litmuse extensions prune-backups --older-than 30 --yes
 
 ### 안전
 
-설치기는 `~/.local/share/litmuse/`에 쓰고, `muse` CLI를 거쳐 Muse의 플러그인 저장소와 설정에 쓰며, `~/.claude`와 `~/.codex` 아래에는 아무것도 쓰지 않습니다. 훅은 실패해도 세션을 막지 않고 그대로 통과시킵니다.
+설치기는 `~/.local/share/litmuse/`에 쓰고, `muse` CLI를 거쳐 Muse의 플러그인 저장소와 설정에 쓰며, `~/.claude`와 `~/.codex` 아래에는 아무것도 쓰지 않습니다. 이 밖에는 `--round`일 때만 사용자 글꼴 폴더에 아이콘 글꼴과 라이선스를 씁니다. 훅은 실패해도 세션을 막지 않고 그대로 통과시킵니다.
 
 <details>
 <summary>설치기와 <code>extensions</code>가 쓰고, 백업하고, 거부하는 것</summary>
 
 - **먼저 백업.** 설치기는 `~/.config/muse/settings.json`과 Muse의 `installed.json`을 먼저 백업하며, Muse 인증 파일은 열어 보지 않습니다. 이 밖에 손대는 파일은 Muse의 사용자 규칙 파일 하나뿐이고, 그것도 표시된 자기 블록 안에서만 씁니다([자세히](./docs/reference_ko-KR.md#muse-자체-규칙-파일의-짧은-블록)).
 - **거부.** 번들 폴더가 심볼릭 링크이거나, 다른 사람의 파일이 들어 있거나, 설치 후 수정되었으면 교체를 거부합니다.
+- **아이콘 글꼴.** `--round`는 `SymbolsNerdFontMono-Regular.ttf`와 `SymbolsNerdFontMono-LICENSE.txt`만 씁니다. 압축 파일과 두 파일은 고정된 SHA-256과 같아야 하고, 이미 있는 파일은 바꾸지 않으며, 링크된 폴더는 거부합니다. 추가한 파일은 LitMuse 폴더의 `icon-font.json`에 적힙니다. 어디서 실패하든 설치는 성공하고 이유를 알려 줍니다.
 - **테스트로 고정.** `~/.claude`와 `~/.codex` 아래에는 아무것도 쓰지 않으며, 테스트가 이를 고정합니다.
 - **`extensions`**는 `--yes`를 붙였을 때만 쓰고, 그때도 세 곳에만 씁니다. Muse 사용자 스킬(`muse skills install`과 `uninstall`을 거쳐), `~/.config/muse/extension-backups/`, 그리고 `~/.cache/litmuse/extensions-src`의 자기 클론입니다. 이 중 어느 곳이든 링크된 폴더면 첫 변경 전에 멈춥니다.
 

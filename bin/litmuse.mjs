@@ -18,13 +18,17 @@ import { runRewindCli } from '../plugin/lib/rewind/collect.mjs';
 import { extensionsCommand } from '../lib/extensions.mjs';
 import { markFor } from '../lib/mark.mjs';
 import { cardsFor } from '../lib/install-cards.mjs';
+import { AGENT_LINE, agentGuide } from '../lib/agent-guide.mjs';
+import { NPX, parse } from '../lib/flags.mjs';
 
 const HELP = `LitMuse ${packageVersion()}: LitFamily workflows for Meta's Muse Code
 
 Usage: litmuse <command> [options]
+Are you an agent? Run ${NPX} install --agent
 
 Commands
   install      Stage the plugin, install it into Muse at user scope, and offer the approvals
+  update       The same as install; your saved choices stay
   doctor       Check install state, every approval, skill enrollment, catalog bytes and overlaps
   status       Short version of doctor plus an update check; --card shows the live LIT card for this folder
                (add --watch to keep it open; q or Ctrl+C leaves)
@@ -43,39 +47,15 @@ Options
   --yes, -y    Allow writes from a shell without a terminal (agents, CI)
   --approve    Approve the hooks and agents without asking (for scripts)
   --scope <s>  Muse install scope: user (default) or project
+  --agent      Print the install guide for coding agents and stop
+  --round      install, update: add the icon font for round ends when no icon font is here (macOS, Linux)
+  --glyphs <g> install, update: save the ends of pills and gauges: auto (default), round or square
   --json       Machine-readable output (doctor, models)
   --no-agent-file  install: leave Muse's user rules file alone for this run
   --offline    Skip the npm update check
   --discard-modified  uninstall: also remove a bundle edited after install
   --from <p>   extensions: use this wjgoarxiv-skills clone instead of LitMuse's cached one
   --version    Print the version`;
-
-function parse(argv) {
-  const flags = {};
-  const rest = [];
-  for (let i = 0; i < argv.length; i += 1) {
-    const a = argv[i];
-    if (a === '--dry-run') flags.dryRun = true;
-    else if (a === '--yes' || a === '-y') flags.yes = true;
-    else if (a === '--approve') flags.approve = true;
-    else if (a === '--json') flags.json = true;
-    else if (a === '--offline') flags.offline = true;
-    else if (a === '--no-agent-file') flags.noAgentFile = true;
-    else if (a === '--discard-modified') flags.discardModified = true;
-    else if (a === '--card') flags.card = true;
-    else if (a === '--watch') flags.watch = true;
-    else if (a === '--scope') flags.scope = argv[++i];
-    else if (a === '--from') flags.from = argv[++i];
-    else if (a === '--family') flags.family = argv[++i];
-    else if (a === '--older-than') flags.olderThan = argv[++i];
-    else if (a === '--all') flags.all = true;
-    else if (a === '--allow-shadow') flags.allowShadow = true;
-    else if (a === '--help' || a === '-h') flags.help = true;
-    else if (a === '--version' || a === '-v') flags.version = true;
-    else rest.push(a);
-  }
-  return { command: rest[0] ?? 'help', args: rest.slice(1), flags };
-}
 
 async function ask(question, { defaultYes = false } = {}) {
   const rl = createInterface({ input: process.stdin, output: process.stdout });
@@ -88,10 +68,18 @@ async function ask(question, { defaultYes = false } = {}) {
 }
 
 async function main() {
-  const { command, args, flags } = parse(process.argv.slice(2));
+  const { command, args, flags, problem } = parse(process.argv.slice(2));
+  if (flags.agent) {
+    process.stdout.write(agentGuide());
+    return 0;
+  }
   const env = process.env;
   const interactive = Boolean(process.stdin.isTTY && process.stdout.isTTY && !env.CI);
   const print = (line) => process.stdout.write(`${line}\n`);
+  if (problem) {
+    print(`${problem} Run litmuse --help for the list.`);
+    return 2;
+  }
   if (flags.version) {
     print(packageVersion());
     return 0;
@@ -102,15 +90,11 @@ async function main() {
     print(HELP);
     return 0;
   }
-  if (flags.scope && !['user', 'project'].includes(flags.scope)) {
-    print('--scope takes user or project');
-    return 2;
-  }
   switch (command) {
     case 'install':
     case 'update': {
       const cards = cardsFor({ env, flags });
-      if (!cards) print(markFor({ env }));
+      if (!cards) print(interactive || flags.json ? markFor({ env }) : `${markFor({ env })}${AGENT_LINE}\n`);
       return install({ env, flags, interactive, ask: cards?.ask ?? ask, print, cards });
     }
     case 'uninstall':

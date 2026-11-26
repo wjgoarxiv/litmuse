@@ -171,7 +171,7 @@ The [Quick start](#quick-start) line installs LitMuse at user scope, so it is av
 1. **Preview** shows every destination and writes nothing; `--dry-run` stops here.
 2. **Stage** backs up the Muse files it is about to change and copies the plugin to `~/.local/share/litmuse/bundle`, LitMuse's own folder.
 3. **Install in Muse** runs `muse plugins install` at user scope, and the `muse` CLI records the plugin in Muse's plugin store. Skills and commands work right away.
-4. **Approve** covers the 21 capabilities (10 hooks, 11 agents) that Muse runs only after you approve them. The installer asks you once whether to approve them all and keeps your yes in Muse's settings; say no and it prints the `muse plugins approve ...` lines for later.
+4. **Approve** covers the 21 capabilities (10 hooks, 11 agents) that Muse runs only after you approve them. The installer asks you once whether to approve them all and keeps your yes in Muse's settings; say no, or run with `--yes`, and it prints the `muse plugins approve ...` lines for later.
 
 The bottom row of the picture covers why an update may ask again, what install leaves alone, and the one file it writes only after you agree ([the rules-file block](./docs/reference.md#a-short-block-in-muses-own-rules-file)). Muse re-arms the agent approvals whenever the plugin is updated, so after an update the installer asks once more for those. In `doctor`, each capability that still waits for approval appears as `APPROVAL NEEDED` together with the exact command.
 
@@ -183,9 +183,14 @@ In a terminal window of at least 40 columns and 12 rows, the plan, the questions
 <summary>Install switches</summary>
 
 - **`--dry-run`** previews and writes nothing.
-- **`--yes`** lets an agent or CI shell install; a shell without a terminal otherwise only previews.
+- **`--yes`** installs without a question, for an agent or a CI shell; a shell without a terminal otherwise only previews. The rules-file block goes in (`--no-agent-file` leaves it out of that run, and `config agentFile off` keeps it out), and the approvals stay yours: their commands are printed.
 - **`--approve`** approves the capabilities without the question, for scripts.
 - **`--scope project`** installs for one project.
+- **`--round`** adds the icon font that holds the round ends when no icon font is here ([Round ends](#round-ends)).
+- **`--glyphs auto|round|square`** saves the ends you want; a later plain install keeps the choice.
+- **`--agent`** prints the install guide for coding agents and does nothing else.
+
+A flag the installer does not know ends the run with exit code 2 before anything is written.
 
 </details>
 
@@ -195,15 +200,29 @@ In a terminal window of at least 40 columns and 12 rows, the plan, the questions
 Paste this into a coding agent opened in any folder:
 
 ```text
-Install LitMuse, the LitFamily plugin for Meta's Muse Code.
-Use only the official npm package @litfamily/litmuse. Show me your plan and wait for my yes before changing anything.
-1. Check that Node.js 20+ and muse are on PATH (`muse --version`).
-2. Preview: npx @litfamily/litmuse install --dry-run
-3. Install: npx @litfamily/litmuse install --yes
-   This installs the plugin and prints 21 approval commands. Ask me before approving; on my yes run
-   npx @litfamily/litmuse install --yes --approve
-4. Verify: npx @litfamily/litmuse doctor and report its last line.
-5. Tell me what was written (the installer prints a "Written:" list) and anything it refused.
+Install LitMuse, the LitFamily plugin for Meta's Muse Code. "npx --yes @litfamily/litmuse@latest install --agent" prints these same steps.
+Use only the official npm package @litfamily/litmuse; add no other source, and do not approve hooks, trust or sign-in for me.
+1. Check that Node.js 20 or newer and muse are on PATH (muse --version).
+2. Preview: npx --yes @litfamily/litmuse@latest install --dry-run --round
+   Show me what it would change.
+3. Ask me, with the defaults:
+   - Keep every default? (yes)
+   - Add the short LitFamily block to Muse's user rules file? (yes; for no, add --no-agent-file to every install and update command below; it lasts one run)
+   - Approve the LitMuse hooks and agents? (no; I run the muse plugins approve commands myself)
+   - Install for every project? (yes; for the current project only, add --scope project)
+   - Round or square ends on the status card? (auto; or add --glyphs round or --glyphs square)
+   Tell me about the icon font: --round adds SymbolsNerdFontMono-Regular.ttf and its licence file to ~/Library/Fonts on macOS or ${XDG_DATA_HOME:-~/.local/share}/fonts on Linux, only when no icon font is here. On Windows it adds none.
+   Tell me what I will see: the status card. It needs no flag; I run npx --yes @litfamily/litmuse@latest status --card in my own terminal.
+4. Wait for my yes, then install: npx --yes @litfamily/litmuse@latest install --yes --round
+   Later updates: npx --yes @litfamily/litmuse@latest update --yes --round
+5. Check: the install must print a line that starts with ROUND_ENDS:. Then run npx --yes @litfamily/litmuse@latest doctor
+   It passes with "LitMuse doctor: PASS". Until I approve, "approvals needed" and exit code 1 are expected. A FAIL line is a failed step: show me the lines and stop.
+6. Show me this and ask if both ends are round, in the terminal that will show the status card:  LIT 
+   Round: npx --yes @litfamily/litmuse@latest install --yes --glyphs round
+   Boxes or question marks: npx --yes @litfamily/litmuse@latest install --yes --glyphs square
+   For round ends I then set my terminal's own font to a full Nerd Font, or add Symbols Nerd Font Mono as its fallback font (iTerm2: Non-ASCII Font, VS Code: terminal.integrated.fontFamily, kitty: symbol_map). Terminal.app has no fallback setting, so it needs a full Nerd Font as its font.
+   Over SSH, on a phone, or no answer: leave it. Undo: npx --yes @litfamily/litmuse@latest install --yes --glyphs auto
+7. Show me the "Written:" list, anything it refused, and the muse plugins approve commands it printed. Only I run those commands, quit Muse and start it again, sign in, and trust a folder or Git repository.
 ```
 
 </details>
@@ -228,13 +247,19 @@ Ticking a row moves the count and the next-row pointer:
 
 <p align="center"><img src="./docs/assets/card/after.webp" width="960" alt="The same card after row 1 is ticked: task 1/2 with a half-filled gauge, next 2. Write the tests." /></p>
 
-Run in a terminal, `litmuse status --card` also puts the mark above the card. In the framed card a half-sunk sun with stars above it and a sea running out from it fills cells that hold no text; a card with no room for it grows a row or two. The sun is dim while no route runs, amber while the card waits for you, and rainbow during `lit-adhd`. Pills and gauges have round ends when your terminal or an installed icon font can draw them, and are square everywhere otherwise; `LITMUSE_GLYPHS=round` or `basic` decides it. When `/lit-status` has the model run the card through its bash tool, or colour is off, the card keeps its plain `LIT ·` headline, and `--json` prints only the record.
+Run in a terminal, `litmuse status --card` also puts the mark above the card. In the framed card a half-sunk sun with stars above it and a sea running out from it fills cells that hold no text; a card with no room for it grows a row or two. The sun is dim while no route runs, amber while the card waits for you, and rainbow during `lit-adhd`. Pills and gauges have round ends when your terminal or an installed icon font can draw them, and are square everywhere otherwise; [Round ends](#round-ends) says how to choose. When `/lit-status` has the model run the card through its bash tool, or colour is off, the card keeps its plain `LIT ·` headline, and `--json` prints only the record.
 
 To keep the card open beside your work, add `--watch`. It takes over the terminal and, while your Muse session is working, lets the sea flow, the stars twinkle and light run across the sun and the pills. When the session stops, or nothing has happened for 15 minutes, the picture holds still and only the words and times keep up. Press `q` or Ctrl+C and your terminal comes back as it was.
 
 <p align="center"><picture><source media="(prefers-reduced-motion: reduce)" srcset="./docs/assets/card/watch-still.webp" /><img src="./docs/assets/card/watch.webp" width="960" alt="Moving framed card of litmuse status --card --watch while lit-plan runs: a neon frame from pink through violet to cyan, light running across the plan pill and the skill chip, a sea flowing out from a half-sunk sun and stars twinkling above it." /></picture></p>
 
 This runs in your own shell, in a second window or pane, because Muse draws no plugin text inside its screen. `LITMUSE_MOTION=off` keeps the scene and stops the motion; `NO_COLOR`, fewer colours, a light background, or under 64 columns show the plain card, kept up to date.
+
+#### Round ends
+
+The round ends are two icon-font characters, so they need a terminal that draws them or a font that holds them. `npx --yes @litfamily/litmuse@latest install --yes --round` adds the symbols-only Nerd Font (`SymbolsNerdFontMono-Regular.ttf` and its licence) to your own font folder, `~/Library/Fonts` on macOS or `${XDG_DATA_HOME:-~/.local/share}/fonts` on Linux, when no icon font is here. An installed font is no proof that your terminal uses it. Set the terminal's own font to a full Nerd Font, or add Symbols Nerd Font Mono as its fallback font (iTerm2: Non-ASCII Font, VS Code: `terminal.integrated.fontFamily`, kitty: `symbol_map`). Terminal.app has no fallback setting, so it needs a full Nerd Font as its font.
+
+`install`, `update` and `doctor` end with one `ROUND_ENDS:` line: `shown` when you have confirmed the ends with `--glyphs round`, `ready` when the terminal draws them itself, `check` when an icon font is here and somebody has to look, and `square` with the reason and one fix. `--glyphs round` holds over SSH too, `--glyphs square` ends the boxes, and `--glyphs auto` goes back. `LITMUSE_GLYPHS` (`auto`, `round`, `square`) wins for one run.
 
 The card reads the hook-kept state under `~/.local/state/litmuse/`, outside the project. How it lists other sessions is in [the reference](./docs/reference.md#the-live-record-behind-the-card).
 
@@ -398,13 +423,13 @@ Route state lives outside the project, under `~/.local/state/litmuse/`, so no to
 
 ## Update and uninstall
 
-To update, run the install line again. To remove everything, run `uninstall` (add `--dry-run` to preview); it takes the rules-file block out too, and plans and `.litmuse/` folders in your projects stay where they are.
+To update, run the install line again; the ends you chose stay. To remove everything, run `uninstall` (add `--dry-run` to preview); it takes the rules-file block out too, and the icon font when `--round` added it and it is unchanged (other products may then draw square ends). Plans and `.litmuse/` folders in your projects stay where they are.
 
 | Task | Command |
 | --- | --- |
 | Install | `npx @litfamily/litmuse install` |
 | Preview first | `npx @litfamily/litmuse install --dry-run` |
-| Update | `npx @litfamily/litmuse install` |
+| Update | `npx @litfamily/litmuse@latest update` |
 | Check | `npx @litfamily/litmuse doctor` |
 | Remove | `npx @litfamily/litmuse uninstall` |
 
@@ -424,13 +449,14 @@ To update, run the install line again. To remove everything, run `uninstall` (ad
 
 ### Safety
 
-The installer writes to `~/.local/share/litmuse/` and, through the `muse` CLI, to Muse's own plugin store and settings, and it writes nothing under `~/.claude` or `~/.codex`. Hooks fail open: if one breaks, your session continues.
+The installer writes to `~/.local/share/litmuse/` and, through the `muse` CLI, to Muse's own plugin store and settings, and it writes nothing under `~/.claude` or `~/.codex`. Only `--round` writes elsewhere: the icon font and its licence, in your own font folder. Hooks fail open: if one breaks, your session continues.
 
 <details>
 <summary>Everything the installer and <code>extensions</code> write, back up and refuse</summary>
 
 - **Backups first.** The installer backs up `~/.config/muse/settings.json` and Muse's `installed.json` first, and it reads Muse's credential file in no step. The one file it edits outside those is Muse's user rules file, and only inside its own marked block ([details](./docs/reference.md#a-short-block-in-muses-own-rules-file)).
 - **Refusals.** It refuses to replace a bundle directory that is a symbolic link, holds someone else's files, or was edited after install.
+- **The icon font.** `--round` writes `SymbolsNerdFontMono-Regular.ttf` and `SymbolsNerdFontMono-LICENSE.txt` and no other name. The archive and both files must match pinned SHA-256 values, an existing file is never replaced, a linked folder is refused, and `icon-font.json` in LitMuse's folder lists what was added. When any of this fails, the install still succeeds and says why.
 - **Pinned by a test.** It writes nothing under `~/.claude` or `~/.codex`; a test pins that.
 - **`extensions`** writes only when you add `--yes`, and then only three places: Muse's user skills (through `muse skills install` and `uninstall`), `~/.config/muse/extension-backups/`, and its own clone in `~/.cache/litmuse/extensions-src`. A linked folder in any of them stops it before the first change.
 

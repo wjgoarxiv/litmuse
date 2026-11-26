@@ -9,6 +9,7 @@ import { spawnSync } from 'node:child_process';
 import { pathToFileURL } from 'node:url';
 import { setTimeout as wait } from 'node:timers/promises';
 import { cardsFor, createCards, wrap } from '../lib/install-cards.mjs';
+import { roundEndsLine } from '../lib/glyphs.mjs';
 import { install } from '../lib/install.mjs';
 import { uninstall } from '../lib/uninstall.mjs';
 import { readAgentFileSetting } from '../lib/agent-file.mjs';
@@ -352,6 +353,42 @@ test('a card install asks the same two questions in the same order and stores th
   assert.match(asked[0].card.note, /Muse runs plugin hooks and agents only after you approve them/);
   assert.match(screen, new RegExp(`! Approvals +${total} \\(\\d+ hooks, \\d+ agents\\) still to approve`));
   assert.equal(printed.text(), '');
+});
+
+test('the first card has a dim pointer for agents in its empty row and no extra height; ROUND_ENDS closes the cards', async () => {
+  for (const [columns, hint] of [[90, 'Agent? See npx --yes @litfamily/litmuse@latest install --agent.'], [40, 'Agent? See install --agent.']]) {
+    const { env } = sandbox();
+    const { w, cards, asked } = installer([false, false], { columns });
+    let printed = 0;
+    await install({ env, flags: {}, interactive: true, ask: cards.ask, print: () => { printed += 1; }, cards, tty: true });
+    assert.equal(printed, 0);
+    assert.deepEqual(asked.map((a) => a.card.tag), ['LIT 1/2', 'LIT 2/2']);
+    const rows = rowsOf(w.raw());
+    const at = rows.findIndex((row) => row.includes('Agent?'));
+    assert.match(rows[at], new RegExp(`^ │ ${hint.replace(/[.?]/g, '\\$&')} +│$`));
+    assert.match(rows[at + 1], /^ │ · Host/);
+    assert.equal(rows.filter((row) => row.includes('Agent?')).length, 1);
+    assert.ok(w.raw().includes(`\x1b[2m${hint}`), 'dim');
+    const ends = rows.filter((row) => row.includes('ROUND_ENDS'));
+    assert.equal(ends.length, 1);
+    assert.equal(ends[0].trim(), roundEndsLine({ env, tty: true }), 'one whole line, whatever the width');
+    assert.equal(rows.filter((row) => row.trim()).at(-1), ends[0]);
+  }
+  const empty = window_({ columns: 40 });
+  const full = window_({ columns: 40 });
+  for (const [w, hints] of [[empty, []], [full, ['x'.repeat(60), 'short']]]) w.cards.panel({ title: 't', hints, sections: [{ rows: [{ value: 'v' }] }] });
+  assert.equal(strip(empty.raw()).split('\n').length, strip(full.raw()).split('\n').length);
+});
+
+test('with --yes the cards leave the approvals to the person and never offer --approve', async () => {
+  const { env } = sandbox();
+  const { w, cards, asked } = installer([]);
+  assert.equal(await install({ env, flags: { yes: true }, interactive: true, ask: cards.ask, print: () => {}, cards }), 0);
+  assert.equal(asked.length, 0);
+  assert.equal(museCalls(env).filter((c) => c.includes('approve')).length, 0);
+  const screen = strip(w.raw()).replace(/\s+/g, ' ');
+  assert.match(screen, /The person who uses Muse runs these when ready:/);
+  assert.doesNotMatch(screen, /--approve/);
 });
 
 test('Yes approves exactly what was listed, and a reinstall asks only what is left', async () => {
