@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.1.22 — 2026-11-26
 
 - `litmuse install --agent` (or `--agent`) prints an install guide for coding agents. It writes nothing, starts nothing and needs no Muse. `--help`, the first line of an install without a person, and the plan card point to it; the README prompts carry the same steps.
 - `install --yes` never waits for an answer, at a terminal too. Approvals stay with you: the commands are printed, and only `--approve` approves without a question.
