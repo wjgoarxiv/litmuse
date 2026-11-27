@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.1.23 — 2026-11-27
 
 - start-work can now finish a long run with nobody at the keyboard. A step the run guard will not let through (a push, a delete, an install, a file made in a folder the plan grants only for reading) is parked with its command and folder, and the run goes on with the next row. When every row is ticked and the plan's `## Done when` check exits 0, the run closes itself with one line. Otherwise it ends with one inbox that starts with `WAITING-ON-USER:` and lists the parked steps, the waiting rows and the answers: `lit approve` runs the shown local steps, `lit approve x` (typed exactly) also runs pushes, tags, publishes and other outward steps, `lit deny` drops them, `lit skip-row [N]` skips a row, `lit pause` / `lit resume` stop and restart the driving, and `lit cancel` ends the run (a damaged state file too, which still refuses protected reads until then). A row the model cannot do carries `IMPOSSIBLE: <reason>`. Secrets and the real host home are still refused and never parked; a reader's glob in the workspace (`cat .env*`) is expanded and every match checked, and git index paths (`git show :.env`) count as paths.
 - A plan line `Run charter: commit on <branch> in <repo>` lets the run commit on that branch after your `yes`. Amend, `--no-verify`, `git add -A`, push and tag stay out of it, and a charter edited after the start grants nothing.

@@ -64,11 +64,11 @@ test('the READMEs, the reference and the changelog describe both features', () =
       assert.ok(text.includes(needle), `${file} mentions ${needle}`);
     }
   }
-  const unreleased = read('CHANGELOG.md').split(/\n## /).find((s) => /^\[?Unreleased/i.test(s));
-  assert.ok(unreleased, 'CHANGELOG has an Unreleased section');
-  assert.match(unreleased, /lit approve x/);
-  assert.match(unreleased, /suggest/i);
-  assert.match(unreleased, /muse plugins approve/);
+  const released = read('CHANGELOG.md').split(/\n## /).find((s) => /^0\.1\.23/.test(s));
+  assert.ok(released, 'CHANGELOG has a 0.1.23 section');
+  assert.match(released, /lit approve x/);
+  assert.match(released, /suggest/i);
+  assert.match(released, /muse plugins approve/);
 });
 
 test('every suggestion and catalog id is a LitMuse skill that ships a SKILL.md', () => {
