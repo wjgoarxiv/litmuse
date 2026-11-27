@@ -8,6 +8,7 @@ import { mkdtempSync, mkdirSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { catalogLine } from '../plugin/hooks/lib/suggest.mjs';
 
 const HOOKS = process.env.LITMUSE_IGNITION_HOOKS || join(dirname(fileURLToPath(import.meta.url)), '..', 'plugin', 'hooks');
 const STATE_HOME = mkdtempSync(join(tmpdir(), 'litmuse-ignition-state-'));
@@ -82,6 +83,6 @@ test('a trailing lit while a route is active continues it in a short note and ne
   assert.ok(Buffer.byteLength(again) <= CONTINUE_CAP, `${Buffer.byteLength(again)} B`);
 });
 
-test('a lit inside a word, a path or code gets no hook note', () => {
-  for (const text of ['what is a literal', 'see lit-plan.md', 'run `lit`']) assert.equal(prompt(workspace(), 'n1', text), '', text);
+test('a lit inside a word, a path or code gets no route note, only the compact skill catalog line', () => {
+  for (const text of ['what is a literal', 'see lit-plan.md', 'run `lit`']) assert.equal(prompt(workspace(), 'n1', text), catalogLine(), text);
 });

@@ -13,13 +13,13 @@ LitMuse에는 훅 10개가 있습니다. Muse는 사용자가 승인한 뒤에�
 | 훅 | 하는 일 |
 | --- | --- |
 | SessionStart | LitMuse 컨텍스트와 경로 표. 컴팩션 뒤에는 저장해 둔 인계 메모를 한 번 다시 넣고, `litmuse style`로 고른 답변 스타일도 더합니다. |
-| UserPromptSubmit | 맨 앞의 `lit` 활성화. 같은 경로가 이미 켜져 있으면 이어서 진행하고, 다른 경로면 전환하며, 맨 `lit`은 시작한 계획을 재개하고, `lit new`·`lit restart`는 새로 시작합니다. |
-| PreToolUse | lit-plan 동안 write_file·edit_file·apply_patch·delete_file 쓰기는 `plans/`와 `.litmuse/` 안으로 제한하고, 셸 명령은 읽기 전용만, 자식 에이전트는 읽기 전용 LitMuse 에이전트만 허용합니다. 모든 경로에서 쓰기가 Markdown이나 텍스트 글에 새로 더하는 부정문 몰림과 얼버무림 몰림을 검사합니다. |
+| UserPromptSubmit | 맨 앞의 `lit` 활성화. 같은 경로가 이미 켜져 있으면 이어서 진행하고, 다른 경로면 전환하며, 맨 `lit`은 시작한 계획을 재개하고, `lit new`·`lit restart`는 새로 시작합니다. start-work 실행 중에는 `lit approve`, `lit approve x`, `lit deny`, `lit skip-row [N]`, `lit pause`, `lit resume`, `lit cancel`에 직접 답합니다. `lit` 없는 프롬프트에는 제안 메모 하나를 붙입니다. 제한 시간 110초(재실행 한 번분). |
+| PreToolUse | lit-plan 동안 write_file·edit_file·apply_patch·delete_file 쓰기는 `plans/`와 `.litmuse/` 안으로 제한하고, 셸 명령은 읽기 전용만, 자식 에이전트는 읽기 전용 LitMuse 에이전트만 허용합니다. start-work 실행 중에는 실행 가드가 통과시키지 않는 단계를 보관하고, 비밀과 호스트 홈은 거절하며, `create_goal`은 `goal: native` 계획에만 허용합니다. 모든 경로에서 쓰기가 Markdown이나 텍스트 글에 새로 더하는 부정문 몰림과 얼버무림 몰림을 검사합니다. |
 | PostToolUse | 도구 기록. 편집이 새로 더한 한 줄 주석을 comment-checker에 넘기고, 쓴 글에는 lit-humanizer 참고 검사를 합니다. |
 | PostToolUseFailure | 기록. |
-| Stop | lit-plan 턴은 계획 파일이 생긴 뒤 끝나고, 같은 세션에서 30분 안에 `go` 한 단어를 입력하면 그 계획을 start-work로 시작합니다. start-work는 계획 행이, litgoal은 기준이 남아 있으면 이어 가되 진전 없이 연속 3번까지만 붙잡습니다. |
+| Stop | lit-plan 턴은 계획 파일이 생긴 뒤 끝나고, 같은 세션에서 30분 안에 `go` 한 단어를 입력하면 그 계획을 start-work로 시작합니다. 승인된 start-work 실행은 멈출 때마다 한 번 판단합니다(계속, 마무리, 완료, 불가능). Done-when 검사는 90초까지입니다. litgoal은 기준이 남아 있으면 이어 가되 진전 없이 연속 3번까지만 붙잡습니다. 제한 시간 100초. |
 | PreCompact | Muse가 컴팩션하기 전에 `.litmuse/handoff/latest.md`를 씁니다. |
-| SubagentStart | 자식 에이전트의 보고 형식. |
+| SubagentStart | 자식 에이전트의 보고 형식. start-work 실행 중이면, 페이로드가 이름을 밝힌 자식 세션은 부모의 실행 가드를 따릅니다. |
 | SubagentStop | 기록 줄. |
 | SessionEnd | 기록 줄. |
 
@@ -68,14 +68,76 @@ Muse는 5시간, 주간 한도를 파일로 남기지 않으므로 카드에는 
 않습니다. `LITMUSE_MOTION=off`(또는 `reduced`)면 멈춰 있습니다. stdout이 터미널이 아니면 `--watch`는 카드를 한 번만
 출력합니다.
 
+## start-work 자동 실행
+
+사용자가 `yes`, `lit start plans/<f>.md`, `go`로 시작한 start-work 실행은 키보드 앞에 아무도 없어도 끝나는 것을
+목표로 합니다. 시작이 곧 그 순간의 계획에 대한 승인입니다. `Run charter:`와 `Scope roots:` 줄은 해시로 묶이므로,
+시작 뒤에 고친 내용은 아무 권한도 주지 않습니다.
+
+- **보관되는 단계.** PreToolUse가 셸 단계를 하나씩 분류하고, 기본값은 보관입니다. 바로 실행되는 것은 읽기 전용 형태의
+  읽기 명령, 계획의 Done-when 검사, 저장소 자체의 테스트와 검사 명령(`npm test`, `npm run test|check|lint|build|typecheck`,
+  `node --test`, `pytest`, `cargo test`, `go test`, `make test`), 프로젝트 안 파일에 대한 스크립트 실행기(`node`, `python3`,
+  `sh`), run charter 아래의 `git add`와 `git commit`뿐입니다. 가드가 모르는 동사(`dd`, `tar`, `ln`, `chmod`, `truncate`,
+  `install`, `patch`, `go run`, `cargo run`, `uv run`, `awk`)는 X로 보관되고, 작업 공간 안으로 향한 셸 리다이렉트도
+  마찬가지입니다. 파일은 가드가 경로마다 검사하는 파일 도구로 씁니다. 가드가 통과시키지 않는 단계는 정확한 글, 폴더, 줄, 등급과 함께 보관되고, 모델은 다음으로 넘어가라는 말을 듣습니다.
+  B 등급은 작업 공간이나 `(read)` Scope root 안의 새 경로에 하는 `touch`, `mkdir`, `cp`, `mv`입니다. X 등급은 push, tag, publish,
+  버전 올리기, reset, clean, 모든 삭제, 덮어쓰기, 설치, 네트워크 도구, 모르는 git 하위 명령, 검사가 아닌 패키지 스크립트,
+  모든 루트 밖의 것, charter가 덮지 않는 커밋입니다. held 단계(glob, 확장, `sh -c`, `eval`, `sudo`, 디코더, `bash_input`)는
+  목록에만 오르고 다시 실행되지 않습니다. 비밀, 실제 호스트 홈, `.git/hooks`, `.git/config`, 실행 상태 파일은 거절되고
+  저장되지 않습니다. 작업 공간 밖의 실제 호스트 홈에 하는 셸 쓰기도 거절됩니다. 링크는 끝까지(16단계) 따라가며, 순환하거나
+  더 긴 링크는 거절합니다. `dd of=` 같은 `이름=값` 피연산자의 값과 `git show HEAD:.env` 같은 `REV:경로` 피연산자와 `git show :.env`, `:0:.env` 같은 인덱스 피연산자도 경로로 검사합니다. 작업 공간 안에서 읽기 명령이 따옴표 없이 쓴 glob과 중괄호(`cat .env*`, `cat *.pem`, `cat .{env,x}`)는 폴더 목록으로 펼쳐 일치하는 파일마다 검사합니다. 펼칠 수 없는 glob(읽을 수 없는 폴더, `..`, `**`, 일부만 따옴표로 감싼 단어, 일치 256개 초과, 일치하는 것이 없음, `[[:class:]]`·`[[=x=]]`·`[[.x.]]` 괄호)은 held입니다. 보호된 곳을 품은 폴더(홈 폴더, `/`)를 도는 기본 `search` 도구도 거절합니다. 비밀 파일 이름은 대소문자를 가리지 않고(`.ENV`, `ID_RSA`), 저장소 안의 `.npmrc`, `.netrc`, `.pypirc`도 비밀로 봅니다. 대상이 실행 상태(훅 상태 폴더, 작업 공간의 `.litmuse` 폴더, 그 세션 기록) 자체이거나 그것을 품거나 그 안에 있는 쓰기, 이동, 삭제는 거절하므로 `mv .litmuse x`와 `rm -rf .`도 거절됩니다. 이미 있는 폴더로 복사하거나 옮길 때는 그 안에 생길 파일로 검사하므로 `cp src/a.mjs .`는 B 등급입니다. 파일 도구도 같은 검사를 받습니다. 프로젝트 밖 패턴 파일을 쓰는 `grep -f`는 묶은 옵션(`-rf F`, `-rfF`)까지 held입니다. `sort`와 `file`의 옵션은 허용 목록으로 읽고, 묶은 짧은 옵션(`-uo F`)과 줄인 긴 옵션(`--out=F`, `--comp`)도 같게 봅니다. 목록 밖 옵션은 held입니다. 보호된 곳을 품은 폴더를 도는 재귀 읽기(`grep -r x ~`, `grep -r -eKEY ~`, `grep -d recurse`, `rg --files ~`, `find -L /`, `diff -r ~`)는 거절합니다. `-e`나 `-f`로 패턴을 주면 붙여 쓰든 떼어 쓰든 피연산자는 모두 경로로 봅니다. 어느 `.git` 폴더에 쓰는 것이든 거절하고, 작업 공간 밖에 있는 링크된 워크트리의 git 폴더도 마찬가지입니다. 봉인이 맞지 않는 기록도 옆의 기록 파일에서 `lit deny` 답을 모두 되살립니다. 읽을 수 없게 깨진 상태 파일은 계획 단계의 제한을 지키면서 보호된 곳 읽기(`read_file ~/.ssh/id_rsa`, `cat .env`)도 계속 거절합니다. `lit cancel`은 그 파일을 갈아 끼우고 실행을 끝냅니다. 멀쩡한 실행에서는 보관된 단계를 버리고 가드를 끕니다. BLOCKED 줄이 기다리던 단계를 `lit approve x`가 실행하면, 다음 Stop이 모델에게 BLOCKED: 줄을 지우고 그 줄을 끝내 체크한 뒤 넘어가라고 알립니다. 작업 공간 밖을 향한 쓰기 도구는 경로 경계로 보관됩니다. 읽기 명령에 숨은 쓰기와 실행도 따집니다. sed는 p, d, q, s
+  스크립트만 읽기로 보고, w, W, r, R, e 명령과 s///w, s///e, `-f`는 held로 둡니다. system, getline, `|`, `>`가 든 awk와
+  `rg --pre`, `rg --hostname-bin`, `sort --compress-program`, `git grep -O`, `+명령`을 붙인 `less`/`more`, `env`·`$ENV`·`input_filename`을 읽는 jq도 held입니다. `sort -o`, `uniq`의 두 번째 피연산자, `tree -o`,
+  `git --output`, `find -fprint`는 그 대상에 쓰는 것으로 봅니다. cron, MCP 서버, 나중 Muse의 새 도구처럼 가드가 속을
+  볼 수 없는 도구도 held입니다. 2000자를 넘는 단계는 거절하고 저장하지 않으므로, 어떤 호출도 실행 기록을 키울 수 없습니다. 가드는 닫힌 쪽으로 실패합니다. 실행 중에 읽을 수 없는 호출(너무 크거나 형식이 깨진 것)이나 검사할 수 없는 호출(실행 상태를 저장하거나 읽다가 난 오류)은 거절됩니다. Muse는 훅 출력을 16 KiB에서 자르므로, 주입하는 메시지는 JSON으로 바꾼 뒤
+  UTF-8 12 KiB 안에 들어가게 하고, 수신함은 예산에 맞는 보관 단계만 보여 줍니다. 나머지는 "(N more parked, not shown)"으로
+  개수만 적고, 다음 답이 재실행하는 목록에서도 빠집니다. 한도는
+  B 32개, X 16개, 경로 16개입니다.
+- **실행기 잔여 위험.** 프로젝트 안의 스크립트는 작성자가 쓴 일을 무엇이든 할 수 있고, push도 할 수 있습니다. 가드는
+  스크립트가 하는 일을 읽을 수 없어서 그대로 실행합니다. test, check, lint, build, typecheck라는 이름의 패키지
+  스크립트도 같습니다. 프로젝트 밖 스크립트를 가리키는 실행기와 그 밖의 패키지 스크립트는 X로 보관됩니다. 가드는 넘겨받은 명령만
+  읽기 때문에, 같은 스크립트가 상태 폴더의 `seal.key`를 읽어 봉인된 기록을 위조할 수도 있습니다. 재실행한 단계가
+  `setsid`로 새 세션을 열면 프로세스 그룹을 벗어나므로, 100초에 그룹을 끝내도 그 프로세스에는 닿지 않습니다.
+- **자식 레인.** BLOCKED: Muse가 SubagentStart 페이로드에 자식 세션을 적어 준다는 근거가 없어서, 자식의 도구 호출을
+  실행에 묶을 수 없습니다. 실행 중에는 읽기 전용 `litmuse/*` 에이전트만 시작하고, 다른 `subagent_spawn`은 held로
+  수신함에 오릅니다. 페이로드가 자식 세션을 적어 주면 훅은 그 자식을 실행에 묶습니다.
+- **봉인된 실행 상태.** 실행 기록은 가드가 읽기도 쓰기도 거절하는 LitMuse 상태 폴더에 있고, 저장할 때마다 같은 폴더의
+  키(`seal.key`, 권한 600)로 만든 HMAC이 붙습니다. 봉인이 맞지 않는 기록은 보관된 단계, 스냅샷, 경로, 허가를 모두 잃고,
+  다음 승인 단어는 아무것도 실행하지 않은 채 그 사실을 알립니다. 수신함은 목록 이름과 보여 준 단계의 12자 digest를
+  함께 보여 주고, 재실행은 그 digest와 맞지 않는 목록을 거절합니다.
+- **Run charter.** `Run charter: commit on feat/qa in .`는 그 저장소의 그 브랜치에서 평범한 `git add <파일>`과
+  `git commit`을 허락합니다. 브랜치는 호출할 때 `.git/HEAD`(워크트리면 `gitdir:`)에서 읽습니다.
+- **멈출 때의 판단.** `done`: 모든 줄에 체크가 있고 `## Done when` 검사(허용 목록, 셸 없음, 90초 한도, 시간 초과는 그 턴
+  동안 기억)가 0으로 끝나고, 도는 레인이 없고 바깥 단계가 보관되지 않았을 때입니다. 실행은 미뤄 둔 단계까지 적은 한 줄로
+  닫힙니다. `continue`: 다음 열린 줄을 알려 줍니다. `wrap-up`: 같은 계획 상태에서 재촉은 두 번까지, 그다음 받은편지함
+  하나, 그 뒤로는 무언가 바뀔 때까지 조용합니다. `impossible`: 열린 줄이 모두 `IMPOSSIBLE:`이고 보관된 것이 없을 때입니다.
+- **받은편지함**은 `WAITING-ON-USER:`로 시작합니다. 보관된 단계를 코드 표기로 8개까지 줄임 없이 보여 주고, 나머지는
+  개수만 셉니다. 기다리는 줄, 불가능한 줄, 30분 넘게 도는 레인, 답할 말도 적습니다. 받은편지함을 그리면 스냅숏이
+  남습니다. `lit approve`는 보여 준 B 단계만 실행하고 보여 준 경로 권한을 줍니다. `lit approve x`(프롬프트 전체가
+  정확히 이 글일 때)는 보여 준 X 단계도 실행합니다. 재실행 전에 다시 검사하고, 그 폴더에서 `/bin/sh -c`를 별도 프로세스 그룹으로
+  돌리고, 끝나거나 100초가 지나면 그룹 전체(뒤에서 도는 자식까지)를 끊습니다. 시간 초과한 단계는 보관해 둡니다. 출력 끝부분은 신뢰할 수 없는 데이터라는 표시와 함께 모델에 갑니다.
+  `lit deny`는 보관된 단계를 모두 버리고 그 명령을 계속 거절합니다. `lit skip-row [N]`는 N번 줄에
+  `SKIPPED (lit skip-row):` 메모와 함께 체크를 넣습니다.
+- **호스트의 빈틈.** Muse는 훅 글을 사용자에게 보여 주지 않습니다. 그래서 사용자에게 갈 글(완료 줄, 받은편지함, 불가능
+  목록)은 "이 글을 그대로 답하고 멈추라"는 블록으로 모델에 갑니다. 자식 레인은 SubagentStart가 자식 세션 이름을 줄 때만
+  실행에 묶입니다. 재실행에는 `/bin/sh`가 필요합니다.
+
+## `lit` 없이 받는 제안
+
+`lit`도 슬래시 명령도 없는 프롬프트에는 메모 하나가 붙습니다. `plot this csv`는 lit-scientific-visualization을
+"none of these"와 함께 알려 주고, 모델이 요청을 보고 정합니다. 맞는 규칙이 없으면 스킬 이름을 담은 카탈로그 한 줄이
+붙습니다. 코드 블록, 인라인 코드, 호스트 알림 안의 글은 읽지 않습니다. 규칙은 `plugin/hooks/lib/suggest.mjs`에 있고,
+`test/fixtures/routing-eval`의 봉인된 held-out 절반에서 재현율 0.85 이상, 근접 오탐 0.10 이하일 때만 실립니다.
+`npm run eval:routing`은 dev 절반만 채점합니다. held-out 절반은 sha256을 확인한 뒤 `node scripts/routing-eval.mjs heldout --record`로 한 번만 채점했고, `npm test`는 그 기록(`heldout-score.json`)과 digest만 읽습니다.
+
 ## 계획 승인 때 거는 목표
 
 Muse는 세션마다 목표 하나를 둡니다. 모델이 `create_goal`로 걸고 `update_goal`로 닫으며, 직접 `/goal clear`로 끝낼 수도
-있습니다. LitMuse는 계획이 그럴 만할 때만 목표를 묻습니다.
+있습니다. LitMuse는 계획에 `goal: native` 줄이 있을 때만 목표를 묻습니다.
 
 lit-plan이 쓴 계획에는 테스트 명령 하나를 적은 `## Done when` 블록이 있습니다(`- check: \`npm test\``). 계획을 저장하면
-lit-plan이 `goal-propose.mjs`를 돌려 이 블록을
-``Every row in plans/flag.md is ticked and `npm test` exits 0 [lit:4c7a9a52]`` 같은 목표 문장 하나로 바꿉니다. 판단하는
+lit-plan이 `goal-propose.mjs`를 돌려, `goal: native` 계획이면 이 블록을
+``Every row in plans/flag.md is ticked and `npm test` exits 0, or the latest reply starts with WAITING-ON-USER:, or after 30 turns [lit:4c7a9a52]`` 같은 목표 문장 하나로 바꿉니다. 판단하는
 말("works", "잘 동작"), push나 publish만으로 된 성공, 짧은 테스트 허용 목록 밖의 명령, 500자를 넘는 문장은 거절하고,
 검사를 한 번 돌려 목표가 아직 참이 아님을 확인합니다. 그러면 승인 질문이
 `Approve plan, start work and set goal: /goal <목표>? (yes / edit / no)`가 됩니다. 목표를 걸 수 없으면

@@ -55,14 +55,15 @@ test('start-work: only F rows open still holds, naming F1', () => {
   assert.match(r.stderr, /row F1/);
 });
 
-test('start-work: releases after 3 holds without a ticked row, and says so in the ledger', () => {
+test('start-work: two nudges without a ticked row, then one inbox, then the turn ends', () => {
   const ws = workspace();
   startWork(ws, 'w3');
-  for (let i = 0; i < 3; i += 1) assert.equal(stop(ws, 'w3').code, 2, `hold ${i + 1}`);
+  for (let i = 0; i < 2; i += 1) assert.equal(stop(ws, 'w3').code, 2, `nudge ${i + 1}`);
+  const inbox = stop(ws, 'w3');
+  assert.equal(inbox.code, 2);
+  assert.match(inbox.stderr, /WAITING-ON-USER:/);
   assert.equal(stop(ws, 'w3').code, 0, 'fourth stop ends the turn');
-  const ledger = readFileSync(join(ws, '.litmuse', 'ledger', 'w3.jsonl'), 'utf8');
-  assert.match(ledger, /hold released/);
-  assert.equal(stop(ws, 'w3').code, 0, 'stays released');
+  assert.equal(stop(ws, 'w3').code, 0, 'stays quiet');
 });
 
 test('start-work: a ticked row resets the hold counter', () => {
@@ -75,28 +76,31 @@ test('start-work: a ticked row resets the hold counter', () => {
   assert.match(r.stderr, /2 open rows/);
 });
 
-test('start-work: no hold on an unapproved plan', () => {
+test('start-work: no hold on an unapproved plan started without naming it', () => {
   for (const status of ['awaiting approval', 'assumptions unconfirmed']) {
     const ws = workspace();
     plan(ws, PLAN(status, OPEN));
-    prompt(ws, 'w5', 'lit start plans/cache.md');
+    prompt(ws, 'w5', 'lit start');
     assert.equal(stop(ws, 'w5').code, 0, status);
   }
 });
 
-test('start-work: no hold when every row is ticked', () => {
+test('start-work: a fully ticked plan with no Done-when check closes itself once, then is quiet', () => {
   const ws = workspace();
   plan(ws, PLAN('approved', '- [x] 1. Done\n- [x] F1. Plan compliance\n'));
   prompt(ws, 'w6', 'lit start plans/cache.md');
+  const r = stop(ws, 'w6');
+  assert.equal(r.code, 2, 'the completion line is relayed through the model');
+  assert.match(r.stderr, /plans\/cache\.md is complete: every row is ticked\./);
   assert.equal(stop(ws, 'w6').code, 0);
 });
 
-test('start-work: a BLOCKED/PAUSED/CANCELLED ledger note releases the Stop', () => {
+test('start-work: a ledger note does not end an autopilot run; the run drives on to its inbox', () => {
   const ws = workspace();
   startWork(ws, 'w7');
   mkdirSync(join(ws, '.litmuse', 'ledger'), { recursive: true });
   writeFileSync(join(ws, '.litmuse', 'ledger', 'w7.jsonl'), `${JSON.stringify({ kind: 'note', text: 'PAUSED at row 2: needs approval to install pytest' })}\n`);
-  assert.equal(stop(ws, 'w7').code, 0);
+  assert.equal(stop(ws, 'w7').code, 2);
 });
 
 test('start-work: a pause word in the last prompt releases the Stop', () => {

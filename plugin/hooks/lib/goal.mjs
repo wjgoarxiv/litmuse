@@ -101,10 +101,13 @@ export function parseDoneWhen(planText) {
   return { ok: false, reason: 'the `## Done when` block names no `check:` command' };
 }
 
-/** `Every row in plans/<f>.md is ticked and \`<cmd>\` exits 0 [lit:<id>]`, or why it cannot be built. */
+// A start-work goal always ends itself: on a reply that waits on the user, or after Muse has driven it 30 turns.
+export const GOAL_SELF_END = ', or the latest reply starts with WAITING-ON-USER:, or after 30 turns';
+
+/** `Every row in plans/<f>.md is ticked and \`<cmd>\` exits 0, or … 30 turns [lit:<id>]`, or why it cannot be built. */
 export function compileCondition({ plan, check }) {
   const id = goalId(plan, check);
-  const condition = `Every row in ${plan} is ticked and \`${check}\` exits 0 [lit:${id}]`;
+  const condition = `Every row in ${plan} is ticked and \`${check}\` exits 0${GOAL_SELF_END} [lit:${id}]`;
   if (condition.length > GOAL_MAX_CHARS) return { ok: false, reason: `the condition is over ${GOAL_MAX_CHARS} characters; point the check at one script` };
   return { ok: true, condition, id };
 }

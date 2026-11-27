@@ -13,7 +13,7 @@ import { parseFrontmatter, PLUGIN_DIR } from '../lib/bundle.mjs';
 const HERE = dirname(fileURLToPath(import.meta.url));
 const HOOKS = join(HERE, '..', 'plugin', 'hooks');
 const PROPOSE = join(HERE, '..', 'plugin', 'skills', 'lit-plan', 'scripts', 'goal-propose.mjs');
-const PLAN = '# Flag\n\n## Done when\n\n- check: `npm test`\n\n## Tasks\n\n- [ ] 1. Add the flag\n- [ ] 2. Test it\n';
+const PLAN = '# Flag\n\ngoal: native\n\n## Done when\n\n- check: `npm test`\n\n## Tasks\n\n- [ ] 1. Add the flag\n- [ ] 2. Test it\n';
 
 function project(planText = PLAN) {
   const ws = mkdtempSync(join(tmpdir(), 'litmuse-goal-'));
@@ -34,7 +34,7 @@ test('the Done when block compiles to one objective; lint refuses judgment words
   assert.deepEqual(parseDoneWhen(PLAN), { ok: true, check: 'npm test' });
   assert.equal(parseDoneWhen('# x\n').ok, false);
   const built = compileCondition({ plan: 'plans/flag.md', check: 'npm test' });
-  assert.match(built.condition, /^Every row in plans\/flag\.md is ticked and `npm test` exits 0 \[lit:[0-9a-f]{8}\]$/);
+  assert.match(built.condition, /^Every row in plans\/flag\.md is ticked and `npm test` exits 0, or the latest reply starts with WAITING-ON-USER:, or after 30 turns \[lit:[0-9a-f]{8}\]$/);
   assert.ok(lintCondition(built.condition, 'npm test').ok);
   assert.match(lintCondition('x', 'npm test && it works').reasons.join(';'), /judgment words/);
   assert.match(lintCondition('x', '잘 동작하면 끝').reasons.join(';'), /judgment words/);
@@ -55,10 +55,12 @@ test('goal-propose prints the consent question and records it; a plan without Do
   const ws = project();
   const { line, consent } = proposeGoal({ cwd: ws, planArg: 'plans/flag.md' });
   assert.equal(line, GOAL_STATUS.asked(consent.condition));
-  assert.match(line, /^Approve plan, start work and set goal: \/goal Every row in plans\/flag\.md is ticked and `npm test` exits 0 \[lit:[0-9a-f]{8}\]\? \(yes \/ edit \/ no\)$/);
+  assert.match(line, /^Approve plan, start work and set goal: \/goal Every row in plans\/flag\.md is ticked and `npm test` exits 0, or the latest reply starts with WAITING-ON-USER:, or after 30 turns \[lit:[0-9a-f]{8}\]\? \(yes \/ edit \/ no\)$/);
   assert.equal(readGoalRecord(ws, 'consent').hash, conditionHash(consent.condition));
   const bare = project('# x\n- [ ] 1. a\n');
   assert.equal(proposeGoal({ cwd: bare, planArg: 'plans/flag.md' }).line, 'Approve plan and start work? (yes / no)\nNo goal set: the plan has no `## Done when` block');
+  const optedOut = project(PLAN.replace('goal: native\n\n', ''));
+  assert.equal(proposeGoal({ cwd: optedOut, planArg: 'plans/flag.md' }).line, 'Approve plan and start work? (yes / no)\nNo goal set: the plan has no `goal: native` line, so the start-work hooks drive the run', 'S-A5-01');
   assert.equal(proposeGoal({ cwd: bare, planArg: '../etc/passwd' }).line, 'No goal set: give the plan as plans/<slug>.md inside this project');
 });
 

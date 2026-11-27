@@ -8,8 +8,22 @@ import { isGoPrompt, takeNextStep } from './lib/next-step.mjs';
 import { ROUTE_INTENTS } from './lib/routes.mjs';
 import { buildSkillPlan, matchedSkills, parseSkillHatch, skillPlanContext, skillPlanIds } from './lib/skill-plan.mjs';
 import { GOAL_STATUS, buildLoopConsent, consentAnswer, consentIsLive, detectCheck, dropGoalRecord, normalizeLoopObjective, readGoalRecord, writeGoalRecord } from './lib/goal.mjs';
+import { answerPrompt, startNote, startRun } from './lib/autopilot.mjs';
+import { hasSlash, suggestionNote } from './lib/suggest.mjs';
+import { SKILL_ROUTES } from './lib/routes.mjs';
 import { readFileSync, writeFileSync, mkdirSync, readdirSync, statSync } from 'node:fs';
 import { resolve, join, dirname } from 'node:path';
+
+// The run record a start-work start carries. A start that names its plan (the user's `yes`, a typed plan path, `go`
+// on a briefed plan) approves it as it stands; an active run on the same plan keeps its parked queue.
+function runFor(payload, previous, plan, options = {}) {
+  try {
+    return startRun(payload, previous && !previous.corrupt ? previous : null, plan, options);
+  } catch {
+    return null;
+  }
+}
+const withRun = (text, run, short = false) => [text, run ? startNote(run, short) : ''].filter(Boolean).join('\n');
 
 // The banner leads every context this hook sends: Muse shows no hook message of its own, so the model's first line is
 // the only place the user can see the route ignite, and a model that narrates first ("Loading the loop route") hides it.
@@ -269,10 +283,11 @@ function goalAnswer(payload) {
   if (withGoal) writeGoalRecord(root, 'intent', { version: 1, condition: consent.condition, hash: consent.hash, id: consent.id, plan: consent.plan, check: consent.check, sessionId: payload.session_id ?? null, armedAt: now });
   const turnId = payload.turn_id ?? null;
   const pauseRequested = false;
-  writeSession(payload, { route: 'start-work', turnId, activatedAt: Date.now(), stopHeldFor: null, pauseRequested });
+  const run = runFor(payload, readSession(payload), consent.plan, { approved: true, consentHash: consent.charterHash ?? null });
+  writeSession(payload, { route: 'start-work', turnId, activatedAt: Date.now(), stopHeldFor: null, pauseRequested, ...(run ? { run } : {}) });
   stackStart(payload, 'start-work', { plan: consent.plan }, false);
   recordRoute(payload, { route: 'start-work', keyword: 'yes', kind: 'ignite', plan: consent.plan, activatedAt: Date.now() });
-  const lines = [activation({ route: 'start-work', keyword: 'yes', bare: false, resume: false, restart: false, trailing: false }, payload)];
+  const lines = [withRun(activation({ route: 'start-work', keyword: 'yes', bare: false, resume: false, restart: false, trailing: false }, payload), run)];
   if (withGoal) {
     lines.push(
       `Plan: ${consent.plan}. The user's yes approves the plan, starts the work and sets its goal: the work starts now; work through its open rows in order.`,
@@ -339,6 +354,19 @@ function loopGoalNote(hit, payload) {
   }
 }
 
+// `lit cancel` ends this session's start-work run, a damaged state file included: the run record is closed (or the
+// unreadable file replaced), its parked steps are dropped, and the run guard stops.
+const CANCEL = /^\s*\/?(?:litmuse:)?lit\s+(?:cancel|취소)\s*$/iu;
+function cancelRun(payload, owned) {
+  const run = owned.corrupt ? null : { ...owned.run, status: 'cancelled', parked: [], paths: [], snapshot: null };
+  writeSession(payload, { route: null, turnId: payload.turn_id ?? null, activatedAt: Date.now(), stopHeldFor: null, pauseRequested: false, ...(run ? { run } : {}) });
+  const goal = cancelOwnedGoal(payload);
+  emitContext('UserPromptSubmit', [...banner('LIT CONTINUES', 'start-work'),
+    `The user typed \`lit cancel\`. The run is cancelled${owned.corrupt ? ' (its state file could not be read and was replaced)' : ''}: its parked steps were dropped and the run guard is off.`,
+    ...(goal ? [goal] : []),
+    'Stop the run\'s work at the next safe point and say which rows are left.'].join('\n'));
+}
+
 // `lit cancel` while this session owns an open LitMuse goal: close that goal only, never a goal the user set.
 function cancelOwnedGoal(payload) {
   if (!/^\s*\/?(?:litmuse:)?lit\s+cancel\s*$/iu.test(String(payload.prompt ?? ''))) return null;
@@ -355,6 +383,20 @@ run((payload) => {
   try {
     if (goalAnswer(payload)) return;
   } catch { /* an unwritable goal record leaves the prompt as ordinary text */ }
+  // Approval words count only here, from the prompt the user typed in the session that owns the run.
+  const owned = readSession(payload);
+  if (CANCEL.test(String(payload.prompt ?? '')) && (owned?.corrupt || owned?.run?.status === 'active')) {
+    cancelRun(payload, owned);
+    return;
+  }
+  if (owned?.run && !owned.corrupt) {
+    const answer = answerPrompt(payload, { ...owned, route: 'start-work', turnId: payload.turn_id ?? null, pauseRequested: false });
+    if (answer) {
+      recordRoute(payload, { route: 'start-work', keyword: null, kind: 'continue' });
+      emitContext('UserPromptSubmit', [...banner('LIT CONTINUES', 'start-work'), answer].join('\n'));
+      return;
+    }
+  }
   const cancelNote = cancelOwnedGoal(payload);
   if (cancelNote) {
     emitContext('UserPromptSubmit', [...banner('LIT CONTINUES', 'litgoal'), cancelNote, 'Then stop the current work at the next safe point and say what is left.'].join('\n'));
@@ -389,7 +431,7 @@ run((payload) => {
     if (step.kind === 'resume-frame') {
       const frame = stackContinue(payload);
       const skill = frame?.skill ?? step.target?.skill ?? 'lit-loop';
-      writeSession(payload, { route: skill, turnId, activatedAt: Date.now(), stopHeldFor: null, pauseRequested });
+      writeSession(payload, { route: skill, turnId, activatedAt: Date.now(), stopHeldFor: null, pauseRequested, ...(owned?.run && !owned.corrupt ? { run: owned.run } : {}) });
       recordRoute(payload, { route: skill, keyword: 'go', kind: 'continue', activatedAt: Date.now() });
       emitContext('UserPromptSubmit', [
         ...banner('LIT CONTINUES', skill),
@@ -399,9 +441,10 @@ run((payload) => {
     }
     if (step.kind === 'continue-work') {
       const plan = resumablePlan(workspaceOf(payload));
-      writeSession(payload, { route: 'start-work', turnId, activatedAt: Date.now(), stopHeldFor: null, pauseRequested });
+      const run = plan ? runFor(payload, owned, plan.file) : null;
+      writeSession(payload, { route: 'start-work', turnId, activatedAt: Date.now(), stopHeldFor: null, pauseRequested, ...(run ? { run } : {}) });
       recordRoute(payload, { route: 'start-work', keyword: 'go', kind: 'resume', plan: plan?.file ?? null, activatedAt: Date.now() });
-      emitContext('UserPromptSubmit', resumeNote(plan, true, payload));
+      emitContext('UserPromptSubmit', withRun(resumeNote(plan, true, payload), run, true));
       return;
     }
     if (step.kind === 'start-plan') {
@@ -410,13 +453,14 @@ run((payload) => {
         emitContext('UserPromptSubmit', goHint('its plan has no open row'));
         return;
       }
-      writeSession(payload, { route: 'start-work', turnId, activatedAt: Date.now(), stopHeldFor: null, pauseRequested });
+      const run = runFor(payload, owned, plan, { approved: true });
+      writeSession(payload, { route: 'start-work', turnId, activatedAt: Date.now(), stopHeldFor: null, pauseRequested, ...(run ? { run } : {}) });
       stackStart(payload, 'start-work', { plan }, false);
       recordRoute(payload, { route: 'start-work', keyword: 'go', kind: 'ignite', plan, activatedAt: Date.now() });
-      emitContext('UserPromptSubmit', [
+      emitContext('UserPromptSubmit', withRun([
         activation({ route: 'start-work', keyword: 'go', bare: false, resume: false, restart: false, trailing: false }, payload),
         `Plan: ${plan}. The typed go is the approval: the work starts without a separate approval turn; work through its open rows in order.`,
-      ].join('\n'));
+      ].join('\n'), run));
       return;
     }
     emitContext('UserPromptSubmit', goHint('an unreadable next step'));
@@ -427,13 +471,19 @@ run((payload) => {
   const hit = detectRoute(hatch ? hatch.rest : payload.prompt);
   const previous = readSession(payload);
   if (!hit) {
+    // A prompt without `lit` carries one suggestion note (fired rules plus "none", else the compact catalog line);
+    // a slash command is the user's own route and gets none.
+    const text = String(payload.prompt ?? '');
+    const suggestion = text.trim() && !hasSlash(text) ? suggestionNote(text, SKILL_ROUTES) : null;
     if (previous && previous.route) {
       writeSession(payload, { ...previous, route: null, turnId: payload.turn_id ?? null, pauseRequested });
       recordRoute(payload, { route: null, kind: 'clear' });
+      if (suggestion) emitContext('UserPromptSubmit', suggestion);
       return;
     }
     const wayBackIn = suggestAdhdOnce(payload);
-    if (wayBackIn) emitContext('UserPromptSubmit', wayBackIn);
+    const note = [wayBackIn, suggestion].filter(Boolean).join('\n');
+    if (note) emitContext('UserPromptSubmit', note);
     return;
   }
   const turnId = payload.turn_id ?? null;
@@ -447,16 +497,17 @@ run((payload) => {
     writeSession(payload, { ...previous, route, turnId, pauseRequested });
     recordRoute(payload, { route, keyword: hit.keyword ?? null, kind: 'continue' });
     emitContext('UserPromptSubmit', route === 'start-work'
-      ? resumeNote(resumablePlan(workspaceOf(payload)), true, payload)
+      ? withRun(resumeNote(resumablePlan(workspaceOf(payload)), true, payload), previous?.run, true)
       : continueNote(route) + (frame && frame.skill !== active ? ` Resumed the paused ${frame.skill}${frame.stage ? ` at ${frame.stage}` : ''}${stackCount(frame)}; the interjected work is closed.` : ''));
     return;
   }
   const plan = !hit.restart && (hit.bare || hit.resume) ? resumablePlan(workspaceOf(payload)) : null;
   if (plan) {
-    writeSession(payload, { route: 'start-work', turnId, activatedAt: Date.now(), stopHeldFor: null, pauseRequested });
+    const run = runFor(payload, previous, plan.file);
+    writeSession(payload, { route: 'start-work', turnId, activatedAt: Date.now(), stopHeldFor: null, pauseRequested, ...(run ? { run } : {}) });
     stackStart(payload, 'start-work', { plan: plan.file }, false);
     recordRoute(payload, { route: 'start-work', keyword: hit.keyword ?? null, kind: 'resume', plan: plan.file, activatedAt: Date.now() });
-    emitContext('UserPromptSubmit', resumeNote(plan, false, payload));
+    emitContext('UserPromptSubmit', withRun(resumeNote(plan, false, payload), run, true));
     return;
   }
   const named = hit.route === 'start-work' ? typedPlan(payload.prompt) : null;
@@ -464,13 +515,18 @@ run((payload) => {
   // the one open plan start-work would pick. The context's approval line stays for a typed plan only.
   const runPlan = hit.route === 'start-work' ? named ?? soleOpenPlan(workspaceOf(payload)) : null;
   const skillPlan = skillPlanFor(hit, hatch);
-  writeSession(payload, { route: hit.route, turnId, activatedAt: Date.now(), stopHeldFor: null, pauseRequested });
+  // A start-work start gets a run record; any other route keeps a run this session already has, so a side route
+  // (a review, a debug) does not drop the parked queue.
+  const run = hit.route === 'start-work' && runPlan ? runFor(payload, previous, runPlan, { approved: Boolean(named) }) : null;
+  const keepRun = run ? { run } : previous?.run && !previous.corrupt ? { run: previous.run } : {};
+  writeSession(payload, { route: hit.route, turnId, activatedAt: Date.now(), stopHeldFor: null, pauseRequested, ...keepRun });
   stackStart(payload, hit.route, runPlan ? { plan: runPlan } : undefined, hit.restart);
   recordRoute(payload, { route: hit.route, keyword: hit.keyword ?? null, kind: 'ignite', plan: runPlan, activatedAt: Date.now(), skills: skillPlanIds(skillPlan) });
   const loopGoal = loopGoalNote(hit, payload);
   emitContext('UserPromptSubmit', activation(hit, payload)
     + (loopGoal ? `\n${loopGoal}` : '')
     + (named ? `\nPlan: ${named}. The typed command is the approval: the work starts without a separate approval turn; work through its open rows in order.` : '')
+    + (run ? `\n${startNote(run)}` : '')
     + (skillPlan ? `\n${skillPlanContext(skillPlan)}` : ''));
 });
 

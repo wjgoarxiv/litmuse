@@ -251,7 +251,7 @@
           "node",
           "hooks/session-start.mjs",
           "--digest",
-          "1dffc2949834e04d"
+          "463938f5ee4ce0b3"
         ],
         "timeoutMs": 5000
       },
@@ -262,9 +262,9 @@
           "node",
           "hooks/user-prompt-submit.mjs",
           "--digest",
-          "a005f619d0221178"
+          "153b71ec33a4bf3a"
         ],
-        "timeoutMs": 5000,
+        "timeoutMs": 110000,
         "statusMessage": "LitMuse route check"
       },
       {
@@ -274,7 +274,7 @@
           "node",
           "hooks/pre-tool-use.mjs",
           "--digest",
-          "86fc0def8a86f4bd"
+          "777e42cd881798ad"
         ],
         "timeoutMs": 5000
       },
@@ -285,7 +285,7 @@
           "node",
           "hooks/post-tool-use.mjs",
           "--digest",
-          "3b81610dc35969d1"
+          "e696e7fee5c415c3"
         ],
         "timeoutMs": 5000
       },
@@ -296,7 +296,7 @@
           "node",
           "hooks/post-tool-use-failure.mjs",
           "--digest",
-          "c95b4780ca00948d"
+          "da0d657c682b2b8e"
         ],
         "timeoutMs": 5000
       },
@@ -307,9 +307,9 @@
           "node",
           "hooks/stop.mjs",
           "--digest",
-          "0a1a04d48d28875d"
+          "565bb6c0dfea4499"
         ],
-        "timeoutMs": 5000
+        "timeoutMs": 100000
       },
       {
         "id": "subagent-start",
@@ -318,7 +318,7 @@
           "node",
           "hooks/subagent-start.mjs",
           "--digest",
-          "8f675c7f0b5209b3"
+          "0881a8ffa7e00575"
         ],
         "timeoutMs": 5000
       },
@@ -329,7 +329,7 @@
           "node",
           "hooks/subagent-stop.mjs",
           "--digest",
-          "05789f8effcb2eff"
+          "d915c029d006af1f"
         ],
         "timeoutMs": 5000
       },
@@ -340,7 +340,7 @@
           "node",
           "hooks/session-end.mjs",
           "--digest",
-          "4fbfe88045109e11"
+          "59aa649dca6cc257"
         ],
         "timeoutMs": 5000
       },
@@ -351,7 +351,7 @@
           "node",
           "hooks/pre-compact.mjs",
           "--digest",
-          "6e445d503992e185"
+          "af3a2bfc420d6456"
         ],
         "timeoutMs": 5000
       }

@@ -138,7 +138,9 @@ test('every go spelling continues; a stale record and a longer prompt do not', (
     writeFileSync(record, JSON.stringify({ kind: 'start-plan', target: { plan: 'plans/a.md' }, at: new Date(Date.now() - 31 * 60_000).toISOString() }));
     assert.match(prompt(where, 'go'), /Nothing on record/u, '31 minutes old');
     writeFileSync(record, JSON.stringify({ kind: 'approve-boundary', target: { workId: 'w', plan: 'plans/a.md' }, at: new Date().toISOString() }));
-    assert.deepEqual(raw(where, 'go ahead and delete the tests'), { status: 0, stdout: '' }, 'longer prompt is ordinary text with no hook output');
+    const plain = raw(where, 'go ahead and delete the tests');
+    assert.equal(plain.status, 0);
+    assert.doesNotMatch(plain.stdout, /lit approve|Nothing on record|LIT /, 'longer prompt is ordinary text: no go route, only the skill catalog line');
     assert.equal(existsSync(record), true, 'an ordinary prompt leaves the record alone');
   } finally {
     rmSync(where.ws, { recursive: true, force: true });

@@ -15,6 +15,7 @@ import { isAbsolute, relative, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { GOAL_STATUS, answerGuide, buildLoopConsent, compileCondition, conditionHash, consentKey, falsify, lintCondition, parseDoneWhen, writeGoalRecord } from '../../../hooks/lib/goal.mjs';
 import { resolveProjectStateRoot } from '../../../hooks/lib/workflow-stack.mjs';
+import { parsePlan } from '../../../hooks/lib/autopilot.mjs';
 
 export function proposeGoal({ cwd, planArg, now = Date.now(), timeoutMs, run, sessionId = null } = {}) {
   const planPath = resolve(cwd, String(planArg ?? ''));
@@ -27,9 +28,13 @@ export function proposeGoal({ cwd, planArg, now = Date.now(), timeoutMs, run, se
     return { line: GOAL_STATUS.skipped(`${plan} cannot be read`) };
   }
   const askedAt = new Date(now).toISOString();
+  // The question binds the plan's `Run charter:` and `Scope roots:` lines as they read now; a plan edited before
+  // the `yes` starts with project grants only.
+  const parsed = parsePlan(planText);
+  const charterHash = parsed.consentHash;
   // No goal is possible: the question still approves the plan and starts the work, and names why there is no goal.
   const startOnly = (reason) => {
-    const consent = { version: 1, goal: false, plan, reason, sessionId, askedAt };
+    const consent = { version: 1, goal: false, plan, reason, sessionId, askedAt, charterHash };
     consent.hash = conditionHash(consentKey(consent));
     writeGoalRecord(resolveProjectStateRoot(cwd), 'consent', consent);
     return { line: `${GOAL_STATUS.askedStart}\n${GOAL_STATUS.skipped(reason)}`, guide: answerGuide('start'), consent };
@@ -37,13 +42,15 @@ export function proposeGoal({ cwd, planArg, now = Date.now(), timeoutMs, run, se
   if (/^goal:\s*never\s*$/mu.test(planText)) return startOnly('this plan is marked goal: never');
   const done = parseDoneWhen(planText);
   if (!done.ok) return startOnly(done.reason);
+  // A start-work run is driven by its own hooks; Muse's native goal is armed only when the plan opts in.
+  if (!parsed.goalNative) return startOnly('the plan has no `goal: native` line, so the start-work hooks drive the run');
   const built = compileCondition({ plan, check: done.check });
   if (!built.ok) return startOnly(built.reason);
   const lint = lintCondition(built.condition, done.check);
   if (!lint.ok) return startOnly(lint.reasons.join('; '));
   const dry = falsify({ cwd, plan, planText, check: done.check, ...(timeoutMs ? { timeoutMs } : {}), ...(run ? { run } : {}) });
   if (!dry.ok) return startOnly(dry.reason);
-  const consent = { version: 1, goal: true, condition: built.condition, hash: conditionHash(built.condition), id: built.id, plan, check: done.check, sessionId, askedAt };
+  const consent = { version: 1, goal: true, condition: built.condition, hash: conditionHash(built.condition), id: built.id, plan, check: done.check, sessionId, askedAt, charterHash };
   writeGoalRecord(resolveProjectStateRoot(cwd), 'consent', consent);
   return { line: GOAL_STATUS.asked(built.condition), guide: answerGuide('plan', built.condition), consent };
 }

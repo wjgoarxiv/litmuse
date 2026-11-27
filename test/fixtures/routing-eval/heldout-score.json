@@ -1,0 +1,63 @@
+{
+  "sha256": "5918352f937a4e4b3a662e3a542bb0cdb2fc81e80f947e57ab6f726ce5d427b0",
+  "scored_at": "2026-11-27",
+  "shared_prompts": 0,
+  "rules": [
+    {
+      "id": "lit-scientific-visualization",
+      "positives": 7,
+      "nearMisses": 4,
+      "recall": 1,
+      "nearMissFp": 0,
+      "pass": true
+    },
+    {
+      "id": "lit-diagram-drawer",
+      "positives": 7,
+      "nearMisses": 4,
+      "recall": 1,
+      "nearMissFp": 0,
+      "pass": true
+    },
+    {
+      "id": "lit-pptx",
+      "positives": 7,
+      "nearMisses": 4,
+      "recall": 1,
+      "nearMissFp": 0,
+      "pass": true
+    },
+    {
+      "id": "lit-docx",
+      "positives": 8,
+      "nearMisses": 4,
+      "recall": 0.875,
+      "nearMissFp": 0,
+      "pass": true
+    },
+    {
+      "id": "debugging",
+      "positives": 7,
+      "nearMisses": 4,
+      "recall": 0.8571428571428571,
+      "nearMissFp": 0,
+      "pass": true
+    },
+    {
+      "id": "review-work",
+      "positives": 8,
+      "nearMisses": 4,
+      "recall": 1,
+      "nearMissFp": 0,
+      "pass": true
+    },
+    {
+      "id": "lit-commit",
+      "positives": 7,
+      "nearMisses": 4,
+      "recall": 0.8571428571428571,
+      "nearMissFp": 0,
+      "pass": true
+    }
+  ]
+}

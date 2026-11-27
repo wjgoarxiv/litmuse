@@ -83,7 +83,7 @@ test('re-entry (c): an approved plan with start-work state and a bare lit resume
   assert.doesNotMatch(resumed.ctx, /lit-plan|lit-loop|no task text/);
   assert.equal(readState(ws, 'c1').route, 'start-work');
   assert.deepEqual(readdirSync(join(ws, 'plans')), before);
-  assert.equal(runHook('stop', { session_id: 'c1', turn_id: 't9', cwd: ws }, ws).code, 0, 'no plan gate on a resume');
+  assert.doesNotMatch(runHook('stop', { session_id: 'c1', turn_id: 't9', cwd: ws }, ws).stderr, /lit-plan gate/, 'no plan gate on a resume');
 
   const again = lit(ws, 'c1', 'lit continue');
   assert.ok(again.bytes <= CONTINUE_CAP);
@@ -234,7 +234,7 @@ test('lit-plan continue still states the planning limit in its short note', () =
 test('an ordinary prompt still clears the route and the next lit is a full activation', () => {
   const ws = workspace();
   lit(ws, 'p4', 'lit plan auth');
-  assert.equal(lit(ws, 'p4', 'thanks').stdout, '');
+  assert.doesNotMatch(lit(ws, 'p4', 'thanks').ctx, /LIT |lit-plan gate|resum/, 'only the skill catalog line');
   assert.equal(readState(ws, 'p4').route, null);
   assert.ok(isFull(lit(ws, 'p4', 'lit plan auth').ctx, 'lit-plan'));
 });

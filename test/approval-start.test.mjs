@@ -13,7 +13,7 @@ import { proposeGoal } from '../plugin/skills/lit-plan/scripts/goal-propose.mjs'
 import { stageRoot, workspaceHash } from '../plugin/hooks/lib/stage.mjs';
 
 const HOOKS = join(dirname(fileURLToPath(import.meta.url)), '..', 'plugin', 'hooks');
-const PLAN = '# Flag\n\n## Done when\n\n- check: `npm test`\n\n## Tasks\n\n- [ ] 1. Add the flag\n- [ ] 2. Test it\n';
+const PLAN = '# Flag\n\ngoal: native\n\n## Done when\n\n- check: `npm test`\n\n## Tasks\n\n- [ ] 1. Add the flag\n- [ ] 2. Test it\n';
 const BARE = '# Flag\n\n## Tasks\n\n- [ ] 1. Add the flag\n';
 const env = { ...process.env, XDG_STATE_HOME: mkdtempSync(join(tmpdir(), 'litmuse-approve-state-')) };
 
@@ -32,7 +32,7 @@ function prompt(ws, text, session, turn = 't') {
 test('the question offers start and goal together, or start alone with the one reason no goal is possible', () => {
   const ws = project();
   const { line, consent } = proposeGoal({ cwd: ws, planArg: 'plans/flag.md', sessionId: 'a1' });
-  assert.match(line, /^Approve plan, start work and set goal: \/goal Every row in plans\/flag\.md is ticked and `npm test` exits 0 \[lit:[0-9a-f]{8}\]\? \(yes \/ edit \/ no\)$/);
+  assert.match(line, /^Approve plan, start work and set goal: \/goal Every row in plans\/flag\.md is ticked and `npm test` exits 0, or the latest reply starts with WAITING-ON-USER:, or after 30 turns \[lit:[0-9a-f]{8}\]\? \(yes \/ edit \/ no\)$/);
   assert.equal(consent.goal, true);
   const bare = project(BARE);
   const plain = proposeGoal({ cwd: bare, planArg: 'plans/flag.md' });

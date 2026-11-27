@@ -262,7 +262,7 @@ test('the model-run fallback: PostToolUse stamps the asking session on the quest
 test('the plan-approval question is unchanged: a plan consent still starts start-work on yes', () => {
   const ws = project();
   mkdirSync(join(ws, 'plans'));
-  writeFileSync(join(ws, 'plans', 'flag.md'), '# Flag\n\n## Done when\n\n- check: `npm test`\n\n## Tasks\n\n- [ ] 1. Add the flag\n');
+  writeFileSync(join(ws, 'plans', 'flag.md'), '# Flag\n\ngoal: native\n\n## Done when\n\n- check: `npm test`\n\n## Tasks\n\n- [ ] 1. Add the flag\n');
   const asked = spawnSync(process.execPath, [PROPOSE, 'plans/flag.md'], { cwd: ws, encoding: 'utf8', env });
   assert.match(asked.stdout, /^Approve plan, start work and set goal: /);
   writeGoalRecord(ws, 'consent', { ...readGoalRecord(ws, 'consent'), sessionId: 'Q1' });

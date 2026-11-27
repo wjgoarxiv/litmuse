@@ -405,6 +405,26 @@ Work leaves the build unit through a valve that the Stop hook keeps shut while p
 
 </details>
 
+### A run that finishes while you are away
+
+Say you approve a two-row plan with `yes` and go to lunch. The run builds row 1, then tries `git push origin feat/qa` for row 2. It does not stop to ask you. The hook parks the push with its folder, and the model carries on with what is left. When you come back, the run has ended in one of two ways.
+
+If every row is ticked and the plan's `## Done when` check exits 0, it closed itself with one line such as `plans/p.md is complete: every row is ticked and \`npm test\` passed.` You type nothing.
+
+If something needs you, the last reply is one inbox that starts with `WAITING-ON-USER:`. It lists each parked step whole, with its folder, and the rows that are waiting or impossible. You answer with one prompt:
+
+- `lit approve` runs the shown local steps, such as a folder made in a read-only Scope root, and grants the shown folders.
+- `lit approve x`, typed exactly, also runs the shown outward steps: push, tag, publish, delete, install.
+- `lit deny` drops every parked step. `lit skip-row 2` skips row 2. `lit pause` and `lit resume` stop and restart the run.
+
+Every step is checked again before it runs, and a step that runs past 100 s is stopped and stays parked. A secret file or your real home folder is refused outright and never parked. While a run is on, the guard lets through only readers, the plan's check, the repo's own test and check commands and scripts inside the project; anything else waits in the inbox. A script inside the project can still do whatever its author wrote, so keep the plan's own scripts honest. Muse shows no hook text, so the completion line and the inbox reach you through the model, which the hook tells to repeat them word for word.
+
+Three optional plan lines shape the run. `Run charter: commit on feat/qa in .` lets it make plain commits on that branch; amend, `--no-verify`, `git add -A`, push and tag stay out. `goal: native` also arms Muse's own goal, which always ends itself on a `WAITING-ON-USER:` reply or after 30 turns. A row the model cannot do gets `IMPOSSIBLE: <reason>` under it, and the run moves on.
+
+### Suggestions without `lit`
+
+A prompt that does not start with `lit` can still get a hint. Type `plot this csv` and the model is told that lit-scientific-visualization may fit, next to "none of these", and it decides from your request. When nothing fits, it gets one short line of skill names instead. A slash command gets nothing. Each hint rule shipped only after it found at least 85% of the right prompts and fired on at most 10% of near misses, on a sealed test set that was scored once, apart from the everyday checks.
+
 ### What a planning turn may do
 
 `lit plan` turns are planning only, and the PreToolUse hook holds that line with an allowlist. Anything unlisted is refused, including MCP tools and tools a later Muse release adds. If the route state goes missing or breaks during a plan turn, the limit stays on.

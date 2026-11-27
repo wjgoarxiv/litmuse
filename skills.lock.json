@@ -518,12 +518,12 @@
     },
     "lit-plan": {
       "skillMd": {
-        "bytes": 44098,
-        "sha256": "0cc287ae70a23f74238942d838bd03c5c8e38d43fa2ec4f839864b9d9758193d"
+        "bytes": 45232,
+        "sha256": "ebe5a8d227c610439227217a18d99500efa114f5c0f72dd524989b60279c3239"
       },
       "files": 8,
-      "bytes": 81018,
-      "sha256": "0c31b8f35ca85f14b594c5fc30254d6af5779dc4de9f372000d8dbde5704987e"
+      "bytes": 82710,
+      "sha256": "7fe2bb326df1b441aed5e213304a4d333529b2400c32ddd0c5eae4acce49f6d3"
     },
     "lit-pptx": {
       "skillMd": {
@@ -653,12 +653,12 @@
     },
     "start-work": {
       "skillMd": {
-        "bytes": 41090,
-        "sha256": "659377d63c0ee016d5167a1d882c582c839f92c57540ab7b56baf8b867920815"
+        "bytes": 48197,
+        "sha256": "71d27435b5f089f206c1e5552aefc1926e6f8fb68d4c8e6af12ade312babb9ad"
       },
       "files": 4,
-      "bytes": 51742,
-      "sha256": "34bd9d9ce25cd5516d33845c1004d49f96ffddb4154cbd870897e80e5ff39e88"
+      "bytes": 58849,
+      "sha256": "43374618e2a8c238f20fb9ac5151e21bf2436b5194218bfa4ca20c08a14c5eda"
     },
     "structural-search": {
       "skillMd": {
@@ -767,6 +767,7 @@
     "plugin/context/style-asd-ste100.md",
     "plugin/context/style-eli5.md",
     "plugin/hooks/lib/added-comments.mjs",
+    "plugin/hooks/lib/autopilot.mjs",
     "plugin/hooks/lib/common.mjs",
     "plugin/hooks/lib/continuation.mjs",
     "plugin/hooks/lib/digest.mjs",
@@ -780,8 +781,11 @@
     "plugin/hooks/lib/redact.mjs",
     "plugin/hooks/lib/reentry.mjs",
     "plugin/hooks/lib/routes.mjs",
+    "plugin/hooks/lib/run-group.mjs",
+    "plugin/hooks/lib/shell-verdict.mjs",
     "plugin/hooks/lib/skill-plan.mjs",
     "plugin/hooks/lib/stage.mjs",
+    "plugin/hooks/lib/suggest.mjs",
     "plugin/hooks/lib/workflow-stack.mjs",
     "plugin/hooks/post-tool-use-failure.mjs",
     "plugin/hooks/post-tool-use.mjs",

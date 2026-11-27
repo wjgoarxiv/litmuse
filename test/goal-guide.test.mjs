@@ -60,9 +60,9 @@ test('the plan guide is a Markdown block quote: title, the goal, one row per ans
 });
 
 test('goal-propose prints the unchanged question line, then the guide for the model to render under it', () => {
-  const ws = project('# Flag\n\n## Done when\n\n- check: `npm test`\n\n## Tasks\n\n- [ ] 1. Add the flag\n');
+  const ws = project('# Flag\n\ngoal: native\n\n## Done when\n\n- check: `npm test`\n\n## Tasks\n\n- [ ] 1. Add the flag\n');
   const [first, blank, ...rest] = propose(ws, 'plans/flag.md').split('\n');
-  assert.match(first, /^Approve plan, start work and set goal: \/goal Every row in plans\/flag\.md is ticked and `npm test` exits 0 \[lit:[0-9a-f]{8}\]\? \(yes \/ edit \/ no\)$/u);
+  assert.match(first, /^Approve plan, start work and set goal: \/goal Every row in plans\/flag\.md is ticked and `npm test` exits 0, or the latest reply starts with WAITING-ON-USER:, or after 30 turns \[lit:[0-9a-f]{8}\]\? \(yes \/ edit \/ no\)$/u);
   assert.equal(blank, '');
   assert.equal(rest.join('\n'), `${answerGuide('plan', first.slice(first.indexOf('/goal ') + 6, -'? (yes / edit / no)'.length))}\n`);
   const bare = project('# x\n- [ ] 1. a\n');

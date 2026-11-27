@@ -29,7 +29,8 @@
     "qa:muse-live": "node scripts/qa-muse-live.mjs",
     "sync:digests": "node scripts/sync-hook-digests.mjs",
     "check:digests": "node scripts/sync-hook-digests.mjs --check",
-    "sync:lock": "node scripts/sync-skills-lock.mjs"
+    "sync:lock": "node scripts/sync-skills-lock.mjs",
+    "eval:routing": "node scripts/routing-eval.mjs dev"
   },
   "files": [
     "bin",

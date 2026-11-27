@@ -1,25 +1,12 @@
-import { existsSync, lstatSync, readdirSync, readFileSync, statSync } from 'node:fs';
+import { lstatSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { appendLedger, block, safeId, workspaceOf, writeSession } from './common.mjs';
+import { driveStop } from './autopilot.mjs';
 
 const MAX_HOLDS = 3;
-const PLAN_ROW = /^- \[( |x|X)\] (\d+|F\d+)\. ?(.*)$/;
 const RELEASE_NOTE = /^(BLOCKED at row \d+|PAUSED at row \d+|CANCELLED):/;
 const PAUSE_WORD = /(^|\s)(stop|pause|cancel|halt|wait)(\s|[.!,?]|$)|멈춰|중단|그만|잠깐|일시\s*정지|취소/i;
 export const WORK_ROUTES = new Set(['start-work', 'lit-loop', 'litgoal']);
-
-// Rows outside code fences, column zero only, so a quoted example never counts as work.
-function planRows(text) {
-  const rows = [];
-  let fenced = false;
-  for (const line of text.split('\n')) {
-    if (/^\s*(```|~~~)/.test(line)) { fenced = !fenced; continue; }
-    if (fenced) continue;
-    const m = PLAN_ROW.exec(line);
-    if (m) rows.push({ done: m[1] !== ' ', id: m[2], title: m[3].trim() });
-  }
-  return rows;
-}
 
 function readText(file) {
   try {
@@ -36,25 +23,6 @@ function ledgerLines(payload) {
   const text = readText(join(workspaceOf(payload), '.litmuse', 'ledger', `${id}.jsonl`));
   if (!text) return [];
   return text.trim().split('\n').slice(-200).map((l) => { try { return JSON.parse(l); } catch { return null; } }).filter(Boolean);
-}
-
-// The plan the session last touched (ledger path), else the newest plan that still has an open row.
-function activePlan(payload, cwd) {
-  const planRef = /plans\/[A-Za-z0-9._-]+\.md/;
-  for (const line of ledgerLines(payload).reverse()) {
-    const hit = planRef.exec(`${line.path ?? ''} ${line.text ?? ''}`);
-    if (hit && existsSync(join(cwd, hit[0]))) return hit[0];
-  }
-  const dir = join(cwd, 'plans');
-  if (!existsSync(dir)) return null;
-  let best = null;
-  for (const name of readdirSync(dir).filter((f) => f.endsWith('.md'))) {
-    const text = readText(join(dir, name));
-    if (!text || !planRows(text).some((r) => !r.done)) continue;
-    const mtime = statSync(join(dir, name)).mtimeMs;
-    if (!best || mtime > best.mtime) best = { file: `plans/${name}`, mtime };
-  }
-  return best ? best.file : null;
 }
 
 // The last explicit note decides: a release opener ends the hold, any later note or evidence line re-arms it.
@@ -87,23 +55,14 @@ function bounded(payload, state, prefix, fingerprint, label) {
   return { ...state, [`${prefix}Fingerprint`]: fingerprint, [`${prefix}Holds`]: holds + 1, [`${prefix}Released`]: false };
 }
 
+// A start-work run is driven by its own decision table (autopilot.mjs): continue, wrap-up, done or impossible. A
+// pause word the user typed still stops the driving for that turn; a ledger note never does, because the run
+// gathers what it cannot finish into the inbox instead of ending on a note.
 function startWorkHold(payload, state) {
-  if (state.route !== 'start-work' || paused(payload, state) || releasedByLedger(payload)) return false;
-  const cwd = workspaceOf(payload);
-  const file = activePlan(payload, cwd);
-  if (!file) return false;
-  const text = readText(join(cwd, file));
-  if (!text) return false;
-  const status = /^[>\s*_-]*Status\**:\**\s*(.+)$/im.exec(text);
-  if (!status || !/^approved\b/i.test(status[1].replace(/^[*_\s]+/, ''))) return false;
-  const rows = planRows(text);
-  const open = rows.filter((r) => !r.done);
-  if (!open.length) return false;
-  const next = bounded(payload, state, 'cont', `${file}:${rows.length - open.length}/${rows.length}`, 'start-work');
-  if (!next) return false;
-  writeSession(payload, next);
-  const word = open.length === 1 ? 'row' : 'rows';
-  block(`LitMuse start-work: ${file} has ${open.length} open ${word} (next: row ${open[0].id}). Continue with row ${open[0].id}, or write a ledger note starting BLOCKED at row ${open[0].id}: / PAUSED at row ${open[0].id}: / CANCELLED: and end the turn.`);
+  if (paused(payload, state)) return false;
+  const verdict = driveStop(payload, state);
+  if (!verdict) return false;
+  block(verdict.block);
   return true;
 }
 
@@ -147,10 +106,12 @@ function goalHold(payload, state) {
   return true;
 }
 
-// block() exits the process; the returns only matter when it is stubbed.
+// block() exits the process; the returns only matter when it is stubbed. A start-work run is driven by its plan
+// alone, so the litgoal hold stays off there and the run's own budget is the whole budget.
 export function continuationHold(payload, state) {
   try {
-    return startWorkHold(payload, state) || goalHold(payload, state);
+    if (state.route === 'start-work') return startWorkHold(payload, state);
+    return goalHold(payload, state);
   } catch {
     return false;
   }

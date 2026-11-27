@@ -7,6 +7,7 @@ import { tmpdir } from 'node:os';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { sessionPath } from '../plugin/hooks/lib/common.mjs';
+import { catalogLine } from '../plugin/hooks/lib/suggest.mjs';
 import { collectRewind } from '../plugin/lib/rewind/collect.mjs';
 import { writeNextStep } from '../plugin/lib/rewind/next-step.mjs';
 
@@ -53,12 +54,12 @@ test('user-prompt-submit: bare lit emits additionalContext naming the skill to l
   assert.equal(state.turnId, 'turn-1');
 });
 
-test('user-prompt-submit: ordinary prompt prints nothing and clears the route', () => {
+test('user-prompt-submit: ordinary prompt gets only the catalog line and clears the route', () => {
   const ws = workspace();
   runHook('user-prompt-submit', { prompt: 'lit loop', session_id: 's2', turn_id: 't1', cwd: ws }, ws);
   const r = runHook('user-prompt-submit', { prompt: 'thanks, looks good', session_id: 's2', turn_id: 't2', cwd: ws }, ws);
   assert.equal(r.code, 0);
-  assert.equal(r.stdout, '');
+  assert.equal(JSON.parse(r.stdout).hookSpecificOutput.additionalContext, catalogLine());
   const state = readState(ws, 's2');
   assert.equal(state.route, null);
 });
@@ -66,7 +67,7 @@ test('user-prompt-submit: ordinary prompt prints nothing and clears the route', 
 test('user-prompt-submit: an unrouted prompt in a fresh session writes no state', () => {
   const ws = workspace();
   const r = runHook('user-prompt-submit', { prompt: 'hello', session_id: 's3', cwd: ws }, ws);
-  assert.equal(r.stdout, '');
+  assert.equal(JSON.parse(r.stdout).hookSpecificOutput.additionalContext, catalogLine());
   assert.equal(existsSync(join(ws, '.litmuse')), false);
 });
 

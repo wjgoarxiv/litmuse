@@ -1,20 +1,35 @@
-import { readFileSync, writeFileSync, mkdirSync, appendFileSync, existsSync, lstatSync, realpathSync, renameSync } from 'node:fs';
+import { readFileSync, writeFileSync, mkdirSync, appendFileSync, existsSync, lstatSync, realpathSync, renameSync, chmodSync } from 'node:fs';
 import { join, dirname, resolve } from 'node:path';
 import { homedir } from 'node:os';
 import { fileURLToPath } from 'node:url';
-import { createHash } from 'node:crypto';
+import { createHash, createHmac, randomBytes, timingSafeEqual } from 'node:crypto';
 import { digestMismatch } from './digest.mjs';
 
 export const PLUGIN_ROOT = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
 const STDIN_LIMIT = 256 * 1024;
 
+// When a payload is too large or will not parse, the session and folder it names are kept here, so the run guard
+// can still deny the call during an active run instead of letting an unread call through.
+let UNREAD = null;
+export const unreadPayload = () => UNREAD;
+
+function identityOf(raw) {
+  const id = /"session_id"\s*:\s*"([A-Za-z0-9_-]{1,128})"/.exec(raw)?.[1];
+  if (!id) return null;
+  let cwd = null;
+  try { cwd = JSON.parse(/"cwd"\s*:\s*("(?:[^"\\]|\\.)*")/.exec(raw)?.[1] ?? 'null'); } catch { cwd = null; }
+  return typeof cwd === 'string' && cwd ? { session_id: id, cwd } : { session_id: id };
+}
+
 export function readPayload() {
+  let raw = '';
   try {
-    const raw = readFileSync(0, 'utf8');
-    if (raw.length > STDIN_LIMIT) return {};
+    raw = readFileSync(0, 'utf8');
+    if (raw.length > STDIN_LIMIT) { UNREAD = identityOf(raw); return {}; }
     const data = JSON.parse(raw);
     return data && typeof data === 'object' ? data : {};
   } catch {
+    UNREAD = identityOf(raw);
     return {};
   }
 }
@@ -82,6 +97,62 @@ export function sessionPath(cwd, sessionId, env = process.env) {
   return join(stateHome, 'litmuse', 'sessions', ws, `${id}.json`);
 }
 
+// A start-work run record is sealed with an HMAC whose key sits next to the session folders, in the state folder
+// the run guard refuses to read or write. A run whose seal does not match was edited outside the hooks.
+function sealKey(env = process.env) {
+  const stateHome = env.XDG_STATE_HOME || join(env.HOME || homedir(), '.local', 'state');
+  const file = join(stateHome, 'litmuse', 'seal.key');
+  try {
+    const key = readFileSync(file);
+    if (key.length >= 32) return key;
+  } catch { /* first use */ }
+  if (isLink(file) || isLink(dirname(file))) return null;
+  mkdirSync(dirname(file), { recursive: true });
+  const key = randomBytes(32);
+  writeFileSync(file, key, { mode: 0o600 });
+  try { chmodSync(file, 0o600); } catch { /* best effort */ }
+  return key;
+}
+
+export function sealRun(run) {
+  const key = sealKey();
+  return key ? createHmac('sha256', key).update(JSON.stringify(run)).digest('hex') : null;
+}
+
+function sealHolds(run, seal) {
+  const want = sealRun(run);
+  if (!want || typeof seal !== 'string' || seal.length !== want.length) return false;
+  return timingSafeEqual(Buffer.from(seal), Buffer.from(want));
+}
+
+// A run that fails its seal keeps its plan and status but loses every parked step, snapshot, path and grant, so
+// nothing written outside the hooks can be replayed or granted.
+function dropTampered(run, file) {
+  const denied = { commands: [...(run.denied?.commands ?? [])], paths: [...(run.denied?.paths ?? [])] };
+  for (const d of readDenied(file)) {
+    denied.commands.push(...(d.commands ?? []));
+    denied.paths.push(...(d.paths ?? []));
+  }
+  return { ...run, parked: [], paths: [], grants: [], snapshot: null, tampered: true, denied };
+}
+
+// Every `lit deny` is also appended to a journal beside the session record, so a record that fails its seal still
+// keeps the refusals the user gave.
+const deniedFile = (file) => file.replace(/\.json$/, '.denied');
+function readDenied(file) {
+  try {
+    return readFileSync(deniedFile(file), 'utf8').split('\n').filter(Boolean).map((l) => JSON.parse(l)).filter((d) => d && typeof d === 'object');
+  } catch {
+    return [];
+  }
+}
+export function appendDenied(payload, entry) {
+  const file = sessionFile(payload);
+  if (!file || isLink(dirname(file))) return;
+  mkdirSync(dirname(file), { recursive: true });
+  appendFileSync(deniedFile(file), `${JSON.stringify({ ts: Date.now(), commands: entry.commands, paths: entry.paths })}\n`);
+}
+
 export function sessionFile(payload) {
   return sessionPath(workspaceOf(payload), payload.session_id);
 }
@@ -107,6 +178,8 @@ export function readSession(payload) {
   try {
     const state = JSON.parse(readFileSync(file, 'utf8'));
     if (!state || typeof state !== 'object') throw new Error('bad state');
+    if (state.run && !sealHolds(state.run, state.run_seal)) state.run = dropTampered(state.run, file);
+    delete state.run_seal;
     return state;
   } catch {
     return { route: 'lit-plan', corrupt: true };
@@ -118,7 +191,9 @@ export function writeSession(payload, state) {
   if (!file || isLink(file) || isLink(dirname(file))) return;
   mkdirSync(dirname(file), { recursive: true });
   const tmp = `${file}.tmp-${process.pid}`;
-  writeFileSync(tmp, `${JSON.stringify(state, null, 2)}\n`);
+  const { run_seal: _old, ...rest } = state;
+  const body = rest.run ? { ...rest, run_seal: sealRun(rest.run) } : rest;
+  writeFileSync(tmp, `${JSON.stringify(body, null, 2)}\n`);
   renameSync(tmp, file);
   appendFileSync(file.replace(/\.json$/, '.journal'), `${JSON.stringify({ ts: Date.now(), route: state.route ?? null })}\n`);
 }
