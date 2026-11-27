@@ -12,8 +12,9 @@ import { homedir, userInfo } from 'node:os';
 //   split   a self-check refused only for its shape: the model is told which parts to run as separate calls
 // It reads the command, never the scripts the command runs.
 
-const FOLDS_CASE = process.platform === 'darwin' || process.platform === 'win32';
-const fold = (p) => (FOLDS_CASE ? p.toLowerCase() : p);
+// Paths are compared case-folded on every OS: a case-sensitive Linux disk may still hold a case-folding mount, and
+// refusing `.LitMuse` or `.GIT` there costs nothing.
+const fold = (p) => p.toLowerCase();
 
 const held = (reason) => ({ held: reason });
 

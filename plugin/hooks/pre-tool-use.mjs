@@ -56,8 +56,9 @@ function inside(cwd, p, dirs) {
   let root;
   try { root = realpathSync(cwd); } catch { root = resolve(cwd); }
   const target = realTarget(cwd, p);
-  // Case-folded where the disk folds case, so `.LitMuse/Sessions` is the same folder as `.litmuse/sessions`.
-  const fold = (x) => (process.platform === 'darwin' || process.platform === 'win32' ? x.toLowerCase() : x);
+  // Case-folded on every OS, so `.LitMuse/Sessions` is the same folder as `.litmuse/sessions` on a case-folding disk
+  // and is refused as a precaution on a case-sensitive one.
+  const fold = (x) => x.toLowerCase();
   return dirs.some((d) => {
     const base = fold(resolve(root, d));
     const t = fold(target);

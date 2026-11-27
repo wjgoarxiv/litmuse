@@ -251,7 +251,7 @@
           "node",
           "hooks/session-start.mjs",
           "--digest",
-          "463938f5ee4ce0b3"
+          "ecd588cc8add5a5a"
         ],
         "timeoutMs": 5000
       },
@@ -262,7 +262,7 @@
           "node",
           "hooks/user-prompt-submit.mjs",
           "--digest",
-          "153b71ec33a4bf3a"
+          "0704e1408ba24bda"
         ],
         "timeoutMs": 110000,
         "statusMessage": "LitMuse route check"
@@ -274,7 +274,7 @@
           "node",
           "hooks/pre-tool-use.mjs",
           "--digest",
-          "777e42cd881798ad"
+          "39010c96d8edc5a0"
         ],
         "timeoutMs": 5000
       },
@@ -285,7 +285,7 @@
           "node",
           "hooks/post-tool-use.mjs",
           "--digest",
-          "e696e7fee5c415c3"
+          "fec2c7800dfa3bf0"
         ],
         "timeoutMs": 5000
       },
@@ -296,7 +296,7 @@
           "node",
           "hooks/post-tool-use-failure.mjs",
           "--digest",
-          "da0d657c682b2b8e"
+          "2717a5a534a6d881"
         ],
         "timeoutMs": 5000
       },
@@ -307,7 +307,7 @@
           "node",
           "hooks/stop.mjs",
           "--digest",
-          "565bb6c0dfea4499"
+          "baead71b5cfdcc86"
         ],
         "timeoutMs": 100000
       },
@@ -318,7 +318,7 @@
           "node",
           "hooks/subagent-start.mjs",
           "--digest",
-          "0881a8ffa7e00575"
+          "24c6d0cd3a5da054"
         ],
         "timeoutMs": 5000
       },
@@ -329,7 +329,7 @@
           "node",
           "hooks/subagent-stop.mjs",
           "--digest",
-          "d915c029d006af1f"
+          "d14d92c88c486267"
         ],
         "timeoutMs": 5000
       },
@@ -340,7 +340,7 @@
           "node",
           "hooks/session-end.mjs",
           "--digest",
-          "59aa649dca6cc257"
+          "60ba6b0fa2bedf3e"
         ],
         "timeoutMs": 5000
       },
@@ -351,7 +351,7 @@
           "node",
           "hooks/pre-compact.mjs",
           "--digest",
-          "af3a2bfc420d6456"
+          "ed5287d05cbbd453"
         ],
         "timeoutMs": 5000
       }

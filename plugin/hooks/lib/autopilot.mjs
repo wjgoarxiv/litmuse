@@ -540,10 +540,12 @@ function editPlanRows(cwd, file, ids) {
   return skipped;
 }
 
+// The message around an approval reply's lines; the replay budget counts it, so a full budget still fits.
+const frame = (lines) => `LitMuse start-work: the user typed an approval word in this session.\n${lines.join('\n')}\nTell the user the result briefly, then carry on with the run.`;
+
 // The reply to an approval word. When it would not fit the host limit whole, an armed list is never cut: the
 // snapshot is dropped, the inbox is left out, and the user is told how to see the list again.
 function approvalReply(run, out) {
-  const frame = (lines) => `LitMuse start-work: the user typed an approval word in this session.\n${lines.join('\n')}\nTell the user the result briefly, then carry on with the run.`;
   const text = frame(out);
   if (jsonBytes(text) <= CONTEXT_BYTES - REPLY_RESERVE || !run.snapshot) return capText(text);
   run.snapshot = null;
@@ -587,7 +589,7 @@ export function answerPrompt(payload, state) {
       const inbox = list();
       const head = `The user typed \`${payload.prompt.trim()}\`. Replayed the [${tier}] steps the last list showed:`;
       const after = 'Whatever is still parked is listed again:';
-      const budget = CONTEXT_BYTES - REPLY_RESERVE - jsonBytes([...out, head, after, inbox].join('\n'));
+      const budget = CONTEXT_BYTES - REPLY_RESERVE - jsonBytes(frame([...out, head, after, inbox]));
       out.push(head, ...fitResults(results, budget), after, inbox);
       const reply = approvalReply(run, out);
       writeSession(payload, state);
